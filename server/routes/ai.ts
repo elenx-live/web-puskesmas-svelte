@@ -444,8 +444,9 @@ router.post("/api/ai/fetch-models", async (req, res) => {
     headers["Authorization"] = `Bearer ${key}`;
   } else {
     const savedConfig = getAIProviderConfig();
-    if (savedConfig.apiKey) {
-      headers["Authorization"] = `Bearer ${savedConfig.apiKey}`;
+    const savedKey = savedConfig.text?.apiKey || savedConfig.apiKey;
+    if (savedKey) {
+      headers["Authorization"] = `Bearer ${savedKey}`;
     }
   }
 

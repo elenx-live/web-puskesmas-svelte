@@ -83,6 +83,14 @@ export const AI_PROVIDER_PRESETS: AIProviderPreset[] = [
     defaultModel: 'llama3',
     placeholderKey: 'Kunci API (opsional jika server lokal)',
     helpText: 'Mendukung semua server AI dengan format endpoint OpenAI /chat/completions standar.'
+  },
+  {
+    id: 'dahono',
+    name: 'Dahono Gateway (DeepSeek / Qwen)',
+    endpointUrl: 'https://gateway.dahono.com/v1',
+    defaultModel: 'dahono/deepseek-v4.1-custom',
+    placeholderKey: 'dahono-...',
+    helpText: 'Gateway AI Dahono. Dapatkan API key dari dashboard Dahono.'
   }
 ];
 
