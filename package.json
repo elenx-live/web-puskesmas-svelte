@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "dev:server": "tsx server.ts",
+    "build:server": "esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist-server/server.cjs",
+    "server": "node dist-server/server.cjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
@@ -15,13 +18,19 @@
     "@tailwindcss/vite": "^4.3.3",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^24.13.3",
+    "esbuild": "^0.28.0",
     "svelte": "^5.57.0",
     "svelte-check": "^4.7.6",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.19.4",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   },
   "dependencies": {
+    "@google/genai": "^1.12.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
     "firebase": "^13.0.0",
     "firebase-admin": "^13.0.0",
     "lucide-svelte": "^1.0.1"
