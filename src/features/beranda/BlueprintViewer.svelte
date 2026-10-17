@@ -1,4 +1,4 @@
-<!-- @component Penampil cetak biru arsitektur sistem CMS (modul, skema Firestore, matriks RBAC, ADR, checklist). -->
+<!-- @component Penampil cetak biru arsitektur sistem CMS (modul, skema database, matriks RBAC, ADR, checklist). -->
 <script lang="ts">
   import { ArrowRight, CheckCircle2 } from 'lucide-svelte';
   import Button from '../../shared/ui/Button.svelte';
@@ -17,7 +17,7 @@
 
   const tabs = [
     { id: 'modules', label: 'Modul Sistem' },
-    { id: 'schemas', label: 'Skema Firestore' },
+    { id: 'schemas', label: 'Skema Database' },
     { id: 'matrix', label: 'Matriks RBAC' },
     { id: 'adr', label: 'Keputusan Arsitektur (ADR)' },
     { id: 'checklist', label: 'Persetujuan Phase 1' }

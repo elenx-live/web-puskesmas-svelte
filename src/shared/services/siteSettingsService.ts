@@ -176,7 +176,7 @@ export const siteSettingsService = {
       }
     } catch {}
 
-    // 2. Fallback to Cloud Firestore / Local cache
+    // 2. Fallback to VPS database via /api/db/*
     const rawData = await getSingleDocument<SiteSettings>(
       FIRESTORE_COLLECTION,
       FIRESTORE_DOC_ID,
@@ -327,9 +327,9 @@ export const siteSettingsService = {
       }
     }
 
-    // 5. Asynchronously persist to Cloud Firestore with timeout protection
+    // 5. Asynchronously persist to VPS database via /api/db/*
     saveSingleDocument(FIRESTORE_COLLECTION, 'global_settings', newSettings, LOCAL_STORAGE_KEY).catch(err => {
-      console.warn('Background Firestore save failed:', err);
+      console.warn('Background VPS DB save failed:', err);
     });
     saveSingleDocument(FIRESTORE_COLLECTION, 'global-settings', newSettings, LOCAL_STORAGE_KEY).catch(() => {});
 

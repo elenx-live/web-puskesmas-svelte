@@ -1,6 +1,6 @@
 import type { GlobalThemeConfig } from '../types/index.js';
 import { auditService } from './auditService';
-import { getSingleDocument, saveSingleDocument } from '../lib/firebase';
+import { saveSingleDocument } from '../lib/firebase';
 
 const DRAFT_KEY = 'puskesmas_theme_draft';
 const PUBLISHED_KEY = 'puskesmas_theme_published';
@@ -191,12 +191,6 @@ export const themeService = {
       }
     } catch {}
 
-    // 3. Try fetching from Firestore
-    try {
-      const fsTheme = await getSingleDocument<GlobalThemeConfig>(FIRESTORE_COLLECTION, 'draft', DRAFT_KEY, cachedDraft);
-      if (fsTheme) return fsTheme;
-    } catch {}
-
     return cachedDraft;
   },
 
@@ -231,17 +225,8 @@ export const themeService = {
         }
       }
     } catch (e) {
-      console.warn('Server theme fetch failed, trying Firestore:', e);
+      console.warn('Server theme fetch failed:', e);
     }
-
-    // 3. Fallback to Cloud Firestore
-    try {
-      const fsTheme = await getSingleDocument<GlobalThemeConfig>(FIRESTORE_COLLECTION, 'published', PUBLISHED_KEY, cachedPublished);
-      if (fsTheme) {
-        localStorage.setItem(PUBLISHED_KEY, JSON.stringify(fsTheme));
-        return fsTheme;
-      }
-    } catch {}
 
     return cachedPublished;
   },
@@ -269,7 +254,7 @@ export const themeService = {
       console.warn('Server theme draft save failed:', err);
     }
 
-    // 3. Save to Firestore
+    // 3. Save to VPS database via /api/db/*
     saveSingleDocument(FIRESTORE_COLLECTION, 'draft', fullConfig, DRAFT_KEY).catch(() => {});
 
     await auditService.recordLog({
@@ -312,7 +297,7 @@ export const themeService = {
       console.warn('Server theme publish failed:', err);
     }
 
-    // 3. Persist to Firestore
+    // 3. Persist to VPS database via /api/db/*
     saveSingleDocument(FIRESTORE_COLLECTION, 'published', fullConfig, PUBLISHED_KEY).catch(() => {});
 
     await auditService.recordLog({
@@ -348,7 +333,7 @@ export const themeService = {
       console.warn('Server theme reset failed:', err);
     }
 
-    // 3. Reset in Firestore
+    // 3. Reset in VPS database via /api/db/*
     saveSingleDocument(FIRESTORE_COLLECTION, 'published', { ...resetConfig, status: 'published' }, PUBLISHED_KEY).catch(() => {});
     saveSingleDocument(FIRESTORE_COLLECTION, 'draft', resetConfig, DRAFT_KEY).catch(() => {});
 

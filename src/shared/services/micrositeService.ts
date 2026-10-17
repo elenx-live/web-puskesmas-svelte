@@ -9,8 +9,7 @@ import type {
 } from '../types/index.js';
 import { auditService } from './auditService';
 import { sanitizeText, sanitizeHtml } from '../utils/sanitize';
-import { getCollectionData, saveDocumentData, deleteDocumentData, db } from '../lib/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { getCollectionData, saveDocumentData, deleteDocumentData } from '../lib/firebase';
 import { syncMicrositeItemToServer, syncMetadataToServer } from '../utils/metaSync';
 
 const MICROSITES_STORAGE_KEY = 'puskesmas_microsites';
@@ -482,7 +481,7 @@ export const micrositeService = {
 
     if (!cleanSlug) return null;
 
-    // 1. First check in local cache / collection sync
+    // 1. Check in local cache / collection sync (VPS database only, no Firestore fallback)
     const list = await fetchMicrosites();
     let item = list.find(m => {
       const itemSlug = (m.slug || '').trim().toLowerCase().replace(/^\/+|\/+$/g, '');
@@ -493,39 +492,6 @@ export const micrositeService = {
         itemSlug.replace(/[^a-z0-9]/g, '') === cleanSlug.replace(/[^a-z0-9]/g, '')
       );
     });
-
-    // 2. If not found locally, query Cloud Firestore directly by slug or id
-    if (!item) {
-      try {
-        const colRef = collection(db, FIRESTORE_COLLECTION);
-        const q = query(colRef, where('slug', '==', cleanSlug));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          const docSnap = snap.docs[0];
-          const cloudData = { ...docSnap.data(), id: docSnap.id } as MicrositeEntity;
-          item = cloudData;
-          // Cache it locally so subsequent loads are instant
-          const updated = [item, ...list.filter(m => m.id !== item!.id)];
-          saveStoredMicrosites(updated, false);
-        } else {
-          // Also try looking up by doc ID
-          const allDocs = await getDocs(colRef);
-          allDocs.forEach((d) => {
-            const data = { ...d.data(), id: d.id } as MicrositeEntity;
-            const dataSlug = (data.slug || '').trim().toLowerCase().replace(/^\/+|\/+$/g, '');
-            if (dataSlug === cleanSlug || d.id.toLowerCase() === cleanSlug) {
-              item = data;
-            }
-          });
-          if (item) {
-            const updated = [item, ...list.filter(m => m.id !== item!.id)];
-            saveStoredMicrosites(updated, false);
-          }
-        }
-      } catch (firestoreErr) {
-        console.warn('[Microsite Service] Cloud Firestore fallback search error:', firestoreErr);
-      }
-    }
 
     if (!item) return null;
     const { password, ...safeItem } = item;

@@ -139,19 +139,19 @@ export const contactService = {
       }
     } catch {}
 
-    // 2. Try Firestore with local cache
+    // 2. Try VPS database via getSingleDocument (no Firestore fallback)
     try {
-      const fsData = await getSingleDocument<PuskesmasContactSettings>(
+      const dbData = await getSingleDocument<PuskesmasContactSettings>(
         FIRESTORE_COLLECTION,
         FIRESTORE_DOC_ID,
         CONTACT_SETTINGS_KEY,
         DEFAULT_CONTACT_SETTINGS
       );
-      if (fsData && fsData.name) {
-        return fsData;
+      if (dbData && dbData.name) {
+        return dbData;
       }
     } catch (err) {
-      console.warn('Firestore contact fetch fallback:', err);
+      console.warn('VPS DB contact fetch failed:', err);
     }
 
     // 3. Fallback to local cache or defaults
@@ -179,9 +179,9 @@ export const contactService = {
       console.warn('Server contact save failed:', err);
     }
 
-    // 3. Cloud Firestore save
+    // 3. VPS database save via /api/db/*
     saveSingleDocument(FIRESTORE_COLLECTION, FIRESTORE_DOC_ID, updated, CONTACT_SETTINGS_KEY).catch(err => {
-      console.warn('Firestore contact save failed:', err);
+      console.warn('VPS DB contact save failed:', err);
     });
 
     // 4. Bi-directional synchronization to site_settings (puskesmas_site_settings)

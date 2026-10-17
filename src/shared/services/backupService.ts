@@ -1,6 +1,5 @@
 import { auditService } from './auditService';
-import { getCollectionData, saveDocumentData, deleteDocumentData, saveSingleDocument, getSingleDocument, db } from '../lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { getCollectionData, saveDocumentData, deleteDocumentData, saveSingleDocument } from '../lib/firebase';
 
 export interface BackupRecord {
   id: string;
@@ -81,7 +80,7 @@ export const backupService = {
       const data = localStorage.getItem(STORAGE_KEY);
       if (!data) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_BACKUPS));
-        // Also fetch from Firestore in background
+        // Also sync from VPS database in background
         getCollectionData<BackupRecord>(FIRESTORE_COLLECTION, STORAGE_KEY, INITIAL_BACKUPS).catch(() => {});
         return INITIAL_BACKUPS;
       }
@@ -182,8 +181,8 @@ export const backupService = {
         currentList[idx].checksum = checksum;
         currentList[idx].dataSnapshot = snapshot;
         this.saveBackups(currentList);
-        
-        // Persist completed backup to Firestore
+
+        // Persist completed backup to VPS database
         await saveDocumentData(FIRESTORE_COLLECTION, newId, currentList[idx], STORAGE_KEY);
       }
 

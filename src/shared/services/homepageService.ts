@@ -1,6 +1,6 @@
 import type { HomepageSection, HomepageBuilderConfig, HomepageTemplateType, BackgroundAnimationType } from '../types/index.js';
 import { auditService } from './auditService';
-import { getSingleDocument, saveSingleDocument } from '../lib/firebase';
+import { saveSingleDocument } from '../lib/firebase';
 
 const DRAFT_KEY = 'puskesmas_homepage_draft';
 const PUBLISHED_KEY = 'puskesmas_homepage_published';
@@ -230,15 +230,6 @@ export const homepageService = {
       }
     } catch {}
 
-    // 3. Fallback to Firestore
-    try {
-      const fsDraft = await getSingleDocument<HomepageBuilderConfig>(FIRESTORE_COLLECTION, 'draft', DRAFT_KEY, cachedDraft);
-      if (fsDraft && Array.isArray(fsDraft.sections)) {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(fsDraft));
-        return fsDraft;
-      }
-    } catch {}
-
     return cachedDraft;
   },
 
@@ -285,17 +276,8 @@ export const homepageService = {
         }
       }
     } catch (e) {
-      console.warn('Server homepage fetch failed, falling back to Firestore:', e);
+      console.warn('Server homepage fetch failed:', e);
     }
-
-    // 3. Fallback to Cloud Firestore
-    try {
-      const fsConfig = await getSingleDocument<HomepageBuilderConfig>(FIRESTORE_COLLECTION, 'published', PUBLISHED_KEY, cachedPublished);
-      if (fsConfig && Array.isArray(fsConfig.sections)) {
-        localStorage.setItem(PUBLISHED_KEY, JSON.stringify(fsConfig));
-        return fsConfig;
-      }
-    } catch {}
 
     return cachedPublished;
   },
@@ -331,7 +313,7 @@ export const homepageService = {
       console.warn('Server homepage draft save failed:', err);
     }
 
-    // 3. Persist to Firestore
+    // 3. Persist to VPS database via /api/db/*
     saveSingleDocument(FIRESTORE_COLLECTION, 'draft', config, DRAFT_KEY).catch(() => {});
 
     await auditService.recordLog({
@@ -382,7 +364,7 @@ export const homepageService = {
       console.warn('Server homepage publish failed:', err);
     }
 
-    // 3. Persist to Firestore
+    // 3. Persist to VPS database via /api/db/*
     saveSingleDocument(FIRESTORE_COLLECTION, 'published', config, PUBLISHED_KEY).catch(() => {});
 
     await auditService.recordLog({
@@ -424,7 +406,7 @@ export const homepageService = {
       console.warn('Server homepage reset failed:', err);
     }
 
-    // 3. Reset in Firestore
+    // 3. Reset in VPS database via /api/db/*
     saveSingleDocument(FIRESTORE_COLLECTION, 'published', resetConfig, PUBLISHED_KEY).catch(() => {});
     saveSingleDocument(FIRESTORE_COLLECTION, 'draft', { ...resetConfig, status: 'draft' }, DRAFT_KEY).catch(() => {});
 

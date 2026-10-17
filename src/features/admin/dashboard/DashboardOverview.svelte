@@ -260,7 +260,7 @@
   ];
 
   const systemHealthItems = [
-    { name: 'Database Firestore / Local Store', status: 'Operational', color: 'text-[var(--color-primary)] bg-[var(--color-primary)]/10' },
+    { name: 'Database SQLite (VPS)', status: 'Operational', color: 'text-[var(--color-primary)] bg-[var(--color-primary)]/10' },
     { name: 'API Gateway & Express Server', status: 'Operational', color: 'text-[var(--color-primary)] bg-[var(--color-primary)]/10' },
     { name: 'WhatsApp Cloud API Gateway', status: 'Connected', color: 'text-[var(--color-primary)] bg-[var(--color-primary)]/10' },
     { name: 'Notification Service Dispatcher', status: 'Operational', color: 'text-[var(--color-primary)] bg-[var(--color-primary)]/10' },

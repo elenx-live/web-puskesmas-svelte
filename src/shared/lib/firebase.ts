@@ -1,23 +1,7 @@
 import type { FirebaseApp } from 'firebase/app';
 import { GoogleAuthProvider } from 'firebase/auth';
 import type { Auth } from 'firebase/auth';
-import {
-  Firestore,
-  collection, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
-  onSnapshot 
-} from 'firebase/firestore';
-import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { app as sharedApp, auth as sharedAuth, db as sharedDb } from '../firebase/firebase';
+import { app as sharedApp, auth as sharedAuth } from '../firebase/firebase';
 import firebaseConfigJson from '../../firebase-applet-config.json';
 
 const firebaseConfig = {
@@ -29,10 +13,9 @@ const firebaseConfig = {
   appId: firebaseConfigJson.appId
 };
 
-// Unified Firebase Singleton instances
+// Unified Firebase Singleton instances (Auth only - Firestore removed)
 export const app: FirebaseApp = sharedApp;
 export const auth: Auth = sharedAuth;
-export const db: Firestore = sharedDb;
 
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
@@ -42,51 +25,10 @@ export const isFirebaseReady = (): boolean => {
 };
 
 /**
- * Helper with timeout to prevent Firestore network stalls from blocking the UI
- */
-function withTimeout<T>(promise: Promise<T>, ms: number, fallbackValue: T): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallbackValue), ms))
-  ]);
-}
-
-// Queue manager to avoid "Write stream exhausted maximum allowed queued writes"
-let pendingWritesCount = 0;
-const MAX_CONCURRENT_WRITES = 3;
-const writeQueue: Array<() => Promise<void>> = [];
-
-async function processWriteQueue() {
-  if (pendingWritesCount >= MAX_CONCURRENT_WRITES || writeQueue.length === 0) return;
-  const nextTask = writeQueue.shift();
-  if (!nextTask) return;
-  
-  pendingWritesCount++;
-  try {
-    await nextTask();
-  } catch (e) {
-    console.warn('[Firestore Write Queue] Handled write error:', e);
-  } finally {
-    pendingWritesCount--;
-    if (writeQueue.length > 0) {
-      setTimeout(processWriteQueue, 50);
-    }
-  }
-}
-
-function enqueueFirestoreWrite(task: () => Promise<void>): void {
-  // Prevent infinite queue buildup by capping max queue length
-  if (writeQueue.length > 25) {
-    writeQueue.splice(0, 5); // discard oldest non-critical background writes
-  }
-  writeQueue.push(task);
-  processWriteQueue();
-}
-
-/**
- * Universal Cloud Firestore & Multi-Account Server Persistence Helper
+ * Universal VPS SQLite Database Persistence Helper (/api/db/*)
  * Cache-First (Stale-While-Revalidate): Returns local cache instantly (0ms)
- * and synchronizes authoritative state with Cloud Firestore and Central Server Data Store.
+ * and synchronizes authoritative state with VPS SQLite database.
+ * Firestore fallback has been removed - /api/db/* is the only source.
  */
 export async function getCollectionData<T extends { id?: string; uid?: string }>(
   collectionName: string,
@@ -122,7 +64,7 @@ export async function getCollectionData<T extends { id?: string; uid?: string }>
     }
   };
 
-  // Helper to fetch from VPS SQLite database (FAST - primary source)
+  // Helper to fetch from VPS SQLite database (/api/db/*) - the ONLY source
   const fetchFromVpsDb = async (): Promise<T[] | null> => {
     try {
       const res = await fetch(`/api/db/${collectionName}?t=${Date.now()}`);
@@ -136,79 +78,28 @@ export async function getCollectionData<T extends { id?: string; uid?: string }>
     return null;
   };
 
-  // Helper to fetch from central server data store
-  const fetchFromServerStore = async (): Promise<T[] | null> => {
+  // 2. Authoritative sync - VPS SQLite database only (no Firestore fallback)
+  const revalidateFromVps = async (): Promise<T[] | null> => {
     try {
-      const srvRes = await fetch(`/api/data/${collectionName}?t=${Date.now()}`);
-      if (srvRes.ok) {
-        const srvJson = await srvRes.json();
-        if (srvJson.success && Array.isArray(srvJson.data)) {
-          return srvJson.data as T[];
-        }
-      }
-    } catch {}
-    return null;
-  };
-
-  // 2. Authoritative sync - VPS DB first (fast), then Firestore, then Server Store
-  const revalidateCloudAndServer = async (): Promise<T[] | null> => {
-    try {
-      let authoritativeList: T[] | null = null;
-
-      // Try VPS SQLite database FIRST (fastest - local)
       const vpsList = await fetchFromVpsDb();
-      if (vpsList !== null && vpsList.length > 0) {
-        authoritativeList = vpsList;
-        applyAuthoritativeData(authoritativeList);
-        return authoritativeList;
-      }
-
-      // Fallback to Firestore if VPS DB empty/failed
-      let firestoreFetched = false;
-      try {
-        const colRef = collection(db, collectionName);
-        const snap = await withTimeout(getDocs(colRef), 4000, null);
-        if (snap !== null) {
-          firestoreFetched = true;
-          const items: T[] = [];
-          snap.forEach((docSnap: QueryDocumentSnapshot<DocumentData>) => {
-            const data = docSnap.data() as T;
-            const docId = docSnap.id;
-            items.push({ ...data, id: (data as any).id || docId });
-          });
-          authoritativeList = items;
-        }
-      } catch (firestoreErr) {
-        console.warn(`[Firestore] Fetch ${collectionName} error:`, firestoreErr);
-      }
-
-      // If Firestore network failed or timed out, try central server store
-      if (!firestoreFetched && authoritativeList === null) {
-        const serverList = await fetchFromServerStore();
-        if (serverList !== null) {
-          authoritativeList = serverList;
-        }
-      }
-
-      // If we got an authoritative list (even if empty `[]`), apply it directly!
-      if (authoritativeList !== null && Array.isArray(authoritativeList)) {
-        applyAuthoritativeData(authoritativeList);
-        return authoritativeList;
+      if (vpsList !== null) {
+        applyAuthoritativeData(vpsList);
+        return vpsList;
       }
     } catch (err) {
-      console.warn(`[Data Sync] Background sync failed for ${collectionName}:`, err);
+      console.warn(`[Data Sync] VPS DB sync failed for ${collectionName}:`, err);
     }
     return null;
   };
 
   // If we had local cache, return it immediately and revalidate in background
   if (localItems !== null) {
-    revalidateCloudAndServer().catch(() => {});
+    revalidateFromVps().catch(() => {});
     return localItems;
   }
 
-  // If no local cache, perform fetch
-  const freshData = await revalidateCloudAndServer();
+  // If no local cache, fetch from VPS DB
+  const freshData = await revalidateFromVps();
   if (freshData !== null) {
     return freshData;
   }
@@ -220,7 +111,7 @@ export async function getCollectionData<T extends { id?: string; uid?: string }>
 }
 
 /**
- * Save or Update a single entity in Cloud Firestore, Central Server Store, and LocalStorage
+ * Save or Update a single entity in VPS SQLite database (/api/db/*) and LocalStorage
  */
 export async function saveDocumentData<T extends { id?: string; uid?: string; slug?: string }>(
   collectionName: string,
@@ -253,38 +144,20 @@ export async function saveDocumentData<T extends { id?: string; uid?: string; sl
     console.warn(`[Storage] Local cache save failed for ${localStorageKey}:`, e);
   }
 
-  // 2. Synchronize to VPS Database, Central Server Data Store & Cloud Firestore
+  // 2. Persist to VPS SQLite Database via /api/db/* (only)
   try {
-    // A. VPS SQLite Database (primary - fast)
     fetch(`/api/db/${collectionName}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     }).catch(err => console.warn(`[VPS-DB] Save to /api/db/${collectionName} error:`, err));
-
-    // B. Server Store (legacy)
-    fetch(`/api/data/${collectionName}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).catch(err => console.warn(`[Server] Save to /api/data/${collectionName} error:`, err));
-
-    // C. Cloud Firestore (background sync)
-    enqueueFirestoreWrite(async () => {
-      try {
-        const docRef = doc(db, collectionName, entityId);
-        await withTimeout(setDoc(docRef, cleanUndefinedValues(payload), { merge: true }), 4000, null);
-      } catch (err) {
-        console.warn(`[Firestore] setDoc error for ${collectionName}/${entityId}:`, err);
-      }
-    });
   } catch (error) {
     console.warn(`[Persistence] Save document sync error for ${collectionName}/${entityId}:`, error);
   }
 }
 
 /**
- * Delete a document from Cloud Firestore, Central Server Store, and LocalStorage
+ * Delete a document from VPS SQLite database (/api/db/*) and LocalStorage
  */
 export async function deleteDocumentData(
   collectionName: string,
@@ -311,27 +184,11 @@ export async function deleteDocumentData(
     console.warn(`[Storage] Local delete failed for ${localStorageKey}:`, e);
   }
 
-  // 2. Synchronize deletion to VPS Database, Central Server Store and Cloud Firestore
+  // 2. Delete from VPS SQLite Database via /api/db/* (only)
   try {
-    // A. VPS SQLite Database (primary - fast)
     fetch(`/api/db/${collectionName}/${encodeURIComponent(docId)}`, {
       method: 'DELETE'
     }).catch(err => console.warn(`[VPS-DB] Delete /api/db/${collectionName}/${docId} error:`, err));
-
-    // B. Server Store (legacy)
-    fetch(`/api/data/${collectionName}/${encodeURIComponent(docId)}`, {
-      method: 'DELETE'
-    }).catch(err => console.warn(`[Server] Delete /api/data/${collectionName}/${docId} error:`, err));
-
-    // C. Cloud Firestore (background sync)
-    enqueueFirestoreWrite(async () => {
-      try {
-        const docRef = doc(db, collectionName, docId);
-        await withTimeout(deleteDoc(docRef), 4000, null);
-      } catch (err) {
-        console.warn(`[Firestore] deleteDoc error for ${collectionName}/${docId}:`, err);
-      }
-    });
   } catch (error) {
     console.warn(`[Persistence] Delete document sync error for ${collectionName}/${docId}:`, error);
   }
@@ -356,7 +213,8 @@ function cleanUndefinedValues(obj: any): any {
 
 /**
  * Save Single Object (e.g. site_settings, contact_settings, homepage, theme)
- * Optimistic local write first, followed by Cloud Firestore & Central Server Store synchronization
+ * Optimistic local write first, followed by VPS SQLite database (/api/db/*) sync.
+ * Firestore fallback has been removed.
  */
 export async function saveSingleDocument<T>(
   collectionName: string,
@@ -379,20 +237,12 @@ export async function saveSingleDocument<T>(
     console.warn(`[Storage] Local save failed for ${localStorageKey}:`, e);
   }
 
-  // 2. Sync to VPS Database, Central Server Store and Cloud Firestore
+  // 2. Sync to VPS SQLite Database via /api/db/* (only)
   try {
-    // A. VPS SQLite Database (primary - fast)
     fetch(`/api/db/${collectionName}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: docId, ...cleanedData })
-    }).catch(() => {});
-
-    // B. Server Store (legacy)
-    fetch(`/api/data/${collectionName}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cleanedData)
     }).catch(() => {});
 
     if (collectionName === 'site_settings') {
@@ -402,21 +252,6 @@ export async function saveSingleDocument<T>(
         body: JSON.stringify(cleanedData)
       }).catch(() => {});
     }
-
-    // B. Cloud Firestore
-    enqueueFirestoreWrite(async () => {
-      try {
-        const docRef = doc(db, collectionName, docId);
-        await withTimeout(setDoc(docRef, cleanedData as any, { merge: true }), 4000, null);
-        if (collectionName === 'site_settings' && (docId === 'global_settings' || docId === 'global-settings')) {
-          const altId = docId === 'global_settings' ? 'global-settings' : 'global_settings';
-          const altRef = doc(db, collectionName, altId);
-          await withTimeout(setDoc(altRef, cleanedData as any, { merge: true }), 4000, null);
-        }
-      } catch (err) {
-        console.warn(`[Firestore] saveSingleDoc error for ${collectionName}/${docId}:`, err);
-      }
-    });
   } catch (error) {
     console.warn(`[Persistence] Save single doc sync error for ${collectionName}/${docId}:`, error);
   }
@@ -424,7 +259,8 @@ export async function saveSingleDocument<T>(
 
 /**
  * Get Single Object (e.g. site_settings, contact_settings, homepage)
- * Cache-First: Returns local cache instantly (0ms) and verifies authoritative state across all accounts
+ * Cache-First: Returns local cache instantly (0ms) and revalidates from VPS SQLite database (/api/db/*).
+ * Firestore fallback has been removed.
  */
 export async function getSingleDocument<T>(
   collectionName: string,
@@ -461,7 +297,7 @@ export async function getSingleDocument<T>(
 
   const revalidateDoc = async (): Promise<T | null> => {
     try {
-      // 0. Try VPS SQLite database FIRST (fastest - primary source)
+      // Try VPS SQLite database via /api/db/* (the ONLY source - no Firestore fallback)
       try {
         const vpsRes = await fetch(`/api/db/${collectionName}/${encodeURIComponent(docId)}?t=${Date.now()}`);
         if (vpsRes.ok) {
@@ -475,10 +311,10 @@ export async function getSingleDocument<T>(
         }
       } catch {}
 
-      // 1. Try fetching from Server API (central source across all accounts)
+      // Try dedicated server API endpoints (backend, not Firestore)
       try {
-        const url = collectionName === 'site_settings' 
-          ? `/api/site-settings?t=${Date.now()}` 
+        const url = collectionName === 'site_settings'
+          ? `/api/site-settings?t=${Date.now()}`
           : `/api/data/${collectionName}?t=${Date.now()}`;
         const srvRes = await fetch(url);
         if (srvRes.ok) {
@@ -489,21 +325,6 @@ export async function getSingleDocument<T>(
             applyDoc(merged);
             return merged;
           }
-        }
-      } catch {}
-
-      // 2. Try fetching from Cloud Firestore
-      try {
-        const docRef = doc(db, collectionName, docId);
-        let snap = await withTimeout(getDoc(docRef), 3000, null as any);
-        if ((!snap || !snap.exists()) && collectionName === 'site_settings') {
-          const altId = docId === 'global_settings' ? 'global-settings' : 'global_settings';
-          snap = await withTimeout(getDoc(doc(db, collectionName, altId)), 3000, null as any);
-        }
-        if (snap && snap.exists()) {
-          const cloudData = { ...defaultInitialData, ...(snap.data() as T) };
-          applyDoc(cloudData);
-          return cloudData;
         }
       } catch {}
     } catch (err) {
