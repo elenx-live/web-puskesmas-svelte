@@ -239,7 +239,7 @@
       <!-- Search Input -->
       <div class="relative flex-1">
         <Search class="w-4 h-4 text-[var(--color-muted-foreground)] absolute left-4 top-3.5 pointer-events-none" />
-        <input
+        <input aria-label="Cari layanan kesehatan (misal: KIA, Poli Umum, UGD, Laboratorium)..."
           type="text"
           placeholder="Cari layanan kesehatan (misal: KIA, Poli Umum, UGD, Laboratorium)..."
           bind:value={searchTerm}

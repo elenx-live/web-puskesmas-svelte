@@ -65,14 +65,14 @@
     <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
       <div class="relative w-full sm:w-64">
         <Search class="w-4 h-4 text-[var(--color-muted-foreground)] absolute left-3 top-1/2 -translate-y-1/2" />
-        <input
+        <input aria-label="Cari berita..."
           type="text"
           placeholder="Cari berita..."
           bind:value={search}
           class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-none pl-9 pr-4 py-2 text-sm text-[var(--color-text)] placeholder-[var(--color-muted-foreground)] transition"
         />
       </div>
-      <select
+      <select aria-label="Filter Kategori Berita"
         bind:value={selectedCat}
         class="w-full sm:w-auto bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-none px-4 py-2 text-sm text-[var(--color-text)] font-semibold transition"
       >

@@ -361,7 +361,7 @@
             <!-- Service Dropdown -->
             <div class="space-y-1">
               <label class="text-[var(--color-muted-foreground)] text-xs font-medium">Layanan Medis <span class="text-rose-500">*</span></label>
-              <select
+              <select aria-label="Layanan Medis"
                 value={serviceId}
                 onchange={(e) => { serviceId = (e.currentTarget as HTMLSelectElement).value; }}
                 class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-3 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)] text-xs transition-colors"
@@ -378,7 +378,7 @@
             <div class="space-y-1">
               <label class="text-[var(--color-muted-foreground)] text-xs font-medium">Tanggal Kunjungan <span class="text-rose-500">*</span></label>
               <div class="relative">
-                <input
+                <input aria-label="Tanggal Kunjungan"
                   type="date"
                   value={visitDate}
                   onchange={handleDateChange}
@@ -437,7 +437,7 @@
               <label class="text-[var(--color-muted-foreground)] text-xs font-medium">Nama Lengkap Pasien <span class="text-rose-500">*</span></label>
               <div class="relative flex items-center">
                 <User class="absolute left-3 w-4 h-4 text-[var(--color-muted-foreground)]" />
-                <input
+                <input aria-label="Nama Lengkap Pasien"
                   type="text"
                   value={fullName}
                   onchange={(e) => { fullName = (e.currentTarget as HTMLInputElement).value; }}
@@ -453,7 +453,7 @@
               <label class="text-[var(--color-muted-foreground)] text-xs font-medium">Nomor Identitas (NIK KTP / KIA) <span class="text-rose-500">*</span></label>
               <div class="relative flex items-center">
                 <CreditCard class="absolute left-3 w-4 h-4 text-[var(--color-muted-foreground)]" />
-                <input
+                <input aria-label="Nomor Identitas (NIK KTP / KIA)"
                   type="text"
                   value={identityNumber}
                   onchange={(e) => { identityNumber = (e.currentTarget as HTMLInputElement).value.replace(/[^0-9]/g, ''); }}
@@ -468,7 +468,7 @@
             <!-- DOB -->
             <div class="space-y-1">
               <label class="text-[var(--color-muted-foreground)] text-xs font-medium">Tanggal Lahir <span class="text-rose-500">*</span></label>
-              <input
+              <input aria-label="Tanggal Lahir"
                 type="date"
                 value={dateOfBirth}
                 onchange={(e) => { dateOfBirth = (e.currentTarget as HTMLInputElement).value; }}
@@ -480,7 +480,7 @@
             <!-- Gender -->
             <div class="space-y-1">
               <label class="text-[var(--color-muted-foreground)] text-xs font-medium">Jenis Kelamin <span class="text-rose-500">*</span></label>
-              <select
+              <select aria-label="Jenis Kelamin"
                 value={gender}
                 onchange={(e) => { gender = (e.currentTarget as HTMLSelectElement).value as 'L' | 'P'; }}
                 class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-3 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)] text-xs transition-colors"
@@ -496,7 +496,7 @@
               <label class="text-[var(--color-muted-foreground)] text-xs font-medium">Nomor HP Aktif (WhatsApp) <span class="text-rose-500">*</span></label>
               <div class="relative flex items-center">
                 <Phone class="absolute left-3 w-4 h-4 text-[var(--color-muted-foreground)]" />
-                <input
+                <input aria-label="Nomor HP Aktif (WhatsApp)"
                   type="tel"
                   value={phoneNumber}
                   onchange={(e) => { phoneNumber = (e.currentTarget as HTMLInputElement).value.replace(/[^0-9+]/g, ''); }}
@@ -526,7 +526,7 @@
               <label class="text-[var(--color-muted-foreground)] text-xs font-medium">Catatan / Keterangan Kunjungan (Opsional)</label>
               <div class="relative flex items-center">
                 <FileText class="absolute left-3 w-4 h-4 text-[var(--color-muted-foreground)]" />
-                <input
+                <input aria-label="Catatan / Keterangan Kunjungan (Opsional)"
                   type="text"
                   value={notes}
                   onchange={(e) => { notes = (e.currentTarget as HTMLInputElement).value; }}

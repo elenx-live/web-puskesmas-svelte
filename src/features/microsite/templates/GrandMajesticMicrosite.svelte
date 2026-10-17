@@ -103,6 +103,7 @@
         onclick={onOpenQR}
         class="p-2.5 rounded-2xl bg-[var(--color-card)]/80 hover:bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-text)] backdrop-blur-md transition shadow-sm"
         title="Tampilkan QR Code"
+            aria-label="Tampilkan QR Code"
       >
         <QrCode class="w-4 h-4 text-amber-400" />
       </button>

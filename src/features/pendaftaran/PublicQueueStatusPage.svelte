@@ -215,7 +215,7 @@
     </div>
 
     <div class="flex gap-2">
-      <input
+      <input aria-label="Kode Pendaftaran atau NIK"
         type="text"
         value={searchQuery}
         oninput={(e) => { searchQuery = (e.currentTarget as HTMLInputElement).value; }}
@@ -289,7 +289,7 @@
         <ListOrdered class="w-3.5 h-3.5 text-[var(--color-muted-foreground)]" />
         <span>Unit / Layanan Kesehatan</span>
       </label>
-      <select
+      <select aria-label="Unit / Layanan Kesehatan"
         value={selectedServiceId}
         onchange={(e) => { selectedServiceId = (e.currentTarget as HTMLSelectElement).value; }}
         class="w-full px-3 py-2.5 bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] rounded-xl text-xs focus:outline-none focus:border-[var(--color-primary)] font-semibold"
@@ -306,7 +306,7 @@
         <Calendar class="w-3.5 h-3.5 text-[var(--color-muted-foreground)]" />
         <span>Tanggal Pelayanan</span>
       </label>
-      <input
+      <input aria-label="Tanggal Pelayanan"
         type="date"
         value={visitDate}
         onchange={(e) => { visitDate = (e.currentTarget as HTMLInputElement).value; }}

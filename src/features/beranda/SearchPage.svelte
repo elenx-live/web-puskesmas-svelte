@@ -220,7 +220,7 @@
       <div class="relative flex gap-3">
         <div class="relative flex-1">
           <Search class="w-4 h-4 text-[var(--color-muted-foreground)] absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
+          <input aria-label="Kolom Pencarian"
             bind:this={searchInputRef}
             type="text"
             bind:value={inputQuery}

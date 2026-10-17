@@ -116,7 +116,7 @@
   <div class="flex flex-col md:flex-row items-center justify-between gap-4">
     <div class="relative w-full md:w-80">
       <Search class="w-4 h-4 text-[var(--color-muted-foreground)] absolute left-3 top-1/2 -translate-y-1/2" />
-      <input
+      <input aria-label="Cari informasi, dokumen, regulasi..."
         type="text"
         placeholder="Cari informasi, dokumen, regulasi..."
         bind:value={search}
@@ -125,7 +125,7 @@
     </div>
 
     {#if activeTab === 'katalog'}
-      <select
+      <select aria-label="Filter Kategori Informasi"
         bind:value={selectedCategory}
         class="w-full md:w-auto bg-[var(--color-card)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl px-4 py-2.5 text-xs text-[var(--color-text)]"
       >

@@ -102,6 +102,7 @@
         onclick={onOpenQR}
         class="p-2.5 rounded-2xl bg-[var(--color-card)]/80 hover:bg-[var(--color-card)] border border-amber-500/30 text-amber-300 backdrop-blur-md transition shadow-sm"
         title="Pindai QR"
+            aria-label="Pindai QR"
       >
         <QrCode class="w-4 h-4 text-amber-400" />
       </button>

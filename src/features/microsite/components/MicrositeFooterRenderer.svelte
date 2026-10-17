@@ -375,6 +375,7 @@
               onclick={handleScrollToTop}
               class="p-1.5 rounded-full hover:bg-[var(--color-bg)] text-[var(--color-muted-foreground)] hover:text-[var(--color-text)] transition"
               title="Ke Atas"
+            aria-label="Ke Atas"
             >
               <ChevronUp class="w-3.5 h-3.5" />
             </button>
@@ -418,6 +419,7 @@
               onclick={onOpenQR}
               class="p-2 rounded-xl bg-[var(--color-bg)] text-[var(--color-muted-foreground)] hover:text-[var(--color-text)] hover:bg-[var(--color-card)] transition border border-[var(--color-border)]"
               title="Tampilkan Kode QR"
+            aria-label="Tampilkan Kode QR"
             >
               <QrCode class="w-4 h-4" />
             </button>
@@ -440,6 +442,7 @@
               onclick={handleScrollToTop}
               class="p-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-md"
               title="Kembali ke Atas"
+            aria-label="Kembali ke Atas"
             >
               <ChevronUp class="w-4 h-4" />
             </button>

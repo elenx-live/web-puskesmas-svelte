@@ -230,6 +230,7 @@
         onclick={loadData}
         class="p-2.5 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-muted-foreground)] hover:text-[var(--color-text)] transition"
         title="Refresh Data"
+            aria-label="Refresh Data"
       >
         <RefreshCw class={`w-4 h-4 ${loading ? 'animate-spin text-[var(--color-primary)]' : ''}`} />
       </button>

@@ -126,6 +126,7 @@
 </div>
 
 <Card class="p-0 overflow-hidden">
+  <div class="overflow-x-auto">
   <table class="w-full text-xs text-left text-[var(--color-text)]">
     <thead class="bg-[var(--color-bg)] text-[10px] font-bold uppercase text-[var(--color-muted-foreground)] border-b border-[var(--color-border)]">
       <tr>
@@ -168,6 +169,7 @@
       {/if}
     </tbody>
   </table>
+  </div>
 </Card>
 
 <!-- Add Modal -->

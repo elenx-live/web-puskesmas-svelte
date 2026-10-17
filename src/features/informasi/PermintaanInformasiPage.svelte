@@ -146,7 +146,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="space-y-2">
             <label class="text-xs font-medium text-[var(--color-text)]">Nama Lengkap Pemohon</label>
-            <input
+            <input aria-label="Nama Lengkap Pemohon"
               type="text"
               placeholder="Contoh: Budi Santoso"
               bind:value={requesterName}
@@ -156,7 +156,7 @@
 
           <div class="space-y-2">
             <label class="text-xs font-medium text-[var(--color-text)]">Kontak (Nomor WhatsApp / Email) <span class="text-[var(--color-primary)]">*</span></label>
-            <input
+            <input aria-label="Kontak (Nomor WhatsApp / Email)"
               type="text"
               required
               placeholder="Contoh: 081234567890 / email@domain.com"
@@ -168,7 +168,7 @@
 
         <div class="space-y-2">
           <label class="text-xs font-medium text-[var(--color-text)]">Rincian Informasi yang Diminta <span class="text-[var(--color-primary)]">*</span></label>
-          <textarea
+          <textarea aria-label="Rincian Informasi yang Diminta"
             required
             rows={4}
             placeholder="Jelaskan secara spesifik informasi publik atau dokumen apa yang Anda butuhkan..."
@@ -180,7 +180,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="space-y-2">
             <label class="text-xs font-medium text-[var(--color-text)]">Tujuan Penggunaan Informasi</label>
-            <input
+            <input aria-label="Tujuan Penggunaan Informasi"
               type="text"
               placeholder="Contoh: Untuk penelitian / kajian publik / pribadi"
               bind:value={purpose}
@@ -190,7 +190,7 @@
 
           <div class="space-y-2">
             <label class="text-xs font-medium text-[var(--color-text)]">Format Memperoleh Salinan Informasi</label>
-            <select
+            <select aria-label="Format Memperoleh Salinan Informasi"
               bind:value={desiredFormat}
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-3 text-xs text-[var(--color-text)]"
             >
@@ -216,7 +216,7 @@
       <form onsubmit={handleTrack} class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl p-6 flex flex-col sm:flex-row gap-3">
         <div class="relative flex-1">
           <Search class="w-4 h-4 text-[var(--color-muted-foreground)] absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
+          <input aria-label="Masukkan Nomor Tiket, misal: INFO-2026-104829"
             type="text"
             placeholder="Masukkan Nomor Tiket, misal: INFO-2026-104829"
             bind:value={trackingCode}

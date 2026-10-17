@@ -120,7 +120,7 @@
     <div class="pt-2">
       <div class="relative">
         <Search class="w-4 h-4 text-[var(--color-muted-foreground)] absolute left-3.5 top-1/2 -translate-y-1/2" />
-        <input
+        <input aria-label="Cari judul berkas, SPP, regulasi, atau kata kunci..."
           type="text"
           placeholder="Cari judul berkas, SPP, regulasi, atau kata kunci..."
           bind:value={search}

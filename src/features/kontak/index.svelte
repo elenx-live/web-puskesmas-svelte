@@ -529,7 +529,7 @@
                 <label class="text-xs font-bold text-[var(--color-text)] block">
                   Nama Lengkap <span class="text-rose-500">*</span>
                 </label>
-                <input
+                <input aria-label="Nama Lengkap"
                   type="text"
                   required
                   value={formName}
@@ -543,7 +543,7 @@
                 <label class="text-xs font-bold text-[var(--color-text)] block">
                   Nomor Telepon / WhatsApp / Email <span class="text-rose-500">*</span>
                 </label>
-                <input
+                <input aria-label="Nomor Telepon / WhatsApp / Email"
                   type="text"
                   required
                   value={formContact}
@@ -557,7 +557,7 @@
                 <label class="text-xs font-bold text-[var(--color-text)] block">
                   Kategori Pesan
                 </label>
-                <select
+                <select aria-label="Kategori Pesan"
                   value={formSubject}
                   onchange={(e) => formSubject = e.currentTarget.value}
                   class="w-full px-3.5 py-2.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none text-xs text-[var(--color-text)]"
@@ -574,7 +574,7 @@
                 <label class="text-xs font-bold text-[var(--color-text)] block">
                   Isi Pesan <span class="text-rose-500">*</span>
                 </label>
-                <textarea
+                <textarea aria-label="Isi Pesan"
                   required
                   rows={4}
                   value={formMessage}

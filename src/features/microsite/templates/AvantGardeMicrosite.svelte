@@ -94,6 +94,7 @@
         onclick={onOpenQR}
         class="p-2 rounded-lg bg-cyan-950/40 hover:bg-cyan-950/70 border border-cyan-500/40 text-cyan-400 backdrop-blur-md transition"
         title="Scan Matrix QR"
+            aria-label="Scan Matrix QR"
       >
         <QrCode class="w-4 h-4" />
       </button>

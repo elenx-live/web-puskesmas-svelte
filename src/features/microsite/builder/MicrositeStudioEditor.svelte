@@ -683,6 +683,7 @@
         onclick={onClose}
         class="p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition"
         title="Tutup Studio"
+            aria-label="Tutup Studio"
       >
         <X class="w-5 h-5" />
       </button>

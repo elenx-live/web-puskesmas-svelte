@@ -135,6 +135,12 @@
 <div
   class="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-sans flex flex-col selection:bg-[var(--color-primary)] selection:text-[var(--color-primary-foreground)]"
 >
+  <a
+    href="#konten-utama"
+    class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-[var(--color-primary)] focus:text-white focus:px-4 focus:py-2 focus:rounded-xl focus:font-semibold"
+  >
+    Lewati ke konten utama
+  </a>
   {#if announcements.length > 0}
     <div
       class="bg-[var(--color-primary)] text-white px-3 sm:px-6 py-2 text-xs font-semibold flex items-center gap-2 sm:gap-3 overflow-hidden z-30 select-none group"
@@ -386,7 +392,12 @@
 
   {#if mobileDrawerOpen}
     <div class="fixed inset-0 z-50 lg:hidden flex justify-end animate-in fade-in duration-200">
-      <div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick={() => (mobileDrawerOpen = false)} role="presentation"></div>
+      <button
+        type="button"
+        aria-label="Tutup menu"
+        class="absolute inset-0 bg-black/60 backdrop-blur-xs cursor-default"
+        onclick={() => (mobileDrawerOpen = false)}
+      ></button>
 
       <div
         class="relative w-full max-w-xs sm:max-w-sm bg-[var(--color-card)] border-l border-[var(--color-border)] h-full flex flex-col justify-between overflow-y-auto shadow-2xl p-5 space-y-6 animate-in slide-in-from-right duration-300"
@@ -650,7 +661,7 @@
     </div>
   {/if}
 
-  <main class="flex-1 pb-20 sm:pb-8">
+  <main id="konten-utama" tabindex="-1" class="flex-1 pb-20 sm:pb-8">
     {@render children()}
   </main>
 

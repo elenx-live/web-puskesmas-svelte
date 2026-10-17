@@ -107,7 +107,7 @@
         <!-- Search Bar -->
         <div class="relative max-w-2xl mx-auto pt-2">
           <Search class="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
+          <input aria-label="Cari pertanyaan, layanan, atau panduan (Contoh: BPJS, Poli Umum, Jam Buka)..."
             type="text"
             placeholder="Cari pertanyaan, layanan, atau panduan (Contoh: BPJS, Poli Umum, Jam Buka)..."
             value={searchQuery}

@@ -401,7 +401,7 @@
         </div>
 
         <form onsubmit={handleSearchTicketSubmit} class="flex gap-3">
-          <input
+          <input aria-label="Nomor Tiket Pengaduan"
             type="text"
             value={searchTicket}
             oninput={(e) => searchTicket = e.currentTarget.value}
@@ -635,7 +635,7 @@
 
                         <div>
                           <label class="text-[10px] font-bold text-[var(--color-muted-foreground)] uppercase tracking-wider block mb-1">Catatan Tambahan / Review</label>
-                          <textarea
+                          <textarea aria-label="Catatan Tambahan / Review"
                             rows={2}
                             value={userComment}
                             oninput={(e) => userComment = e.currentTarget.value}
@@ -787,7 +787,7 @@
           <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] block">
             2. Judul Penyampaian <span class="text-rose-400">*</span>
           </label>
-          <input
+          <input aria-label="2. Judul Penyampaian"
             type="text"
             value={title}
             oninput={(e) => title = e.currentTarget.value}
@@ -802,7 +802,7 @@
             <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] block">
               3. Kategori Laporan
             </label>
-            <select
+            <select aria-label="3. Kategori Laporan"
               value={category}
               onchange={(e) => category = e.currentTarget.value}
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl p-3 text-xs text-[var(--color-text)]"
@@ -819,7 +819,7 @@
             <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] block">
               4. Layanan Terkait
             </label>
-            <select
+            <select aria-label="4. Layanan Terkait"
               value={serviceId}
               onchange={(e) => serviceId = e.currentTarget.value}
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl p-3 text-xs text-[var(--color-text)]"
@@ -840,7 +840,7 @@
             <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] block">
               5. Unit Pelayanan / Poliklinik
             </label>
-            <select
+            <select aria-label="5. Unit Pelayanan / Poliklinik"
               value={unitId}
               onchange={(e) => unitId = e.currentTarget.value}
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl p-3 text-xs text-[var(--color-text)]"
@@ -859,7 +859,7 @@
             <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] block">
               6. Lokasi / Ruangan Spesifik
             </label>
-            <input
+            <input aria-label="6. Lokasi / Ruangan Spesifik"
               type="text"
               value={locationName}
               oninput={(e) => locationName = e.currentTarget.value}
@@ -873,7 +873,7 @@
             <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)] block">
               7. Tanggal Kejadian
             </label>
-            <input
+            <input aria-label="7. Tanggal Kejadian"
               type="date"
               value={occurrenceDate}
               oninput={(e) => occurrenceDate = e.currentTarget.value}
@@ -914,7 +914,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
               <div>
                 <label class="text-[10px] font-bold text-[var(--color-muted-foreground)] block mb-1">Nama Lengkap (Opsional)</label>
-                <input
+                <input aria-label="Nama Lengkap (Opsional)"
                   type="text"
                   value={senderName}
                   oninput={(e) => senderName = e.currentTarget.value}
@@ -924,7 +924,7 @@
               </div>
               <div>
                 <label class="text-[10px] font-bold text-[var(--color-muted-foreground)] block mb-1">Alamat Email (Opsional)</label>
-                <input
+                <input aria-label="Alamat Email (Opsional)"
                   type="email"
                   value={senderEmail}
                   oninput={(e) => senderEmail = e.currentTarget.value}
@@ -934,7 +934,7 @@
               </div>
               <div>
                 <label class="text-[10px] font-bold text-[var(--color-muted-foreground)] block mb-1">No. HP / WhatsApp (Opsional)</label>
-                <input
+                <input aria-label="No. HP / WhatsApp (Opsional)"
                   type="tel"
                   value={senderPhone}
                   oninput={(e) => senderPhone = e.currentTarget.value}
@@ -956,7 +956,7 @@
               {content.length} / 2000 Karakter
             </span>
           </div>
-          <textarea
+          <textarea aria-label="9. Isi Kritik / Saran / Pengaduan"
             rows={6}
             value={content}
             oninput={(e) => content = e.currentTarget.value}
@@ -1011,7 +1011,7 @@
         <!-- Consent Policy and Verification Checkbox -->
         <div class="p-4 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-2xl space-y-3">
           <label class="flex items-start gap-3 cursor-pointer">
-            <input
+            <input aria-label="Pilih berkas lampiran pendukung (JPG, PNG, PDF, DOCX, Maks. 5 MB)"
               type="checkbox"
               checked={consentChecked}
               onchange={(e) => consentChecked = e.currentTarget.checked}

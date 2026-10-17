@@ -212,6 +212,12 @@
 </script>
 
 <div class="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-sans flex flex-col md:flex-row">
+  <a
+    href="#konten-utama"
+    class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-[var(--color-primary)] focus:text-white focus:px-4 focus:py-2 focus:rounded-xl focus:font-semibold"
+  >
+    Lewati ke konten utama
+  </a>
   {#if sidebarOpen}
     <button
       type="button"
@@ -575,7 +581,7 @@
       </div>
     </header>
 
-    <main class="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto space-y-6">
+    <main id="konten-utama" tabindex="-1" class="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto space-y-6">
       {@render children()}
     </main>
   </div>
