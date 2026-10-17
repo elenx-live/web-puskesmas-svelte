@@ -8,6 +8,9 @@
   } from '../../shared/services/serviceEngineService.js';
   import { siteSettingsService } from '../../shared/services/siteSettingsService.js';
   import { postService } from '../../shared/services/postService.js';
+  import { navigate } from '../../app/router.svelte.js';
+  import LoadingSkeleton from '../../shared/ui/LoadingSkeleton.svelte';
+  import EmptyState from '../../shared/ui/EmptyState.svelte';
   import type {
     ServiceEntity,
     ServiceRequirementEntity,
@@ -184,33 +187,18 @@
 </script>
 
 {#if loading}
-  <div class="py-16 px-6 max-w-5xl mx-auto space-y-6">
-    <div class="h-6 bg-[var(--color-card)] rounded w-1/4 animate-pulse"></div>
-    <div class="h-10 bg-[var(--color-card)] rounded w-3/4 animate-pulse"></div>
-    <div class="h-24 bg-[var(--color-card)] rounded w-full animate-pulse"></div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="h-40 bg-[var(--color-card)] rounded-3xl animate-pulse col-span-2"></div>
-      <div class="h-40 bg-[var(--color-card)] rounded-3xl animate-pulse"></div>
-    </div>
+  <div class="py-16 px-6 max-w-5xl mx-auto">
+    <LoadingSkeleton variant="text" count={6} />
   </div>
 {:else if !service}
-  <div class="py-20 px-6 max-w-xl mx-auto text-center space-y-6">
-    <div class="w-16 h-16 rounded-3xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center mx-auto">
-      <AlertCircle class="w-8 h-8" />
-    </div>
-    <div class="space-y-2">
-      <h1 class="text-2xl font-bold text-[var(--color-text)]">Layanan Tidak Ditemukan</h1>
-      <p class="text-xs text-[var(--color-muted-foreground)]">
-        Layanan kesehatan yang Anda cari tidak tersedia, dalam bentuk draf, atau telah dipindahkan.
-      </p>
-    </div>
-    <a
-      href="#/layanan"
-      class="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-bold rounded-xl text-xs hover:bg-[var(--color-primary)] transition"
-    >
-      <ArrowLeft class="w-4 h-4" />
-      <span>Kembali ke Direktori Layanan</span>
-    </a>
+  <div class="py-16 px-6 max-w-xl mx-auto">
+    <EmptyState
+      icon={AlertCircle}
+      title="Layanan Tidak Ditemukan"
+      description="Layanan kesehatan yang Anda cari tidak tersedia, dalam bentuk draf, atau telah dipindahkan."
+      actionLabel="Kembali ke Direktori Layanan"
+      onAction={() => navigate('/layanan')}
+    />
   </div>
 {:else}
   {#if service.status !== 'published'}

@@ -23,6 +23,7 @@
   import type { SearchResultItem } from '../../shared/types/index.js';
   import { searchService } from '../../shared/services/searchService.js';
   import { navigate, routerState } from '../../app/router.svelte.js';
+  import LoadingSkeleton from '../../shared/ui/LoadingSkeleton.svelte';
 
   const queryParam = $derived(routerState.query.q || '');
   const typeParam = $derived(routerState.query.type || 'all');
@@ -397,10 +398,7 @@
     {/if}
 
     {#if loading}
-      <div class="p-16 text-center text-[var(--color-muted-foreground)] font-mono text-sm bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl space-y-3">
-        <div class="w-8 h-8 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p>Mencari informasi di seluruh database publik Puskesmas...</p>
-      </div>
+      <LoadingSkeleton variant="list" count={5} />
     {:else if !queryParam}
       <div class="p-16 text-center space-y-4 bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl text-[var(--color-muted-foreground)]">
         <Search class="w-12 h-12 text-[var(--color-primary)]/50 mx-auto" />

@@ -5,6 +5,9 @@
   import {
     FileText, Search, ShieldCheck, Calendar, ArrowRight, BookOpen, FileCheck
   } from 'lucide-svelte';
+  import LoadingSkeleton from '../../shared/ui/LoadingSkeleton.svelte';
+  import EmptyState from '../../shared/ui/EmptyState.svelte';
+  import ErrorState from '../../shared/ui/ErrorState.svelte';
 
   const CATEGORIES: PublicInfoCategory[] = [
     'Profil Puskesmas',
@@ -31,26 +34,32 @@
 
   let infos = $state<PublicInfoEntity[]>([]);
   let loading = $state(true);
+  let loadError = $state<string | null>(null);
   let search = $state('');
   let selectedCategory = $state('');
   let activeTab = $state<'katalog' | 'berkala' | 'sertamerta' | 'setiapsaat'>('katalog');
 
-  $effect(() => {
-    const loadData = async () => {
-      loading = true;
-      try {
-        let catFilter = selectedCategory;
-        if (activeTab === 'berkala') catFilter = 'Informasi Berkala';
-        if (activeTab === 'sertamerta') catFilter = 'Informasi Serta-Merta';
-        if (activeTab === 'setiapsaat') catFilter = 'Informasi Setiap Saat';
+  async function loadData() {
+    loading = true;
+    loadError = null;
+    try {
+      let catFilter = selectedCategory;
+      if (activeTab === 'berkala') catFilter = 'Informasi Berkala';
+      if (activeTab === 'sertamerta') catFilter = 'Informasi Serta-Merta';
+      if (activeTab === 'setiapsaat') catFilter = 'Informasi Setiap Saat';
 
-        infos = await publicInfoService.getPublishedPublicInfos(catFilter || undefined, search);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        loading = false;
-      }
-    };
+      infos = await publicInfoService.getPublishedPublicInfos(catFilter || undefined, search);
+    } catch (e) {
+      console.error(e);
+      loadError = 'Informasi publik tidak dapat dimuat. Periksa koneksi internet Anda lalu coba lagi.';
+    } finally {
+      loading = false;
+    }
+  }
+
+  $effect(() => {
+    // Re-run saat search/kategori/tab berubah
+    void search; void selectedCategory; void activeTab;
     loadData();
   });
 </script>
@@ -130,13 +139,15 @@
 
   <!-- Information List -->
   {#if loading}
-    <div class="p-12 text-center text-[var(--color-muted-foreground)] font-mono text-sm">Memuat informasi publik...</div>
+    <LoadingSkeleton variant="list" count={5} />
+  {:else if loadError}
+    <ErrorState message={loadError} onRetry={loadData} retrying={loading} />
   {:else if infos.length === 0}
-    <div class="p-16 text-center bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl space-y-3">
-      <BookOpen class="w-10 h-10 text-zinc-600 mx-auto" />
-      <h3 class="text-[var(--color-text)] font-medium text-sm">Tidak ada informasi ditemukan</h3>
-      <p class="text-xs text-[var(--color-muted-foreground)]">Coba ubah kata kunci pencarian atau kategori Anda.</p>
-    </div>
+    <EmptyState
+      icon={BookOpen}
+      title="Tidak ada informasi ditemukan"
+      description="Coba ubah kata kunci pencarian atau kategori Anda."
+    />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       {#each infos as info (info.id)}

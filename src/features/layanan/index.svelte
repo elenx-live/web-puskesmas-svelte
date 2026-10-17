@@ -16,7 +16,11 @@
     ServiceScheduleExceptionEntity
   } from '../../shared/types/index.js';
   import Badge from '../../shared/ui/Badge.svelte';
+  import Button from '../../shared/ui/Button.svelte';
   import Select from '../../shared/ui/Select.svelte';
+  import LoadingSkeleton from '../../shared/ui/LoadingSkeleton.svelte';
+  import EmptyState from '../../shared/ui/EmptyState.svelte';
+  import ErrorState from '../../shared/ui/ErrorState.svelte';
   import {
     Search,
     Filter,
@@ -39,6 +43,7 @@
   }
 
   let loading = $state(true);
+  let loadError = $state<string | null>(null);
   let siteName = $state('Puskesmas');
   let servicesData = $state<ServiceWithMeta[]>([]);
 
@@ -59,6 +64,7 @@
 
   async function loadData() {
     loading = true;
+    loadError = null;
     try {
       const settings = await siteSettingsService.getSettings();
       if (settings?.siteName) {
@@ -103,6 +109,7 @@
       servicesData = enriched;
     } catch (err) {
       console.error('Gagal memuat data layanan publik:', err);
+      loadError = 'Data layanan tidak dapat dimuat. Periksa koneksi internet Anda lalu coba lagi.';
     } finally {
       loading = false;
     }
@@ -327,37 +334,17 @@
 
   <!-- Services List Content -->
   {#if loading}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {#each [1, 2, 3, 4, 5, 6] as idx (idx)}
-        <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl p-6 space-y-4 animate-pulse">
-          <div class="h-4 bg-[var(--color-card)] rounded w-1/3"></div>
-          <div class="h-6 bg-[var(--color-card)] rounded w-3/4"></div>
-          <div class="h-12 bg-[var(--color-card)] rounded w-full"></div>
-          <div class="h-10 bg-[var(--color-card)] rounded w-full"></div>
-        </div>
-      {/each}
-    </div>
+    <LoadingSkeleton variant="card" count={6} />
+  {:else if loadError}
+    <ErrorState message={loadError} onRetry={loadData} retrying={loading} />
   {:else if filteredServices.length === 0}
-    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl p-12 text-center space-y-4 my-8">
-      <div class="w-12 h-12 rounded-2xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center mx-auto">
-        <Info class="w-6 h-6" />
-      </div>
-      <div class="space-y-1">
-        <h3 class="text-base font-bold text-[var(--color-text)]">Layanan tidak ditemukan</h3>
-        <p class="text-xs text-[var(--color-muted-foreground)] max-w-md mx-auto">
-          Tidak ada layanan kesehatan yang sesuai dengan kata kunci pencarian atau kombinasi filter yang Anda pilih.
-        </p>
-      </div>
-      {#if hasActiveFilters}
-        <button
-          onclick={resetFilters}
-          class="px-4 py-2 bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-bold rounded-xl text-xs hover:bg-[var(--color-primary)] transition inline-flex items-center gap-2"
-        >
-          <RefreshCw class="w-3.5 h-3.5" />
-          <span>Reset Semua Filter</span>
-        </button>
-      {/if}
-    </div>
+    <EmptyState
+      icon={Info}
+      title="Layanan tidak ditemukan"
+      description="Tidak ada layanan kesehatan yang sesuai dengan kata kunci pencarian atau kombinasi filter yang Anda pilih."
+      actionLabel={hasActiveFilters ? 'Reset Semua Filter' : ''}
+      onAction={hasActiveFilters ? resetFilters : undefined}
+    />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {#each filteredServices as { service, statusResult } (service.id)}

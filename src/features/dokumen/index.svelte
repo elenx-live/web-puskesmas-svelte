@@ -4,10 +4,14 @@
   import { documentService } from '../../shared/services/documentService.js';
   import { categoryService } from '../../shared/services/categoryService.js';
   import type { DocumentEntity, CategoryEntity } from '../../shared/types/index.js';
+  import LoadingSkeleton from '../../shared/ui/LoadingSkeleton.svelte';
+  import EmptyState from '../../shared/ui/EmptyState.svelte';
+  import ErrorState from '../../shared/ui/ErrorState.svelte';
 
   let documents = $state<DocumentEntity[]>([]);
   let categories = $state<CategoryEntity[]>([]);
   let loading = $state(true);
+  let loadError = $state<string | null>(null);
 
   let search = $state('');
   let selectedCat = $state('Semua');
@@ -20,6 +24,7 @@
 
   async function loadDocs(s: string, cat: string) {
     loading = true;
+    loadError = null;
     try {
       const [docList, catList] = await Promise.all([
         documentService.getPublishedDocuments(cat === 'Semua' ? '' : cat, s),
@@ -29,6 +34,7 @@
       categories = catList;
     } catch (e) {
       console.error(e);
+      loadError = 'Dokumen tidak dapat dimuat. Periksa koneksi internet Anda lalu coba lagi.';
     } finally {
       loading = false;
     }
@@ -153,26 +159,21 @@
 
   <!-- Documents Grid / Feed -->
   {#if loading}
-    <div class="py-16 text-center space-y-3 bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl">
-      <div class="w-8 h-8 border-3 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p class="text-xs text-[var(--color-muted-foreground)] font-mono">Memuat arsip dokumentasi resmi...</p>
-    </div>
+    <LoadingSkeleton variant="list" count={5} />
+  {:else if loadError}
+    <ErrorState
+      message={loadError}
+      onRetry={() => loadDocs(search, selectedCat)}
+      retrying={loading}
+    />
   {:else if documents.length === 0}
-    <div class="py-16 text-center space-y-3 bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl p-6">
-      <div class="w-12 h-12 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mx-auto">
-        <FileText class="w-6 h-6" />
-      </div>
-      <h3 class="text-sm font-bold text-[var(--color-text)]">Dokumen Tidak Ditemukan</h3>
-      <p class="text-xs text-[var(--color-muted-foreground)] max-w-sm mx-auto">
-        Tidak ada dokumen yang cocok dengan pencarian "{search}". Coba kata kunci lain atau pilih kategori Semua.
-      </p>
-      <button
-        onclick={() => { search = ''; selectedCat = 'Semua'; }}
-        class="px-4 py-2 rounded-xl bg-[var(--color-primary)] text-white text-xs font-semibold inline-block cursor-pointer"
-      >
-        Reset Filter
-      </button>
-    </div>
+    <EmptyState
+      icon={FileText}
+      title="Dokumen Tidak Ditemukan"
+      description={search ? `Tidak ada dokumen yang cocok dengan pencarian "${search}". Coba kata kunci lain atau pilih kategori Semua.` : 'Belum ada dokumen resmi yang dipublikasikan.'}
+      actionLabel="Reset Filter"
+      onAction={() => { search = ''; selectedCat = 'Semua'; }}
+    />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {#each documents as doc (doc.id)}

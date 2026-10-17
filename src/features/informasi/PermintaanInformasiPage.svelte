@@ -3,6 +3,7 @@
   import { publicInfoService } from '../../shared/services/publicInfoService.js';
   import type { InformationRequestEntity } from '../../shared/types/index.js';
   import { Search, CheckCircle2, AlertCircle } from 'lucide-svelte';
+  import { toastStore } from '../../shared/stores/toast.svelte.js';
 
   let activeTab = $state<'form' | 'tracking'>('form');
 
@@ -39,8 +40,10 @@
         desiredFormat
       });
       successReq = newReq;
+      toastStore.success('Permohonan informasi berhasil dikirim. Simpan nomor tiket Anda.');
     } catch (e: any) {
       errorMsg = e.message || 'Terjadi kesalahan saat mengajukan permohonan.';
+      toastStore.error(errorMsg);
     } finally {
       submitting = false;
     }

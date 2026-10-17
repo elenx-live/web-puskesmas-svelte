@@ -1,6 +1,7 @@
 <!-- @component Portal Pengaduan & Aspirasi Masyarakat: formulir penyampaian + cek status tiket (dari KritikSaranPage). -->
 <script lang="ts">
   import { complaintService, type CreateComplaintInput } from '../../shared/services/complaintService.js';
+  import { toastStore } from '../../shared/stores/toast.svelte.js';
   import { serviceEngineService } from '../../shared/services/serviceEngineService.js';
   import type { ServiceEntity, ComplaintType, ComplaintEntity, ComplaintStatus } from '../../shared/types/index.js';
   import Card from '../../shared/ui/Card.svelte';
@@ -198,8 +199,10 @@
 
       const result = await complaintService.createComplaint(payload);
       submittedData = result;
+      toastStore.success('Pengaduan berhasil dikirim. Nomor tiket Anda telah diterbitkan.');
     } catch (err: any) {
       errorMessage = err.message || 'Gagal mengirim pengaduan. Sila coba kembali.';
+      toastStore.error(errorMessage);
     } finally {
       isSubmitting = false;
     }

@@ -31,13 +31,37 @@
     '4xl': 'max-w-6xl',
   };
 
+  let dialogEl = $state<HTMLDivElement | null>(null);
+
   function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Escape') onClose();
+    if (e.key === 'Escape') {
+      onClose();
+      return;
+    }
+    // Focus trap sederhana: Tab berputar di dalam dialog
+    if (e.key === 'Tab' && dialogEl) {
+      const focusables = dialogEl.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const list = Array.from(focusables).filter((el) => !el.hasAttribute('disabled'));
+      if (list.length === 0) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
   }
 
   $effect(() => {
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
+      // Fokus awal ke dialog agar trap langsung aktif
+      requestAnimationFrame(() => dialogEl?.focus());
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
   });
@@ -46,8 +70,11 @@
 {#if isOpen}
   <div
     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+    onclick={onClose}
   >
     <div
+      bind:this={dialogEl}
+      tabindex="-1"
       class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl {sizeClasses[size] ??
         'max-w-lg'} w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
       onclick={(e) => e.stopPropagation()}

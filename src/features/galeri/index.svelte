@@ -1,11 +1,15 @@
 <!-- @component Halaman galeri publik: grid album foto & kegiatan dengan lightbox modal penampil foto album. -->
 <script lang="ts">
-  import { X } from 'lucide-svelte';
+  import { X, Images } from 'lucide-svelte';
   import { galleryService } from '../../shared/services/galleryService.js';
   import type { GalleryAlbum } from '../../shared/types/index.js';
+  import LoadingSkeleton from '../../shared/ui/LoadingSkeleton.svelte';
+  import EmptyState from '../../shared/ui/EmptyState.svelte';
+  import ErrorState from '../../shared/ui/ErrorState.svelte';
 
   let albums = $state<GalleryAlbum[]>([]);
   let loading = $state(true);
+  let loadError = $state<string | null>(null);
   let activeAlbum = $state<GalleryAlbum | null>(null);
 
   $effect(() => {
@@ -14,11 +18,13 @@
 
   async function loadAlbums() {
     loading = true;
+    loadError = null;
     try {
       const data = await galleryService.getPublishedAlbums();
       albums = data;
     } catch (e) {
       console.error(e);
+      loadError = 'Galeri foto tidak dapat dimuat. Periksa koneksi internet Anda lalu coba lagi.';
     } finally {
       loading = false;
     }
@@ -38,9 +44,15 @@
 
   <!-- Albums Grid -->
   {#if loading}
-    <div class="p-12 text-center text-[var(--color-muted-foreground)] font-mono text-sm">Memuat galeri foto...</div>
+    <LoadingSkeleton variant="card" count={6} />
+  {:else if loadError}
+    <ErrorState message={loadError} onRetry={loadAlbums} retrying={loading} />
   {:else if albums.length === 0}
-    <div class="p-12 text-center text-[var(--color-muted-foreground)] text-sm">Belum ada album foto.</div>
+    <EmptyState
+      icon={Images}
+      title="Belum ada album foto"
+      description="Dokumentasi foto kegiatan puskesmas akan tampil di sini setelah dipublikasikan."
+    />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {#each albums as album (album.id)}

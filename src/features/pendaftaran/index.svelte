@@ -5,6 +5,7 @@
   import Card from '../../shared/ui/Card.svelte';
   import Badge from '../../shared/ui/Badge.svelte';
   import { registrationService } from '../../shared/services/registrationService.js';
+  import { toastStore } from '../../shared/stores/toast.svelte.js';
   import { serviceEngineService } from '../../shared/services/serviceEngineService.js';
   import type {
     ServiceEntity,
@@ -216,8 +217,10 @@
 
       const res = await registrationService.createRegistration(payload);
       submittedData = res;
+      toastStore.success('Pendaftaran berhasil dikirim. Simpan kode pendaftaran Anda.');
     } catch (err) {
       errorMessage = (err as Error).message || 'Gagal mengirim pendaftaran online. Silakan periksa kembali data Anda.';
+      toastStore.error(errorMessage);
     } finally {
       isSubmitting = false;
     }

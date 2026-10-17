@@ -1,12 +1,15 @@
 <!-- @component Halaman detail artikel berita berdasarkan slug: breadcrumb, isi artikel, tag, bagikan, & sidebar berita/layanan terkait. -->
 <script lang="ts">
-  import { ChevronRight, User, ArrowLeft, Tag, Clock, Share2, Send, Copy, Check, Smartphone } from 'lucide-svelte';
+  import { ChevronRight, User, Tag, Clock, Share2, Send, Copy, Check, Smartphone } from 'lucide-svelte';
   import { postService } from '../../shared/services/postService.js';
   import { serviceEngineService } from '../../shared/services/serviceEngineService.js';
   import { sanitizeHtml } from '../../shared/utils/sanitize.js';
   import { updateClientMetaTags } from '../../shared/utils/metaSync.js';
   import { openWhatsAppShare } from '../../shared/utils/shareUtils.js';
   import type { PostEntity, ServiceEntity } from '../../shared/types/index.js';
+  import LoadingSkeleton from '../../shared/ui/LoadingSkeleton.svelte';
+  import EmptyState from '../../shared/ui/EmptyState.svelte';
+  import { navigate } from '../../app/router.svelte.js';
 
   const { slug: slugProp = '' }: { slug?: string } = $props();
 
@@ -85,18 +88,17 @@
 </script>
 
 {#if loading}
-  <div class="max-w-5xl mx-auto px-4 py-20 flex flex-col items-center justify-center text-[var(--color-muted-foreground)] space-y-4">
-    <div class="w-8 h-8 border-4 border-[var(--color-primary)]/30 border-t-[var(--color-primary)] rounded-full animate-spin"></div>
-    <div class="text-xs font-bold uppercase tracking-widest">Memuat Artikel...</div>
+  <div class="max-w-5xl mx-auto px-4 py-20">
+    <LoadingSkeleton variant="text" count={6} />
   </div>
 {:else if !post}
-  <div class="max-w-3xl mx-auto px-4 py-32 text-center space-y-6">
-    <h1 class="text-4xl font-black text-[var(--color-text)] tracking-tight">404 - Artikel Tidak Ditemukan</h1>
-    <p class="text-[var(--color-muted-foreground)] text-sm font-medium">Artikel atau berita yang Anda cari tidak tersedia atau telah dihapus.</p>
-    <a href="#/berita" class="inline-flex items-center gap-2 px-8 py-3.5 rounded-none bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-[var(--color-primary-foreground)] font-bold text-xs transition">
-      <ArrowLeft class="w-4 h-4" />
-      Kembali ke Berita
-    </a>
+  <div class="max-w-3xl mx-auto px-4 py-16">
+    <EmptyState
+      title="404 - Artikel Tidak Ditemukan"
+      description="Artikel atau berita yang Anda cari tidak tersedia atau telah dihapus."
+      actionLabel="Kembali ke Berita"
+      onAction={() => navigate('/berita')}
+    />
   </div>
 {:else}
   <div class="max-w-7xl mx-auto px-4 sm:px-6 py-12">

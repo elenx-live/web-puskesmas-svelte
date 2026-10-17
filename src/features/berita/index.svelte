@@ -1,13 +1,17 @@
 <!-- @component Halaman daftar berita publik: kabar puskesmas dengan pencarian, filter kategori, berita unggulan & grid artikel. -->
 <script lang="ts">
-  import { Search, Clock } from 'lucide-svelte';
+  import { Search, Clock, Newspaper } from 'lucide-svelte';
   import { postService } from '../../shared/services/postService.js';
   import { categoryService } from '../../shared/services/categoryService.js';
   import type { PostEntity, CategoryEntity } from '../../shared/types/index.js';
+  import LoadingSkeleton from '../../shared/ui/LoadingSkeleton.svelte';
+  import EmptyState from '../../shared/ui/EmptyState.svelte';
+  import ErrorState from '../../shared/ui/ErrorState.svelte';
 
   let posts = $state<PostEntity[]>([]);
   let categories = $state<CategoryEntity[]>([]);
   let loading = $state(true);
+  let loadError = $state<string | null>(null);
   let search = $state('');
   let selectedCat = $state('');
 
@@ -17,6 +21,7 @@
 
   async function loadPosts(s: string, cat: string) {
     loading = true;
+    loadError = null;
     try {
       const [postList, catList] = await Promise.all([
         postService.getPublishedPosts(cat, s),
@@ -26,6 +31,7 @@
       categories = catList;
     } catch (e) {
       console.error(e);
+      loadError = 'Berita tidak dapat dimuat. Periksa koneksi internet Anda lalu coba lagi.';
     } finally {
       loading = false;
     }
@@ -80,14 +86,19 @@
 
   <!-- Article Grid -->
   {#if loading}
-    <div class="py-20 flex flex-col items-center justify-center text-[var(--color-muted-foreground)] space-y-4">
-      <div class="w-8 h-8 border-4 border-[var(--color-primary)]/30 border-t-[var(--color-primary)] rounded-full animate-spin"></div>
-      <div class="text-xs font-bold uppercase tracking-widest">Memuat Berita...</div>
-    </div>
+    <LoadingSkeleton variant="card" count={6} />
+  {:else if loadError}
+    <ErrorState
+      message={loadError}
+      onRetry={() => loadPosts(search, selectedCat)}
+      retrying={loading}
+    />
   {:else if posts.length === 0}
-    <div class="py-20 text-center text-[var(--color-muted-foreground)] border border-[var(--color-border)] bg-[var(--color-card)]">
-      <p class="text-sm font-medium">Tidak ada berita yang ditemukan.</p>
-    </div>
+    <EmptyState
+      icon={Newspaper}
+      title="Tidak ada berita"
+      description="Belum ada berita yang dipublikasikan atau tidak ada yang sesuai dengan pencarian Anda."
+    />
   {:else}
     <div class="space-y-12">
 
