@@ -82,12 +82,13 @@
     try {
       const cfg = await aiProviderService.getConfig();
 
-      // Populate Text Config
+      // Populate Text Config — JANGAN tampilkan API key di input (keamanan).
+      // Input selalu kosong; user ketik key baru untuk mengganti. Indikator "tersimpan" dari hasCustomKey.
       if (cfg.text) {
         textProvider = cfg.text.provider || 'gemini';
         textProviderName = cfg.text.providerName || 'Google Gemini';
         textEndpointUrl = cfg.text.endpointUrl || 'https://generativelanguage.googleapis.com';
-        textApiKey = cfg.text.apiKey || '';
+        textApiKey = '';
         textHasCustomKey = Boolean(cfg.text.hasCustomKey);
         textModel = cfg.text.model || 'gemini-3.8-flash';
         textTestResult = {
@@ -98,7 +99,7 @@
         textProvider = cfg.provider;
         textProviderName = cfg.providerName || 'Google Gemini';
         textEndpointUrl = cfg.endpointUrl || 'https://generativelanguage.googleapis.com';
-        textApiKey = cfg.apiKey || '';
+        textApiKey = '';
         textHasCustomKey = Boolean(cfg.hasCustomKey);
         textModel = cfg.model || 'gemini-3.8-flash';
         textTestResult = {
@@ -112,7 +113,7 @@
         imageProvider = cfg.image.provider || 'pollinations';
         imageProviderName = cfg.image.providerName || 'Pollinations AI (Flux)';
         imageEndpointUrl = cfg.image.endpointUrl || 'https://image.pollinations.ai';
-        imageApiKey = cfg.image.apiKey || '';
+        imageApiKey = '';
         imageHasCustomKey = Boolean(cfg.image.hasCustomKey);
         imageModel = cfg.image.model || 'flux';
         imageAspectRatio = cfg.image.aspectRatio || '16:9';
@@ -176,7 +177,8 @@
         category: 'text',
         provider: textProvider,
         endpointUrl: textEndpointUrl,
-        apiKey: textApiKey
+        // Jika input kosong tapi ada key tersimpan, kirim marker agar backend pakai key yang tersimpan
+        apiKey: textApiKey || (textHasCustomKey ? '••••••••' : '')
       });
 
       if (res.models && res.models.length > 0) {
@@ -203,7 +205,7 @@
         category: 'image',
         provider: imageProvider,
         endpointUrl: imageEndpointUrl,
-        apiKey: imageApiKey
+        apiKey: imageApiKey || (imageHasCustomKey ? '••••••••' : '')
       });
 
       if (res.models && res.models.length > 0) {

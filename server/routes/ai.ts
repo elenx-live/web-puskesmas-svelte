@@ -329,8 +329,13 @@ router.post("/api/ai/test-provider", async (req, res) => {
 
 // 3b. Fetch Available Models from AI Provider (For Text or Image)
 router.post("/api/ai/fetch-models", async (req, res) => {
-  const { category, provider, endpointUrl, apiKey } = req.body;
+  const { category, provider, endpointUrl } = req.body;
+  let { apiKey } = req.body;
   const current = getAIProviderConfig();
+  // Jika frontend kirim marker "••••••••" (input kosong tapi key tersimpan), pakai key dari server
+  if (apiKey === "••••••••") {
+    apiKey = category === "image" ? current.image.apiKey : current.text.apiKey;
+  }
 
   // IMAGE MODELS
   if (category === "image") {
