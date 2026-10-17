@@ -1,0 +1,336 @@
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth, isLiveFirebaseConfigured } from '../firebase/firebase';
+import type { BackupRecord } from './backupService.js';
+import { auditService } from './auditService';
+
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
+const GDRIVE_TOKEN_KEY = 'puskesmas_gdrive_access_token';
+const GDRIVE_USER_KEY = 'puskesmas_gdrive_user_info';
+const DRIVE_AUTO_SYNC_KEY = 'puskesmas_gdrive_auto_sync';
+
+export interface DriveFileInfo {
+  id: string;
+  name: string;
+  mimeType: string;
+  createdTime: string;
+  size?: string;
+  webViewLink?: string;
+}
+
+export interface DriveUserInfo {
+  email?: string;
+  displayName?: string;
+  photoLink?: string;
+  connectedAt: string;
+}
+
+export const googleDriveService = {
+  getAccessToken(): string | null {
+    const tokenData = localStorage.getItem(GDRIVE_TOKEN_KEY);
+    if (!tokenData) return null;
+    try {
+      const parsed = JSON.parse(tokenData);
+      if (parsed.expiresAt && Date.now() > parsed.expiresAt) {
+        localStorage.removeItem(GDRIVE_TOKEN_KEY);
+        return null;
+      }
+      return parsed.token;
+    } catch {
+      return tokenData;
+    }
+  },
+
+  setAccessToken(token: string, expiresInSeconds = 3600) {
+    const data = {
+      token,
+      expiresAt: Date.now() + expiresInSeconds * 1000 - 60000 // 1 min buffer
+    };
+    localStorage.setItem(GDRIVE_TOKEN_KEY, JSON.stringify(data));
+  },
+
+  getDriveUser(): DriveUserInfo | null {
+    try {
+      const data = localStorage.getItem(GDRIVE_USER_KEY);
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  setDriveUser(user: DriveUserInfo) {
+    localStorage.setItem(GDRIVE_USER_KEY, JSON.stringify(user));
+  },
+
+  isAutoSyncEnabled(): boolean {
+    return localStorage.getItem(DRIVE_AUTO_SYNC_KEY) === 'true';
+  },
+
+  setAutoSyncEnabled(enabled: boolean) {
+    localStorage.setItem(DRIVE_AUTO_SYNC_KEY, String(enabled));
+  },
+
+  disconnect() {
+    localStorage.removeItem(GDRIVE_TOKEN_KEY);
+    localStorage.removeItem(GDRIVE_USER_KEY);
+  },
+
+  /**
+   * Connect to Google Drive via Google OAuth popup
+   */
+  async connectWithGoogleOAuth(): Promise<{ token: string; userInfo: DriveUserInfo }> {
+    // 1. Try Firebase Auth GoogleAuthProvider with Drive Scope
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/drive.file');
+      provider.setCustomParameters({ prompt: 'consent select_account' });
+      
+      let result;
+      try {
+        result = await signInWithPopup(auth, provider);
+      } catch (firstErr: any) {
+        const msg = (firstErr?.message || '').toLowerCase();
+        if (msg.includes('database is closing') || msg.includes('closing/hidden')) {
+          await new Promise(r => setTimeout(r, 450));
+          result = await signInWithPopup(auth, provider);
+        } else {
+          throw firstErr;
+        }
+      }
+
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken;
+
+      if (token) {
+        this.setAccessToken(token);
+        const userInfo: DriveUserInfo = {
+          email: result.user.email || undefined,
+          displayName: result.user.displayName || undefined,
+          photoLink: result.user.photoURL || undefined,
+          connectedAt: new Date().toISOString()
+        };
+        this.setDriveUser(userInfo);
+        return { token, userInfo };
+      }
+    } catch (firebaseErr: any) {
+      console.warn('Firebase Google Auth popup failed, checking GSI / direct token:', firebaseErr);
+      if (firebaseErr.code === 'auth/popup-closed-by-user') {
+        throw new Error('Proses otorisasi Google dibatalkan oleh pengguna.');
+      }
+    }
+
+    // 2. Try Google Identity Services (GSI) Token Client if available
+    if (typeof window !== 'undefined' && window.google?.accounts?.oauth2) {
+      return new Promise((resolve, reject) => {
+        try {
+          const tokenClient = window.google.accounts.oauth2.initTokenClient({
+            client_id: '959224361046.apps.googleusercontent.com',
+            scope: 'https://www.googleapis.com/auth/drive.file',
+            callback: async (resp: any) => {
+              if (resp.error) {
+                reject(new Error(resp.error_description || resp.error || 'Gagal otorisasi Google'));
+                return;
+              }
+              if (resp.access_token) {
+                googleDriveService.setAccessToken(resp.access_token, resp.expires_in || 3600);
+                const userInfo = await googleDriveService.fetchUserInfo(resp.access_token);
+                resolve({ token: resp.access_token, userInfo });
+              } else {
+                reject(new Error('Tidak ada access token yang diterima dari Google.'));
+              }
+            }
+          });
+          tokenClient.requestAccessToken();
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }
+
+    throw new Error('Silakan gunakan opsi masukan Token Akses OAuth Google Drive secara manual jika popup diblokir oleh browser.');
+  },
+
+  /**
+   * Fetch user info from Google API using access token
+   */
+  async fetchUserInfo(accessToken: string): Promise<DriveUserInfo> {
+    try {
+      const res = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const info: DriveUserInfo = {
+          email: data.email,
+          displayName: data.name,
+          photoLink: data.picture,
+          connectedAt: new Date().toISOString()
+        };
+        this.setDriveUser(info);
+        return info;
+      }
+    } catch (e) {
+      console.warn('Failed to fetch Google user info:', e);
+    }
+    const fallback: DriveUserInfo = { connectedAt: new Date().toISOString() };
+    this.setDriveUser(fallback);
+    return fallback;
+  },
+
+  /**
+   * Upload a system backup snapshot to Google Drive
+   */
+  async uploadBackupToDrive(
+    backupRecord: BackupRecord,
+    accessToken?: string,
+    actor?: { id: string; name: string; email: string }
+  ): Promise<DriveFileInfo> {
+    const token = accessToken || this.getAccessToken();
+    if (!token) {
+      throw new Error('Akses token Google Drive tidak ditemukan. Harap hubungkan Google Drive terlebih dahulu.');
+    }
+
+    const fileName = `Puskesmas_Backup_${backupRecord.id}_${backupRecord.createdAt.split('T')[0]}.json`;
+
+    const metadata = {
+      name: fileName,
+      mimeType: 'application/json',
+      description: `Backup Sistem Puskesmas Manding - ID: ${backupRecord.id}, Type: ${backupRecord.type}, Created: ${backupRecord.createdAt}`
+    };
+
+    const dataPayload = {
+      backupInfo: {
+        id: backupRecord.id,
+        type: backupRecord.type,
+        scope: backupRecord.scope,
+        createdAt: backupRecord.createdAt,
+        checksum: backupRecord.checksum,
+        createdBy: backupRecord.createdBy,
+        size: backupRecord.size
+      },
+      dataSnapshot: backupRecord.dataSnapshot || {}
+    };
+
+    const fileContent = JSON.stringify(dataPayload, null, 2);
+
+    const boundary = 'foo_bar_baz_puskesmas_boundary';
+    const delimiter = `\r\n--${boundary}\r\n`;
+    const closeDelimiter = `\r\n--${boundary}--`;
+
+    const multipartRequestBody =
+      delimiter +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+      JSON.stringify(metadata) +
+      delimiter +
+      'Content-Type: application/json\r\n\r\n' +
+      fileContent +
+      closeDelimiter;
+
+    const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,createdTime,size,webViewLink', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`
+      },
+      body: multipartRequestBody
+    });
+
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      const errorMsg = errJson.error?.message || `Gagal upload file ke Google Drive (Status ${response.status})`;
+      if (response.status === 401) {
+        this.disconnect();
+        throw new Error('Sesi token Google Drive telah kedaluwarsa. Silakan hubungkan ulang Google Drive.');
+      }
+      throw new Error(errorMsg);
+    }
+
+    const driveFile: DriveFileInfo = await response.json();
+
+    if (actor) {
+      await auditService.recordLog({
+        userId: actor.id,
+        userName: actor.name,
+        userEmail: actor.email,
+        module: 'SETTINGS',
+        action: 'CREATE',
+        description: `Berhasil mengunggah arsip backup ${backupRecord.id} ke Google Drive (${driveFile.name}, Drive ID: ${driveFile.id}).`
+      });
+    }
+
+    return driveFile;
+  },
+
+  /**
+   * List Puskesmas backup files existing in Google Drive
+   */
+  async listDriveBackups(accessToken?: string): Promise<DriveFileInfo[]> {
+    const token = accessToken || this.getAccessToken();
+    if (!token) return [];
+
+    try {
+      const query = encodeURIComponent("name contains 'Puskesmas_Backup' and trashed = false");
+      const url = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,mimeType,createdTime,size,webViewLink)&orderBy=createdTime desc`;
+
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) this.disconnect();
+        return [];
+      }
+
+      const data = await response.json();
+      return data.files || [];
+    } catch (e) {
+      console.warn('Gagal mengambil daftar backup dari Google Drive:', e);
+      return [];
+    }
+  },
+
+  /**
+   * Download and parse backup data from Google Drive
+   */
+  async downloadAndParseDriveBackup(fileId: string, accessToken?: string): Promise<{ backupInfo: any; dataSnapshot: any }> {
+    const token = accessToken || this.getAccessToken();
+    if (!token) {
+      throw new Error('Akses token Google Drive tidak ditemukan.');
+    }
+
+    const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gagal mengunduh file dari Google Drive (Status ${response.status})`);
+    }
+
+    const content = await response.json();
+    if (!content.dataSnapshot) {
+      throw new Error('Struktur file backup Google Drive tidak valid atau rusak.');
+    }
+    return content;
+  },
+
+  /**
+   * Delete a backup file from Google Drive
+   */
+  async deleteDriveBackup(fileId: string, accessToken?: string): Promise<void> {
+    const token = accessToken || this.getAccessToken();
+    if (!token) throw new Error('Akses token Google Drive tidak ditemukan.');
+
+    const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!response.ok && response.status !== 404) {
+      throw new Error(`Gagal menghapus file di Google Drive (Status ${response.status})`);
+    }
+  }
+};
