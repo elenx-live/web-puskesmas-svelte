@@ -8,6 +8,7 @@ import type {
   MicrositeGroup
 } from '../types/index.js';
 import { auditService } from './auditService';
+import { apiFetch } from '../lib/api';
 import { sanitizeText, sanitizeHtml } from '../utils/sanitize';
 import { getCollectionData, saveDocumentData, deleteDocumentData } from '../lib/firebase';
 import { syncMicrositeItemToServer, syncMetadataToServer } from '../utils/metaSync';
@@ -948,7 +949,7 @@ export const micrositeService = {
 
     // Delete from Node.js backend server
     try {
-      fetch(`/api/microsites/${encodeURIComponent(id)}`, {
+      apiFetch(`/api/microsites/${encodeURIComponent(id)}`, {
         method: 'DELETE'
       }).catch(err => console.warn('Server delete microsite error:', err));
     } catch {}

@@ -16,6 +16,7 @@ import homepageRouter from "./server/routes/homepage.js";
 import micrositesRouter from "./server/routes/microsites.js";
 import uploadsRouter from "./server/routes/uploads.js";
 import miscRouter from "./server/routes/misc.js";
+import authRouter from "./server/routes/auth.js";
 
 // Load environment variables
 dotenv.config();
@@ -86,6 +87,7 @@ app.use(homepageRouter);
 app.use(micrositesRouter);
 app.use(uploadsRouter);
 app.use(miscRouter);
+app.use(authRouter);
 
 // Vite middleware for development
 async function startViteMiddleware() {

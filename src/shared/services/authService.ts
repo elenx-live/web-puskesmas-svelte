@@ -1,5 +1,4 @@
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { auth, isLiveFirebaseConfigured } from '../firebase/firebase';
+import { requestGoogleCredential, disableGisAutoSelect, setGoogleIdToken, clearGoogleIdToken } from '../lib/gis';
 import type { AppUser } from '../types/index.js';
 import { INITIAL_SUPER_ADMIN } from '../firebase/seedData';
 import { userService } from './userService';
@@ -8,51 +7,56 @@ import { auditService } from './auditService';
 
 const SESSION_KEY = 'puskesmas_auth_session';
 
-/**
- * Trigger Google Sign-In with fallback to account picker if OAuth error occurs in preview/container
- */
-async function authenticateWithGooglePopup(): Promise<{ email: string; displayName: string; photoURL: string }> {
-  // If Firebase Auth is fully initialized and supported in the environment
-  if (isLiveFirebaseConfigured) {
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-      
-      let result;
-      try {
-        result = await signInWithPopup(auth, provider);
-      } catch (firstErr: any) {
-        const msg = (firstErr?.message || '').toLowerCase();
-        // If hit transient IndexedDB closing/hidden race condition, wait 450ms and retry once
-        if (msg.includes('database is closing') || msg.includes('closing/hidden')) {
-          console.warn('[Auth] Retrying popup auth after transient IndexedDB stabilization...');
-          await new Promise(r => setTimeout(r, 450));
-          result = await signInWithPopup(auth, provider);
-        } else {
-          throw firstErr;
-        }
-      }
+// Re-export untuk kompatibilitas (dipakai api.ts)
+export { getGoogleIdToken } from '../lib/gis';
 
-      return {
-        email: (result.user.email || '').toLowerCase(),
-        displayName: result.user.displayName || result.user.email?.split('@')[0] || '',
-        photoURL: result.user.photoURL || ''
-      };
-    } catch (err: any) {
-      if (err.code === 'auth/popup-closed-by-user') {
-        throw new Error('Proses login Google dibatalkan oleh pengguna.');
-      }
-      console.warn('Firebase Google Auth popup encountered an issue:', err);
-      const oauthErr = new Error('OAuth Popup Error');
-      (oauthErr as any).isOAuthError = true;
-      throw oauthErr;
+/**
+ * Login Google via Google Identity Services (GIS) — pola PeSat.
+ * 1. Minta credential (ID token) dari GIS.
+ * 2. Kirim ke backend /api/auth/google untuk verifikasi.
+ * 3. Backend mengembalikan info user terverifikasi.
+ */
+async function authenticateWithGoogle(): Promise<{ email: string; displayName: string; photoURL: string; credential: string }> {
+  const credential = await requestGoogleCredential();
+
+  const res = await fetch('/api/auth/google', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credential }),
+  });
+  const data = (await res.json()) as {
+    ok?: boolean;
+    code?: string;
+    message?: string;
+    user?: { email?: string; name?: string; picture?: string };
+    credential?: string;
+  };
+
+  if (!res.ok || !data.ok) {
+    const code = data.code || '';
+    if (code === 'NOT_ALLOWED' || res.status === 403) {
+      throw new Error('Akses Ditolak: Akun Google Anda belum terdaftar di sistem.');
     }
+    if (code === 'AUTH_NOT_CONFIGURED') {
+      throw new Error('Login Google belum dikonfigurasi di server. Hubungi administrator.');
+    }
+    throw new Error(data.message || 'Gagal verifikasi kredensial Google.');
   }
 
-  // If in web container / preview without external OAuth client credentials, trigger account chooser dialog
-  const oauthErr = new Error('OAuth Popup Error');
-  (oauthErr as any).isOAuthError = true;
-  throw oauthErr;
+  const email = (data.user?.email || '').toLowerCase();
+  if (!email || !email.includes('@')) {
+    throw new Error('Alamat email Google tidak valid.');
+  }
+
+  // Simpan ID token untuk API requests berikutnya
+  setGoogleIdToken(data.credential || credential);
+
+  return {
+    email,
+    displayName: data.user?.name || email.split('@')[0],
+    photoURL: data.user?.picture || '',
+    credential: data.credential || credential,
+  };
 }
 
 async function computeSHA256(str: string): Promise<string> {
@@ -189,7 +193,7 @@ export const authService = {
       displayName = overrideName || email.split('@')[0];
       photoURL = overridePhoto || '';
     } else {
-      const googleUser = await authenticateWithGooglePopup();
+      const googleUser = await authenticateWithGoogle();
       email = googleUser.email;
       displayName = googleUser.displayName;
       photoURL = googleUser.photoURL;
@@ -316,11 +320,8 @@ export const authService = {
       }).catch(() => {});
     }
     localStorage.removeItem(SESSION_KEY);
-    try {
-      if (isLiveFirebaseConfigured && auth) {
-        await signOut(auth).catch(() => {});
-      }
-    } catch {}
+    clearGoogleIdToken();
+    disableGisAutoSelect();
     window.dispatchEvent(new Event('storage'));
   }
 };

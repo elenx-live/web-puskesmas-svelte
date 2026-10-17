@@ -1,8 +1,7 @@
 import type { FirebaseApp } from 'firebase/app';
-import { GoogleAuthProvider } from 'firebase/auth';
-import type { Auth } from 'firebase/auth';
-import { app as sharedApp, auth as sharedAuth } from '../firebase/firebase';
+import { app as sharedApp } from '../firebase/firebase';
 import firebaseConfigJson from '../../firebase-applet-config.json';
+import { apiFetch } from './api';
 
 const firebaseConfig = {
   apiKey: firebaseConfigJson.apiKey,
@@ -13,12 +12,8 @@ const firebaseConfig = {
   appId: firebaseConfigJson.appId
 };
 
-// Unified Firebase Singleton instances (Auth only - Firestore removed)
+// Unified Firebase Singleton instance (app saja; Auth tidak dipakai lagi — login via GIS)
 export const app: FirebaseApp = sharedApp;
-export const auth: Auth = sharedAuth;
-
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 export const isFirebaseReady = (): boolean => {
   return !!(firebaseConfig.projectId && firebaseConfig.apiKey);
@@ -67,7 +62,7 @@ export async function getCollectionData<T extends { id?: string; uid?: string }>
   // Helper to fetch from VPS SQLite database (/api/db/*) - the ONLY source
   const fetchFromVpsDb = async (): Promise<T[] | null> => {
     try {
-      const res = await fetch(`/api/db/${collectionName}?t=${Date.now()}`);
+      const res = await apiFetch(`/api/db/${collectionName}?t=${Date.now()}`);
       if (res.ok) {
         const json = await res.json();
         if (json.docs && Array.isArray(json.docs)) {
@@ -146,7 +141,7 @@ export async function saveDocumentData<T extends { id?: string; uid?: string; sl
 
   // 2. Persist to VPS SQLite Database via /api/db/* (only)
   try {
-    fetch(`/api/db/${collectionName}`, {
+    apiFetch(`/api/db/${collectionName}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -186,7 +181,7 @@ export async function deleteDocumentData(
 
   // 2. Delete from VPS SQLite Database via /api/db/* (only)
   try {
-    fetch(`/api/db/${collectionName}/${encodeURIComponent(docId)}`, {
+    apiFetch(`/api/db/${collectionName}/${encodeURIComponent(docId)}`, {
       method: 'DELETE'
     }).catch(err => console.warn(`[VPS-DB] Delete /api/db/${collectionName}/${docId} error:`, err));
   } catch (error) {
@@ -239,14 +234,14 @@ export async function saveSingleDocument<T>(
 
   // 2. Sync to VPS SQLite Database via /api/db/* (only)
   try {
-    fetch(`/api/db/${collectionName}`, {
+    apiFetch(`/api/db/${collectionName}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: docId, ...cleanedData })
     }).catch(() => {});
 
     if (collectionName === 'site_settings') {
-      fetch('/api/site-settings', {
+    apiFetch('/api/site-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleanedData)
@@ -299,7 +294,7 @@ export async function getSingleDocument<T>(
     try {
       // Try VPS SQLite database via /api/db/* (the ONLY source - no Firestore fallback)
       try {
-        const vpsRes = await fetch(`/api/db/${collectionName}/${encodeURIComponent(docId)}?t=${Date.now()}`);
+        const vpsRes = await apiFetch(`/api/db/${collectionName}/${encodeURIComponent(docId)}?t=${Date.now()}`);
         if (vpsRes.ok) {
           const vpsJson = await vpsRes.json();
           if (vpsJson && typeof vpsJson === 'object' && !vpsJson.error) {
