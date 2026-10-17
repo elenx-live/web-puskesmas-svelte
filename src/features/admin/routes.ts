@@ -1,46 +1,4 @@
 import type { RouteDef } from '../../app/router.svelte.js';
-import C_dashboard_DashboardOverview_svelte from './dashboard/DashboardOverview.svelte';
-import C_dashboard_OperationalDashboard_svelte from './dashboard/OperationalDashboard.svelte';
-import C_dashboard_ServiceDashboard_svelte from './dashboard/ServiceDashboard.svelte';
-import C_operasional_PendaftaranManagement_svelte from './operasional/PendaftaranManagement.svelte';
-import C_operasional_QueueManagement_svelte from './operasional/QueueManagement.svelte';
-import C_operasional_ComplaintsManagement_svelte from './operasional/ComplaintsManagement.svelte';
-import C_survei_AdminSurveysManagement_svelte from './survei/AdminSurveysManagement.svelte';
-import C_pengguna_UsersManagement_svelte from './pengguna/UsersManagement.svelte';
-import C_pengguna_RolesManagement_svelte from './pengguna/RolesManagement.svelte';
-import C_konten_PagesManagement_svelte from './konten/PagesManagement.svelte';
-import C_konten_MenusManagement_svelte from './konten/MenusManagement.svelte';
-import C_konten_PostsManagement_svelte from './konten/PostsManagement.svelte';
-import C_konten_CategoriesManagement_svelte from './konten/CategoriesManagement.svelte';
-import C_konten_AnnouncementsManagement_svelte from './konten/AnnouncementsManagement.svelte';
-import C_konten_DocumentsManagement_svelte from './konten/DocumentsManagement.svelte';
-import C_konten_GalleryManagement_svelte from './konten/GalleryManagement.svelte';
-import C_konten_MediaLibraryView_svelte from './konten/MediaLibraryView.svelte';
-import C_layanan_ServicesManagement_svelte from './layanan/ServicesManagement.svelte';
-import C_layanan_ServiceReviewQueue_svelte from './layanan/ServiceReviewQueue.svelte';
-import C_layanan_ServiceCategoriesManagement_svelte from './layanan/ServiceCategoriesManagement.svelte';
-import C_layanan_ServiceClustersManagement_svelte from './layanan/ServiceClustersManagement.svelte';
-import C_layanan_ServiceUnitsManagement_svelte from './layanan/ServiceUnitsManagement.svelte';
-import C_layanan_ServiceLocationsManagement_svelte from './layanan/ServiceLocationsManagement.svelte';
-import C_fasilitas_AdminFacilityManagement_svelte from './fasilitas/AdminFacilityManagement.svelte';
-import C_fasilitas_AdminOrgStructureManagement_svelte from './fasilitas/AdminOrgStructureManagement.svelte';
-import C_fasilitas_AdminStaffDirectoryManagement_svelte from './fasilitas/AdminStaffDirectoryManagement.svelte';
-import C_fasilitas_AdminContactManagement_svelte from './fasilitas/AdminContactManagement.svelte';
-import C_fasilitas_AdminFaqManagement_svelte from './fasilitas/AdminFaqManagement.svelte';
-import C_fasilitas_AdminDynamicContentManagement_svelte from './fasilitas/AdminDynamicContentManagement.svelte';
-import C_fasilitas_AdminPublicInfoManagement_svelte from './fasilitas/AdminPublicInfoManagement.svelte';
-import C_fasilitas_AdminInfoRequestsManagement_svelte from './fasilitas/AdminInfoRequestsManagement.svelte';
-import C_microsite_MicrositesManagement_svelte from './microsite/MicrositesManagement.svelte';
-import C_sistem_SettingsManagement_svelte from './sistem/SettingsManagement.svelte';
-import C_sistem_AIProviderSettingsPage_svelte from './sistem/AIProviderSettingsPage.svelte';
-import C_sistem_AdminFeaturesManagement_svelte from './sistem/AdminFeaturesManagement.svelte';
-import C_sistem_WhatsAppSettings_svelte from './sistem/WhatsAppSettings.svelte';
-import C_sistem_AuditLogsView_svelte from './sistem/AuditLogsView.svelte';
-import C_sistem_NotificationsManagement_svelte from './sistem/NotificationsManagement.svelte';
-import C_sistem_SeoSearchManagement_svelte from './sistem/SeoSearchManagement.svelte';
-import C_sistem_ThemeCustomization_svelte from './sistem/ThemeCustomization.svelte';
-import C_sistem_SystemBackupManagement_svelte from './sistem/SystemBackupManagement.svelte';
-import C_sistem_SystemMonitoringManagement_svelte from './sistem/SystemMonitoringManagement.svelte';
 
 /**
  * Rute fitur admin — agregat seluruh sub-fitur admin.
@@ -111,11 +69,14 @@ export const adminRoutes: RouteDef[] = [
   A('/admin/settings/communication', () => import('./sistem/SettingsManagement.svelte'), 'manage_site_settings'),
   A('/admin/settings/security', () => import('./sistem/SettingsManagement.svelte'), 'manage_site_settings'),
   A('/admin/settings/ai-provider', () => import('./sistem/AIProviderSettingsPage.svelte'), 'manage_site_settings'),
+  A('/admin/ai-providers', () => import('./sistem/AIProviderSettingsPage.svelte'), 'manage_site_settings'),
   A('/admin/ai-provider', () => import('./sistem/AIProviderSettingsPage.svelte'), 'manage_site_settings'),
   A('/admin/settings/fitur', () => import('./sistem/AdminFeaturesManagement.svelte'), 'manage_site_settings'),
   A('/admin/features', () => import('./sistem/AdminFeaturesManagement.svelte'), 'manage_site_settings'),
   A('/admin/settings/whatsapp', () => import('./sistem/WhatsAppSettings.svelte'), 'manage_site_settings'),
+  A('/admin/whatsapp', () => import('./sistem/WhatsAppSettings.svelte'), 'manage_site_settings'),
   A('/admin/audit', () => import('./sistem/AuditLogsView.svelte'), 'view_audit_logs'),
+  A('/admin/audit-logs', () => import('./sistem/AuditLogsView.svelte'), 'view_audit_logs'),
   A('/admin/notifications', () => import('./sistem/NotificationsManagement.svelte')),
   A('/admin/seo', () => import('./sistem/SeoSearchManagement.svelte'), 'manage_site_settings'),
   A('/admin/builder', () => import('./sistem/ThemeCustomization.svelte'), 'manage_homepage_builder'),

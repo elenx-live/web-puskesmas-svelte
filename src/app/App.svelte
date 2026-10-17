@@ -1,10 +1,18 @@
 <!--
-  @component Root aplikasi Svelte 5 — routing langsung per fitur (modular).
-  Setiap fitur di src/features/<nama>/ independen.
+  @component Root aplikasi Svelte 5 — routing tunggal via registry (lazy load per halaman).
+
+  Satu sumber kebenaran routing: `src/features/registry.ts` (dibangun dari
+  `src/features/<nama>/routes.ts` tiap fitur). App.svelte TIDAK meng-import
+  halaman secara statis — setiap halaman dimuat lazy via `def.load()` sehingga
+  satu halaman = satu chunk bundle yang independen.
+
+  - Rute tak dikenal -> NotFoundPage (publik) / pesan 404 dalam AdminLayout (admin).
+  - Mendukung hash (`#/layanan`) dan fallback path-based (`/layanan`).
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { routerState } from './router.svelte.js';
+  import type { Component } from 'svelte';
+  import { routerState, matchRoute, type MatchedRoute } from './router.svelte.js';
   import { authStore } from '../shared/stores/auth.svelte.js';
   import { siteSettingsService } from '../shared/services/siteSettingsService.js';
   import type { SiteSettings } from '../shared/types/index.js';
@@ -15,30 +23,17 @@
   import MaintenanceScreen from '../shared/components/MaintenanceScreen.svelte';
   import NotFoundPage from '../features/errors/NotFoundPage.svelte';
 
-  // --- Halaman per fitur ---
-  import BerandaPage from '../features/beranda/index.svelte';
-  import SearchPage from '../features/beranda/SearchPage.svelte';
-  import ProfilPage from '../features/profil/index.svelte';
-  import LayananPage from '../features/layanan/index.svelte';
-  import BeritaPage from '../features/berita/index.svelte';
-  import DokumenPage from '../features/dokumen/index.svelte';
-  import GaleriPage from '../features/galeri/index.svelte';
-  import KontakPage from '../features/kontak/index.svelte';
-  import PengaduanPage from '../features/pengaduan/index.svelte';
-  import PendaftaranPage from '../features/pendaftaran/index.svelte';
-  import SurveiPage from '../features/survei/index.svelte';
-  import InformasiPage from '../features/informasi/index.svelte';
-  import MicrositePage from '../features/microsite/index.svelte';
-  import MicrositeDirectoryPage from '../features/microsite/MicrositeCategoriesPage.svelte';
-  import AuthPage from '../features/auth/index.svelte';
-  import BeritaDetailPage from '../features/berita/BeritaDetailPage.svelte';
-  import LayananDetailPage from '../features/layanan/LayananDetailPage.svelte';
-  import PublicSurveyPage from '../features/survei/PublicSurveyPage.svelte';
-  import PublicFacilityPage from '../features/layanan/PublicFacilityPage.svelte';
-  import AdminRouter from '../features/admin/AdminRouter.svelte';
-
   let currentPath = $state('/');
   let settings = $state<SiteSettings | null>(null);
+
+  // Hasil pencocokan rute dari registry tunggal + komponen hasil lazy-load.
+  let matched = $state<MatchedRoute | null>(null);
+  let PageComponent = $state<Component | null>(null);
+  let loadState = $state<'idle' | 'loading' | 'error'>('idle');
+
+  // Cache komponen yang sudah dimuat: navigasi ulang ke halaman yang sama
+  // menjadi instan (tanpa flash loading), remount tetap terjadi via {#key}.
+  const componentCache = new Map<string, Component>();
 
   onMount(() => {
     const cleanup = routerState.init();
@@ -52,9 +47,54 @@
     };
   });
 
+  /** Cocokkan path ke registry lalu lazy-load komponen halamannya. */
+  function resolveRoute(path: string) {
+    const m = matchRoute(path);
+    matched = m;
+    if (!m) {
+      PageComponent = null;
+      loadState = 'idle';
+      return;
+    }
+    const cached = componentCache.get(m.def.path);
+    if (cached) {
+      PageComponent = cached;
+      loadState = 'idle';
+      return;
+    }
+    PageComponent = null;
+    loadState = 'loading';
+    const pathAtLoad = path;
+    m.def.load().then(
+      (mod) => {
+        const comp = (mod as { default: Component }).default;
+        componentCache.set(m.def.path, comp);
+        // Abaikan hasil basi bila pengguna sudah pindah halaman lain.
+        if (pathAtLoad === currentPath) {
+          PageComponent = comp;
+          loadState = 'idle';
+        }
+      },
+      () => {
+        if (pathAtLoad === currentPath) loadState = 'error';
+      }
+    );
+  }
+
   $effect(() => {
     currentPath = routerState.path;
   });
+
+  $effect(() => {
+    resolveRoute(currentPath);
+  });
+
+  function retryLoad() {
+    resolveRoute(currentPath);
+  }
+
+  const layout = $derived(matched?.def.layout ?? 'public');
+  const routeParams = $derived(matched?.params ?? {});
 
   const isPublicRoute = $derived(!currentPath.startsWith('/admin') && currentPath !== '/login');
   const isMaintenanceActive = $derived(
@@ -64,107 +104,60 @@
     if (!isMaintenanceActive || !isPublicRoute) return false;
     return !authStore.user;
   });
-
-  // Extract microsite slug dari URL (/m/:slug atau /microsite/:slug)
-  const micrositeSlug = $derived.by(() => {
-    const p = currentPath.split('?')[0];
-    if (p.startsWith('/m/')) return p.substring(3).split('/')[0];
-    if (p.startsWith('/microsite/')) return p.substring(11).split('/')[0];
-    return '';
-  });
-
-  // Tentukan halaman berdasarkan path
-  // Ekstrak slug/id untuk halaman detail (berita/layanan/survei)
-  const detailSlug = $derived.by(() => {
-    const p = currentPath.split('?')[0];
-    const parts = p.split('/').filter(Boolean);
-    if (parts.length === 2 && ['berita', 'layanan', 'survei'].includes(parts[0])) {
-      return parts[1];
-    }
-    return '';
-  });
-
-  const page = $derived.by(() => {
-    const p = currentPath.split('?')[0];
-    if (p === '/') return 'beranda';
-    if (p === '/search') return 'search';
-    if (p === '/login') return 'auth';
-    if (p.startsWith('/profil') || ['/sejarah-puskesmas','/visi-misi','/struktur-organisasi','/tenaga-kesehatan','/sarana-prasarana'].includes(p)) return 'profil';
-    // Detail pages: /berita/{slug}, /layanan/{slug}, /survei/{id}
-    if (p.startsWith('/berita/') && p.split('/').filter(Boolean).length === 2) return 'berita-detail';
-    if (p.startsWith('/layanan/') && p.split('/').filter(Boolean).length === 2) return 'layanan-detail';
-    if (p.startsWith('/layanan')) return 'layanan';
-    if (p.startsWith('/fasilitas')) return 'fasilitas';
-    if (p.startsWith('/berita')) return 'berita';
-    if (p.startsWith('/dokumen')) return 'dokumen';
-    if (p.startsWith('/galeri')) return 'galeri';
-    if (p.startsWith('/kontak') || p.startsWith('/kritik-saran')) return 'kontak';
-    if (p.startsWith('/pengaduan')) return 'pengaduan';
-    if (p.startsWith('/pendaftaran')) return 'pendaftaran';
-    if (p.startsWith('/survei/') && p.split('/').filter(Boolean).length === 2) return 'survei-detail';
-    if (p.startsWith('/survei')) return 'survei';
-    if (p.startsWith('/informasi') || p.startsWith('/maklumat') || p.startsWith('/ppid') || p.startsWith('/faq')) return 'informasi';
-    if (p === '/microsites' || p === '/m') return 'microsite-dir';
-    if (p.startsWith('/m/') || p.startsWith('/microsite/')) return 'microsite';
-    if (p.startsWith('/antrian') || p.startsWith('/queue')) return 'pendaftaran';
-    if (p.startsWith('/admin')) return 'admin';
-    return 'notfound';
-  });
 </script>
 
 <ThemeStyleInjector />
 <ToastHost />
 
+{#snippet pageContent()}
+  {#if PageComponent}
+    <PageComponent {...routeParams} />
+  {:else if loadState === 'error'}
+    <div class="p-8 text-center">
+      <h2 class="text-xl font-bold mb-2">Gagal memuat halaman</h2>
+      <p class="text-gray-600 mb-4">Periksa koneksi internet Anda lalu coba lagi.</p>
+      <button
+        onclick={retryLoad}
+        class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition"
+      >
+        Coba lagi
+      </button>
+    </div>
+  {:else}
+    <div class="p-12 text-center text-sm text-gray-500" role="status" aria-live="polite">
+      Memuat halaman…
+    </div>
+  {/if}
+{/snippet}
+
 {#if showMaintenanceScreen}
   <MaintenanceScreen {settings} />
-{:else if page === 'admin'}
+{:else if matched && layout === 'admin'}
   <AdminLayout>
-    <AdminRouter path={currentPath} />
+    {#key currentPath}
+      {@render pageContent()}
+    {/key}
+  </AdminLayout>
+{:else if matched && layout === 'none'}
+  {#key currentPath}
+    {@render pageContent()}
+  {/key}
+{:else if matched}
+  <PublicLayout>
+    {#key currentPath}
+      {@render pageContent()}
+    {/key}
+  </PublicLayout>
+{:else if currentPath.startsWith('/admin')}
+  <!-- Rute admin tak dikenal: 404 di dalam layout admin (perilaku lama AdminRouter). -->
+  <AdminLayout>
+    <div class="p-8 text-center">
+      <h2 class="text-xl font-bold mb-2">Halaman tidak ditemukan</h2>
+      <p class="text-gray-600">Path: {currentPath}</p>
+    </div>
   </AdminLayout>
 {:else}
   <PublicLayout>
-    {#key currentPath}
-    {#if page === 'beranda'}
-      <BerandaPage />
-    {:else if page === 'search'}
-      <SearchPage />
-    {:else if page === 'profil'}
-      <ProfilPage />
-    {:else if page === 'layanan'}
-      <LayananPage />
-    {:else if page === 'layanan-detail'}
-      <LayananDetailPage slug={detailSlug} />
-    {:else if page === 'fasilitas'}
-      <PublicFacilityPage />
-    {:else if page === 'berita'}
-      <BeritaPage />
-    {:else if page === 'berita-detail'}
-      <BeritaDetailPage slug={detailSlug} />
-    {:else if page === 'dokumen'}
-      <DokumenPage />
-    {:else if page === 'galeri'}
-      <GaleriPage />
-    {:else if page === 'kontak'}
-      <KontakPage />
-    {:else if page === 'pengaduan'}
-      <PengaduanPage />
-    {:else if page === 'pendaftaran'}
-      <PendaftaranPage />
-    {:else if page === 'survei'}
-      <SurveiPage />
-    {:else if page === 'survei-detail'}
-      <PublicSurveyPage id={detailSlug} />
-    {:else if page === 'informasi'}
-      <InformasiPage />
-    {:else if page === 'microsite-dir'}
-      <MicrositeDirectoryPage />
-    {:else if page === 'microsite'}
-      <MicrositePage slug={micrositeSlug} />
-    {:else if page === 'auth'}
-      <AuthPage />
-    {:else}
-      <NotFoundPage />
-    {/if}
-    {/key}
+    <NotFoundPage />
   </PublicLayout>
 {/if}

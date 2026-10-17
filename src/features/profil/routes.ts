@@ -1,19 +1,17 @@
 import type { RouteDef } from '../../app/router.svelte.js';
-import C_index_svelte from './index.svelte';
-import C_PublicOrganizationPage_svelte from './PublicOrganizationPage.svelte';
-import C_PublicStaffDirectoryPage_svelte from './PublicStaffDirectoryPage.svelte';
 
 /**
- * Rute fitur profil — halaman profil institusi, struktur organisasi,
- * dan direktori tenaga medis/petugas.
- * Catatan: slug CMS dinamis (mis. /visi-misi, /sejarah-puskesmas) ditangani
- * App.svelte secara otomatis lewat DynamicPageRenderer, tidak perlu rute di sini.
+ * Rute fitur profil — halaman profil institusi.
+ * Slug CMS dinamis (/sejarah-puskesmas, /visi-misi) dirender oleh halaman
+ * profil utama. Komponen dimuat lazy (satu chunk per halaman).
  */
 export const profilRoutes: RouteDef[] = [
-  { path: '/profil', load: () => Promise.resolve({ default: C_index_svelte }).catch(e => { console.error('Chunk load failed:', './index.svelte', e); throw e; }), layout: 'public' },
-  { path: '/struktur-organisasi', load: () => Promise.resolve({ default: C_PublicOrganizationPage_svelte }).catch(e => { console.error('Chunk load failed:', './PublicOrganizationPage.svelte', e); throw e; }), layout: 'public' },
-  { path: '/profil/struktur-organisasi', load: () => Promise.resolve({ default: C_PublicOrganizationPage_svelte }).catch(e => { console.error('Chunk load failed:', './PublicOrganizationPage.svelte', e); throw e; }), layout: 'public' },
-  { path: '/tenaga-kesehatan', load: () => Promise.resolve({ default: C_PublicStaffDirectoryPage_svelte }).catch(e => { console.error('Chunk load failed:', './PublicStaffDirectoryPage.svelte', e); throw e; }), layout: 'public' },
-  { path: '/profil/petugas', load: () => Promise.resolve({ default: C_PublicStaffDirectoryPage_svelte }).catch(e => { console.error('Chunk load failed:', './PublicStaffDirectoryPage.svelte', e); throw e; }), layout: 'public' },
-  { path: '/petugas', load: () => Promise.resolve({ default: C_PublicStaffDirectoryPage_svelte }).catch(e => { console.error('Chunk load failed:', './PublicStaffDirectoryPage.svelte', e); throw e; }), layout: 'public' },
+  { path: '/profil', load: () => import('./index.svelte'), layout: 'public' },
+  { path: '/sejarah-puskesmas', load: () => import('./index.svelte'), layout: 'public' },
+  { path: '/visi-misi', load: () => import('./index.svelte'), layout: 'public' },
+  { path: '/struktur-organisasi', load: () => import('./PublicOrganizationPage.svelte'), layout: 'public' },
+  { path: '/profil/struktur-organisasi', load: () => import('./PublicOrganizationPage.svelte'), layout: 'public' },
+  { path: '/tenaga-kesehatan', load: () => import('./PublicStaffDirectoryPage.svelte'), layout: 'public' },
+  { path: '/profil/petugas', load: () => import('./PublicStaffDirectoryPage.svelte'), layout: 'public' },
+  { path: '/petugas', load: () => import('./PublicStaffDirectoryPage.svelte'), layout: 'public' },
 ];
