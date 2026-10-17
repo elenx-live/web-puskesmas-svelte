@@ -291,7 +291,8 @@
           provider: textProvider,
           providerName: textProviderName,
           endpointUrl: textEndpointUrl,
-          apiKey: textApiKey,
+          // Input kosong = pertahankan key lama (kirim marker, bukan string kosong)
+          apiKey: textApiKey || '••••••••',
           model: textModel,
           enabled: true
         },
@@ -299,7 +300,7 @@
           provider: imageProvider,
           providerName: imageProviderName,
           endpointUrl: imageEndpointUrl,
-          apiKey: imageApiKey,
+          apiKey: imageApiKey || '••••••••',
           model: imageModel,
           aspectRatio: imageAspectRatio,
           enabled: true
