@@ -1,7 +1,36 @@
 // TAHAP 3 — hasil pemecahan server.ts (perilaku endpoint TIDAK berubah).
 import { Router } from "express";
+import { logger } from "../lib/logger.js";
 import express from "express";
 import { getAIProviderConfig, saveAIProviderConfig, executeAICompletion, buildAccurateVisualPrompt } from "../lib/storage.js";
+import type { AIProviderConfig, ImageProviderSettings, TextProviderSettings } from "../lib/storage.js";
+
+/** Info model dari Google Gemini models API. */
+interface GeminiModelInfo {
+  name?: string;
+  supportedGenerationMethods?: string[];
+}
+
+/** Item model dari API OpenAI-compatible / Ollama. */
+interface OpenAIModelItem {
+  id?: string;
+  name?: string;
+  model?: string;
+}
+
+/** Respons JSON custom image provider. */
+interface CustomImageResponse {
+  data?: Array<{ url?: string; b64_json?: string }>;
+}
+
+/** Hasil parse AI import (artikel). */
+interface AiImportResult {
+  title?: string;
+  excerpt?: string;
+  content?: string;
+  tags?: string[];
+  [k: string]: unknown;
+}
 import { AI_PROVIDER_PRESETS, IMAGE_PROVIDER_PRESETS } from "../lib/config.js";
 const router = Router();
 
@@ -274,25 +303,25 @@ router.post("/api/ai/test-provider", async (req, res) => {
       modelUsed: result.modelUsed,
       reply: result.text.trim().substring(0, 150)
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     const latencyMs = Date.now() - startTime;
     const current = getAIProviderConfig();
 
     if (category === "image") {
       current.image.lastStatus = "failed";
       current.image.lastTestedAt = new Date().toISOString();
-      current.image.lastStatusMessage = err.message || "Gagal terkoneksi ke Provider AI Gambar";
+      current.image.lastStatusMessage = (err as { message?: string })?.message || "Gagal terkoneksi ke Provider AI Gambar";
       saveAIProviderConfig(current);
     } else {
       current.text.lastStatus = "failed";
       current.text.lastTestedAt = new Date().toISOString();
-      current.text.lastStatusMessage = err.message || "Gagal terkoneksi ke Provider AI Teks";
+      current.text.lastStatusMessage = (err as { message?: string })?.message || "Gagal terkoneksi ke Provider AI Teks";
       saveAIProviderConfig(current);
     }
 
     res.status(400).json({
       success: false,
-      message: `Uji koneksi gagal: ${err.message}`,
+      message: `Uji koneksi gagal: ${(err as { message?: string })?.message}`,
       latencyMs
     });
   }
@@ -365,11 +394,11 @@ router.post("/api/ai/fetch-models", async (req, res) => {
       try {
         const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
         if (geminiRes.ok) {
-          const gData: any = await geminiRes.json();
+          const gData: { models?: GeminiModelInfo[] } = await geminiRes.json();
           if (Array.isArray(gData.models)) {
             const fetchedList = gData.models
-              .filter((m: any) => m.supportedGenerationMethods?.includes("generateContent"))
-              .map((m: any) => m.name.replace(/^models\//, ''))
+              .filter((m: GeminiModelInfo) => m.supportedGenerationMethods?.includes("generateContent"))
+              .map((m: GeminiModelInfo) => (m.name as string).replace(/^models\//, ''))
               .filter((name: string) => !name.includes("embedding") && !name.includes("aqa") && !name.includes("text-embedding"));
             if (fetchedList.length > 0) {
               return res.json({ success: true, models: fetchedList, provider: "gemini" });
@@ -433,19 +462,19 @@ router.post("/api/ai/fetch-models", async (req, res) => {
       clearTimeout(timeout);
 
       if (mRes.ok) {
-        const mData: any = await mRes.json();
+        const mData: { data?: OpenAIModelItem[]; models?: OpenAIModelItem[] } = await mRes.json();
         let models: string[] = [];
 
         if (Array.isArray(mData.data)) {
           // Standard OpenAI, Groq, OpenRouter, DeepSeek format: { data: [ { id: "..." } ] }
           models = mData.data
-            .map((item: any) => item.id || item.name)
-            .filter((id: any) => typeof id === "string" && id.length > 0);
+            .map((item: OpenAIModelItem) => item.id || item.name)
+            .filter((id: unknown): id is string => typeof id === "string" && id.length > 0);
         } else if (Array.isArray(mData.models)) {
           // Ollama format: { models: [ { name: "llama3:latest" } ] }
           models = mData.models
-            .map((item: any) => item.name || item.id || item.model)
-            .filter((id: any) => typeof id === "string" && id.length > 0);
+            .map((item: OpenAIModelItem) => item.name || item.id || item.model)
+            .filter((id: unknown): id is string => typeof id === "string" && id.length > 0);
         }
 
         if (models.length > 0) {
@@ -461,8 +490,8 @@ router.post("/api/ai/fetch-models", async (req, res) => {
         const errText = await mRes.text();
         lastError = `HTTP ${mRes.status}: ${errText.substring(0, 100)}`;
       }
-    } catch (e: any) {
-      lastError = e.message;
+    } catch (e: unknown) {
+      lastError = (e as { message?: unknown })?.message as string;
     }
   }
 
@@ -608,7 +637,7 @@ Informasi Halaman Web Asli (${siteName || domainHost}):
         }
       }
     } catch (e) {
-      console.log("Webpage fetch notice: proceeding with available raw text", e);
+      logger.warn("Webpage fetch notice: proceeding with available raw text", e);
     }
   }
 
@@ -695,7 +724,7 @@ INGAT: Topik artikel WAJIB sesuai dengan isi sumber di atas, minimal 4-6 paragra
 
     const text = result.text || '';
     let jsonMatch = text.match(/\{[\s\S]*\}/);
-    let parsed: any = null;
+    let parsed: AiImportResult | null = null;
     
     if (jsonMatch) {
       try {
@@ -728,7 +757,7 @@ INGAT: Topik artikel WAJIB sesuai dengan isi sumber di atas, minimal 4-6 paragra
       modelUsed: result.modelUsed,
       ...parsed
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("AI Import Error:", err);
 
     // DETERMINISTIC ADAPTATION: If AI failed (e.g. key missing/quota/timeout),
@@ -777,8 +806,8 @@ ${mandatoryAttributionBox}
 
 // Check current AI Provider capability for Image Generation
 router.get("/api/ai/image-capability", (req, res) => {
-  const aiConfig: any = getAIProviderConfig();
-  const imageConfig: any = aiConfig.image || {};
+  const aiConfig: AIProviderConfig = getAIProviderConfig();
+  const imageConfig: ImageProviderSettings = aiConfig.image || {};
   const currentProvider: string = imageConfig.provider || "pollinations";
   
   let apiKey = imageConfig.apiKey || "";
@@ -848,9 +877,9 @@ router.post("/api/ai/generate-image", async (req, res) => {
     const { prompt, title, excerpt, category, style } = req.body || {};
     const effectivePrompt = (prompt || '').trim() || (title ? `Pelayanan kesehatan ${title} di Puskesmas` : 'Pelayanan kesehatan Puskesmas Indonesia');
 
-    const aiConfig: any = getAIProviderConfig();
-    const imageConfig: any = aiConfig.image || {};
-    const textConfig: any = aiConfig.text || {};
+    const aiConfig: AIProviderConfig = getAIProviderConfig();
+    const imageConfig: ImageProviderSettings = aiConfig.image || {};
+    const textConfig: TextProviderSettings = aiConfig.text || {};
 
     if (imageConfig.enabled === false) {
       return res.status(400).json({
@@ -898,7 +927,7 @@ router.post("/api/ai/generate-image", async (req, res) => {
     // 3A. Google Gemini / Imagen 3
     if (currentProvider === "gemini") {
       const model = imageConfig.model || "imagen-3.0-generate-002";
-      console.log(`Generating image with connected provider: Google Imagen 3 (${model})...`);
+      logger.info(`Generating image with connected provider: Google Imagen 3 (${model})...`);
       
       const imagenRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`, {
         method: "POST",
@@ -948,7 +977,7 @@ router.post("/api/ai/generate-image", async (req, res) => {
     // 3B. OpenAI DALL-E 3
     if (currentProvider === "openai") {
       const model = imageConfig.model || "dall-e-3";
-      console.log(`Generating image with connected provider: OpenAI DALL-E 3 (${model})...`);
+      logger.info(`Generating image with connected provider: OpenAI DALL-E 3 (${model})...`);
       const dalleRes = await fetch("https://api.openai.com/v1/images/generations", {
         method: "POST",
         headers: {
@@ -1003,7 +1032,7 @@ router.post("/api/ai/generate-image", async (req, res) => {
     // 3C. Stability AI
     if (currentProvider === "stability") {
       const model = imageConfig.model || "stable-diffusion-xl-1024-v1-0";
-      console.log(`Generating image with connected provider: Stability AI (${model})...`);
+      logger.info(`Generating image with connected provider: Stability AI (${model})...`);
       const stabRes = await fetch(`https://api.stability.ai/v1/generation/${model}/text-to-image`, {
         method: "POST",
         headers: {
@@ -1060,7 +1089,7 @@ router.post("/api/ai/generate-image", async (req, res) => {
     // 3D. Pollinations AI (Flux / Open Source)
     if (currentProvider === "pollinations") {
       const model = imageConfig.model || "flux";
-      console.log(`Generating image with connected provider: Pollinations AI (${model})...`);
+      logger.info(`Generating image with connected provider: Pollinations AI (${model})...`);
       const cleanPrompt = encodeURIComponent(finalEnglishPrompt.substring(0, 450));
       const pollinationsUrl = `https://image.pollinations.ai/prompt/${cleanPrompt}?width=1280&height=720&model=${model}&nologo=true&enhance=false&seed=${Date.now() % 100000}`;
 
@@ -1106,7 +1135,7 @@ router.post("/api/ai/generate-image", async (req, res) => {
         });
       }
 
-      const customData: any = await customRes.json();
+      const customData: CustomImageResponse = await customRes.json();
       const customUrl = customData?.data?.[0]?.url || customData?.data?.[0]?.b64_json;
       const finalUrl = customUrl?.startsWith('data:') || customUrl?.startsWith('http') ? customUrl : `data:image/png;base64,${customUrl}`;
 
@@ -1129,11 +1158,11 @@ router.post("/api/ai/generate-image", async (req, res) => {
       error: `Provider gambar '${currentProvider}' tidak dikenali. Silakan buka Pengaturan Provider AI untuk menyetel provider gambar Anda.`,
       needsConfiguration: true
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error in /api/ai/generate-image:", err);
     return res.status(500).json({
       success: false,
-      error: err.message || "Gagal memproses pembuatan gambar AI",
+      error: (err as { message?: string })?.message || "Gagal memproses pembuatan gambar AI",
       providerUsed: "AI Image Provider"
     });
   }

@@ -6,12 +6,6 @@ import { userService } from './userService';
 import { roleService } from './roleService';
 import { auditService } from './auditService';
 
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
-
 const SESSION_KEY = 'puskesmas_auth_session';
 
 /**

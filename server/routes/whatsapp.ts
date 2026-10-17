@@ -1,6 +1,17 @@
 // TAHAP 3 — hasil pemecahan server.ts (perilaku endpoint TIDAK berubah).
 import { Router } from "express";
+import { logger } from "../lib/logger.js";
 import { getWhatsAppConfig, saveWhatsAppConfig, getWhatsAppLogs, saveWhatsAppLogs, normalizePhoneNumber, maskPhoneNumber } from "../lib/storage.js";
+import type { WhatsAppLog } from "../lib/storage.js";
+
+/** Respons JSON generik dari Meta Graph API (WhatsApp). */
+interface MetaApiResponse {
+  id?: string;
+  display_phone_number?: string;
+  verified_name?: string;
+  messages?: Array<{ id?: string }>;
+  error?: { code?: unknown; message?: string };
+}
 const router = Router();
 
 router.get("/api/whatsapp/config", (req, res) => {
@@ -90,7 +101,7 @@ router.post("/api/whatsapp/test-connection", async (req, res) => {
       }
     });
 
-    const data: any = await response.json();
+    const data: MetaApiResponse = await response.json();
 
     if (response.ok) {
       res.json({
@@ -110,11 +121,11 @@ router.post("/api/whatsapp/test-connection", async (req, res) => {
         error: errorMsg
       });
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     res.status(500).json({
       success: false,
       message: "Connection test failed.",
-      error: err.message || "Network Timeout / DNS Error"
+      error: (err as { message?: string })?.message || "Network Timeout / DNS Error"
     });
   }
 });
@@ -135,7 +146,7 @@ router.post("/api/whatsapp/send", async (req, res) => {
   // Idempotency: check if already sent successfully for this notificationId / eventId
   const logs = getWhatsAppLogs();
   if (notificationId) {
-    const existing = logs.find((l: any) => l.notificationId === notificationId && l.direction !== "inbound" && l.status !== "failed");
+    const existing = logs.find((l: WhatsAppLog) => l.notificationId === notificationId && l.direction !== "inbound" && l.status !== "failed");
     if (existing) {
       return res.json({ success: true, duplicated: true, log: existing });
     }
@@ -167,7 +178,7 @@ router.post("/api/whatsapp/send", async (req, res) => {
   const logId = `wa-log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
   const now = new Date().toISOString();
 
-  const newLog: any = {
+  const newLog: WhatsAppLog = {
     id: logId,
     notificationId: notificationId || "",
     recipient: normalizedPhone,
@@ -194,7 +205,7 @@ router.post("/api/whatsapp/send", async (req, res) => {
     // TEST MODE simulation
     setTimeout(() => {
       const updatedLogs = getWhatsAppLogs();
-      const idx = updatedLogs.findIndex((l: any) => l.id === logId);
+      const idx = updatedLogs.findIndex((l: WhatsAppLog) => l.id === logId);
       if (idx !== -1) {
         updatedLogs[idx].status = "sent";
         updatedLogs[idx].sentAt = new Date().toISOString();
@@ -212,7 +223,7 @@ router.post("/api/whatsapp/send", async (req, res) => {
     const url = `https://graph.facebook.com/${config.api_version}/${config.phone_number_id}/messages`;
 
     // Construct Meta Template Parameters in standardized order
-    const parameters: any[] = [];
+    const parameters: { type: string; text: unknown }[] = [];
     if (variables.fullName || variables.name) {
       parameters.push({ type: "text", text: variables.fullName || variables.name });
     }
@@ -262,9 +273,9 @@ router.post("/api/whatsapp/send", async (req, res) => {
       body: JSON.stringify(payload)
     });
 
-    const data: any = await response.json();
+    const data: MetaApiResponse = await response.json();
     const updatedLogs = getWhatsAppLogs();
-    const idx = updatedLogs.findIndex((l: any) => l.id === logId);
+    const idx = updatedLogs.findIndex((l: WhatsAppLog) => l.id === logId);
 
     if (idx !== -1) {
       if (response.ok) {
@@ -285,16 +296,16 @@ router.post("/api/whatsapp/send", async (req, res) => {
     } else {
       res.status(response.status).json({ success: false, error: data.error });
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     const updatedLogs = getWhatsAppLogs();
-    const idx = updatedLogs.findIndex((l: any) => l.id === logId);
+    const idx = updatedLogs.findIndex((l: WhatsAppLog) => l.id === logId);
     if (idx !== -1) {
       updatedLogs[idx].status = "failed";
-      updatedLogs[idx].errorMessage = err.message || "Network Error";
+      updatedLogs[idx].errorMessage = (err as { message?: string })?.message || "Network Error";
       updatedLogs[idx].updatedAt = new Date().toISOString();
       saveWhatsAppLogs(updatedLogs);
     }
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: (err as { message?: string })?.message });
   }
 });
 
@@ -308,7 +319,7 @@ router.get("/api/whatsapp/logs", (req, res) => {
 router.post("/api/whatsapp/logs/retry", async (req, res) => {
   const { id } = req.body;
   const logs = getWhatsAppLogs();
-  const logIndex = logs.findIndex((l: any) => l.id === id);
+  const logIndex = logs.findIndex((l: WhatsAppLog) => l.id === id);
 
   if (logIndex === -1) {
     return res.status(404).json({ message: "Log not found." });
@@ -332,7 +343,7 @@ router.post("/api/whatsapp/logs/retry", async (req, res) => {
   if (config.test_mode) {
     setTimeout(() => {
       const refreshed = getWhatsAppLogs();
-      const idx = refreshed.findIndex((l: any) => l.id === id);
+      const idx = refreshed.findIndex((l: WhatsAppLog) => l.id === id);
       if (idx !== -1) {
         refreshed[idx].status = "sent";
         refreshed[idx].sentAt = new Date().toISOString();
@@ -376,9 +387,9 @@ router.post("/api/whatsapp/logs/retry", async (req, res) => {
       body: JSON.stringify(payload)
     });
 
-    const data: any = await response.json();
+    const data: MetaApiResponse = await response.json();
     const refreshed = getWhatsAppLogs();
-    const idx = refreshed.findIndex((l: any) => l.id === id);
+    const idx = refreshed.findIndex((l: WhatsAppLog) => l.id === id);
 
     if (idx !== -1) {
       if (response.ok) {
@@ -401,16 +412,16 @@ router.post("/api/whatsapp/logs/retry", async (req, res) => {
     } else {
       res.status(response.status).json({ success: false, error: data.error });
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     const refreshed = getWhatsAppLogs();
-    const idx = refreshed.findIndex((l: any) => l.id === id);
+    const idx = refreshed.findIndex((l: WhatsAppLog) => l.id === id);
     if (idx !== -1) {
       refreshed[idx].status = "failed";
-      refreshed[idx].errorMessage = err.message || "Network Error during retry";
+      refreshed[idx].errorMessage = (err as { message?: string })?.message || "Network Error during retry";
       refreshed[idx].updatedAt = new Date().toISOString();
       saveWhatsAppLogs(refreshed);
     }
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: (err as { message?: string })?.message });
   }
 });
 
@@ -423,7 +434,7 @@ router.get("/api/webhooks/whatsapp", (req, res) => {
   const config = getWhatsAppConfig();
   // Double security: verify mode and token
   if (mode === "subscribe" && token && token === config.webhook_verify_token) {
-    console.log("WhatsApp Webhook successfully verified!");
+    logger.info("WhatsApp Webhook successfully verified!");
     return res.status(200).send(challenge);
   } else {
     console.warn("Unauthorized Webhook verification attempt rejected.");
@@ -471,7 +482,7 @@ router.post("/api/webhooks/whatsapp", (req, res) => {
         const newStatus = statusObj.status; // delivered, read, etc.
         const error = statusObj.errors?.[0];
 
-        const logIdx = logs.findIndex((l: any) => l.providerMessageId === messageId);
+        const logIdx = logs.findIndex((l: WhatsAppLog) => l.providerMessageId === messageId);
         if (logIdx !== -1) {
           logs[logIdx].status = newStatus; // e.g. delivered, read
           if (error) {

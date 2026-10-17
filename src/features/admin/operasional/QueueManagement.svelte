@@ -10,6 +10,7 @@
   import { serviceEngineService } from '../../../shared/services/serviceEngineService.js';
   import { authStore } from '../../../shared/stores/auth.svelte.js';
   import type { ServiceEntity, ServiceRegistrationEntity } from '../../../shared/types/index.js';
+  import { errorMessage } from '../../../shared/lib/logger.js';
 
   type BadgeVariant = 'primary' | 'amber' | 'emerald' | 'red' | 'zinc' | 'blue' | 'rose' | 'sky' | 'slate' | 'purple';
   type QueueStatus = 'waiting' | 'calling' | 'serving' | 'completed' | 'skipped' | 'cancelled';
@@ -69,7 +70,7 @@
     if (document.hidden) return;
     try {
       // Get registrations filtered by date & service
-      const filters: any = { visitDate };
+      const filters: { visitDate: string; serviceId?: string } = { visitDate };
       if (selectedServiceId) {
         filters.serviceId = selectedServiceId;
       }
@@ -156,8 +157,8 @@
       successMsg = `Memanggil Antrean ${updated.queueNumber}`;
       speakQueue(updated.queueNumber || '', updated.serviceName, selectedCounter);
       await loadQueueData();
-    } catch (err: any) {
-      errorMsg = err.message || 'Gagal memanggil antrean. Silakan coba lagi.';
+    } catch (err: unknown) {
+      errorMsg = errorMessage(err, 'Gagal memanggil antrean. Silakan coba lagi.');
     } finally {
       loading = false;
     }
@@ -178,8 +179,8 @@
       }, selectedCounter);
       speakQueue(reg.queueNumber || '', reg.serviceName, selectedCounter);
       await loadQueueData();
-    } catch (err: any) {
-      errorMsg = err.message;
+    } catch (err: unknown) {
+      errorMsg = errorMessage(err);
     } finally {
       loading = false;
     }
@@ -201,8 +202,8 @@
       const updated = await registrationService.recallQueue(regId, actor);
       successMsg = `Memanggil Ulang Antrean ${updated.queueNumber}`;
       speakQueue(updated.queueNumber || '', updated.serviceName, reg.counterNumber || selectedCounter);
-    } catch (err: any) {
-      errorMsg = err.message || 'Gagal memanggil ulang antrean. Silakan coba lagi.';
+    } catch (err: unknown) {
+      errorMsg = errorMessage(err, 'Gagal memanggil ulang antrean. Silakan coba lagi.');
     } finally {
       loading = false;
     }
@@ -228,8 +229,8 @@
 
       successMsg = `Mulai pelayanan untuk nomor ${updated.queueNumber}`;
       await loadQueueData();
-    } catch (err: any) {
-      errorMsg = err.message || 'Gagal memulai pelayanan.';
+    } catch (err: unknown) {
+      errorMsg = errorMessage(err, 'Gagal memulai pelayanan.');
     } finally {
       loading = false;
     }
@@ -255,8 +256,8 @@
 
       successMsg = `Pelayanan nomor ${updated.queueNumber} selesai.`;
       await loadQueueData();
-    } catch (err: any) {
-      errorMsg = err.message || 'Gagal menyelesaikan pelayanan.';
+    } catch (err: unknown) {
+      errorMsg = errorMessage(err, 'Gagal menyelesaikan pelayanan.');
     } finally {
       loading = false;
     }
@@ -290,8 +291,8 @@
       isSkipModalOpen = false;
       regToSkip = null;
       await loadQueueData();
-    } catch (err: any) {
-      errorMsg = err.message || 'Gagal melepaskan antrean.';
+    } catch (err: unknown) {
+      errorMsg = errorMessage(err, 'Gagal melepaskan antrean.');
     } finally {
       loading = false;
     }
@@ -319,8 +320,8 @@
 
       successMsg = `Antrean ${updated.queueNumber} telah dibatalkan.`;
       await loadQueueData();
-    } catch (err: any) {
-      errorMsg = err.message || 'Gagal membatalkan antrean.';
+    } catch (err: unknown) {
+      errorMsg = errorMessage(err, 'Gagal membatalkan antrean.');
     } finally {
       loading = false;
     }

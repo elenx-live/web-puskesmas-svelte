@@ -3,9 +3,26 @@ import { auth, isLiveFirebaseConfigured } from '../firebase/firebase';
 import type { BackupRecord } from './backupService.js';
 import { auditService } from './auditService';
 
+interface GoogleOAuth2TokenClient {
+  requestAccessToken: () => void;
+}
+
+interface GoogleTokenResponse {
+  error?: string;
+  error_description?: string;
+  access_token?: string;
+  expires_in?: number;
+}
+
 declare global {
   interface Window {
-    google?: any;
+    google?: {
+      accounts?: {
+        oauth2?: {
+          initTokenClient: (config: Record<string, unknown>) => GoogleOAuth2TokenClient;
+        };
+      };
+    };
   }
 }
 
@@ -92,8 +109,9 @@ export const googleDriveService = {
       let result;
       try {
         result = await signInWithPopup(auth, provider);
-      } catch (firstErr: any) {
-        const msg = (firstErr?.message || '').toLowerCase();
+      } catch (firstErr: unknown) {
+        const _firstMsg = (firstErr as { message?: unknown })?.message;
+        const msg = (typeof _firstMsg === 'string' ? _firstMsg : '').toLowerCase();
         if (msg.includes('database is closing') || msg.includes('closing/hidden')) {
           await new Promise(r => setTimeout(r, 450));
           result = await signInWithPopup(auth, provider);
@@ -116,21 +134,22 @@ export const googleDriveService = {
         this.setDriveUser(userInfo);
         return { token, userInfo };
       }
-    } catch (firebaseErr: any) {
+    } catch (firebaseErr: unknown) {
       console.warn('Firebase Google Auth popup failed, checking GSI / direct token:', firebaseErr);
-      if (firebaseErr.code === 'auth/popup-closed-by-user') {
+      if ((firebaseErr as { code?: unknown })?.code === 'auth/popup-closed-by-user') {
         throw new Error('Proses otorisasi Google dibatalkan oleh pengguna.');
       }
     }
 
     // 2. Try Google Identity Services (GSI) Token Client if available
-    if (typeof window !== 'undefined' && window.google?.accounts?.oauth2) {
+    const gsiOAuth2 = typeof window !== 'undefined' ? window.google?.accounts?.oauth2 : undefined;
+    if (gsiOAuth2) {
       return new Promise((resolve, reject) => {
         try {
-          const tokenClient = window.google.accounts.oauth2.initTokenClient({
+          const tokenClient = gsiOAuth2.initTokenClient({
             client_id: '959224361046.apps.googleusercontent.com',
             scope: 'https://www.googleapis.com/auth/drive.file',
-            callback: async (resp: any) => {
+            callback: async (resp: GoogleTokenResponse) => {
               if (resp.error) {
                 reject(new Error(resp.error_description || resp.error || 'Gagal otorisasi Google'));
                 return;
@@ -296,7 +315,7 @@ export const googleDriveService = {
   /**
    * Download and parse backup data from Google Drive
    */
-  async downloadAndParseDriveBackup(fileId: string, accessToken?: string): Promise<{ backupInfo: any; dataSnapshot: any }> {
+  async downloadAndParseDriveBackup(fileId: string, accessToken?: string): Promise<{ backupInfo: Record<string, unknown>; dataSnapshot: Record<string, unknown> }> {
     const token = accessToken || this.getAccessToken();
     if (!token) {
       throw new Error('Akses token Google Drive tidak ditemukan.');

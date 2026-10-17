@@ -1,8 +1,8 @@
 import type { FirebaseApp } from 'firebase/app';
 import { GoogleAuthProvider } from 'firebase/auth';
 import type { Auth } from 'firebase/auth';
-import { 
-  Firestore, 
+import {
+  Firestore,
   collection, 
   doc, 
   getDoc, 
@@ -16,6 +16,7 @@ import {
   limit, 
   onSnapshot 
 } from 'firebase/firestore';
+import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { app as sharedApp, auth as sharedAuth, db as sharedDb } from '../firebase/firebase';
 import firebaseConfigJson from '../../firebase-applet-config.json';
 
@@ -166,11 +167,11 @@ export async function getCollectionData<T extends { id?: string; uid?: string }>
       let firestoreFetched = false;
       try {
         const colRef = collection(db, collectionName);
-        const snap = await withTimeout(getDocs(colRef), 4000, null as any);
+        const snap = await withTimeout(getDocs(colRef), 4000, null);
         if (snap !== null) {
           firestoreFetched = true;
           const items: T[] = [];
-          snap.forEach((docSnap: any) => {
+          snap.forEach((docSnap: QueryDocumentSnapshot<DocumentData>) => {
             const data = docSnap.data() as T;
             const docId = docSnap.id;
             items.push({ ...data, id: (data as any).id || docId });
@@ -233,9 +234,9 @@ export async function saveDocumentData<T extends { id?: string; uid?: string; sl
   // 1. Optimistic immediate update to LocalStorage cache (0ms)
   try {
     const local = localStorage.getItem(localStorageKey);
-    let items: any[] = local ? JSON.parse(local) : [];
+    let items: Record<string, unknown>[] = local ? JSON.parse(local) : [];
     if (!Array.isArray(items)) items = [];
-    const index = items.findIndex((i: any) => (i.id === entityId || i.uid === entityId));
+    const index = items.findIndex((i: Record<string, unknown>) => (i.id === entityId || i.uid === entityId));
     if (index >= 0) {
       items[index] = { ...items[index], ...payload };
     } else {
@@ -294,9 +295,9 @@ export async function deleteDocumentData(
   try {
     const local = localStorage.getItem(localStorageKey);
     if (local) {
-      const items: any[] = JSON.parse(local);
+      const items: Record<string, unknown>[] = JSON.parse(local);
       if (Array.isArray(items)) {
-        const filtered = items.filter((i: any) => i.id !== docId && i.uid !== docId && i.slug !== docId);
+        const filtered = items.filter((i: Record<string, unknown>) => i.id !== docId && i.uid !== docId && i.slug !== docId);
         localStorage.setItem(localStorageKey, JSON.stringify(filtered));
         window.dispatchEvent(new CustomEvent('puskesmas_collection_updated', {
           detail: { collectionName, localStorageKey, count: filtered.length }

@@ -17,7 +17,8 @@
   import type { SiteSettings } from '../../../shared/types/index.js';
   import { authStore } from '../../../shared/stores/auth.svelte.js';
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
-  import { navigate, routerState } from '../../../app/router.svelte.js';
+  import { errorMessage } from '../../../shared/lib/logger.js';
+    import { navigate, routerState } from '../../../app/router.svelte.js';
   import { MAINTENANCE_BG_PRESETS } from '../../../shared/data/maintenancePresets.js';
   import AIProviderSettingsCard from '../components/AIProviderSettingsCard.svelte';
   // Catatan: source React mengimpor komponen ini tanpa me-render-nya; import dipertahankan apa adanya.
@@ -229,7 +230,7 @@
               if (settings) settings.faviconUrl = finalUrl;
               toastStore.showToast('Favicon browser berhasil diunggah! Klik "Simpan Pengaturan" untuk menyimpan.');
             }
-          } catch (procErr: any) {
+          } catch (procErr: unknown) {
             console.error('Canvas processing error, using raw file:', procErr);
             if (type === 'logo') {
               if (settings) settings.logoUrl = rawBase64;
@@ -266,9 +267,9 @@
       };
 
       reader.readAsDataURL(file);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('File upload error:', err);
-      toastStore.showToast(err.message || 'Gagal mengunggah berkas.', 'error');
+      toastStore.showToast(errorMessage(err, 'Gagal mengunggah berkas.'), 'error');
       if (type === 'logo') uploadingLogo = false;
       else uploadingFavicon = false;
     }
@@ -289,11 +290,11 @@
           if (contactObj.latitude) res.latitude = contactObj.latitude;
           if (contactObj.longitude) res.longitude = contactObj.longitude;
           if (Array.isArray(contactObj.channels)) {
-            const phoneCh = contactObj.channels.find((c: any) => c.type === 'Phone');
+            const phoneCh = contactObj.channels.find((c: { type?: string }) => c.type === 'Phone');
             if (phoneCh?.value) res.phone = phoneCh.value;
-            const waCh = contactObj.channels.find((c: any) => c.type === 'WhatsApp');
+            const waCh = contactObj.channels.find((c: { type?: string }) => c.type === 'WhatsApp');
             if (waCh?.value) res.whatsapp = waCh.value;
-            const emailCh = contactObj.channels.find((c: any) => c.type === 'Email');
+            const emailCh = contactObj.channels.find((c: { type?: string }) => c.type === 'Email');
             if (emailCh?.value) res.email = emailCh.value;
           }
         }
@@ -378,9 +379,9 @@
       settings = updated;
       initialSettingsJson = JSON.stringify(updated);
       toastStore.showToast('Profil Puskesmas & Pengaturan Umum berhasil disimpan & disinkronkan.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Save settings error:', err);
-      toastStore.showToast(err.message || 'Gagal menyimpan pengaturan', 'error');
+      toastStore.showToast(errorMessage(err, 'Gagal menyimpan pengaturan'), 'error');
     } finally {
       clearTimeout(fallbackTimer);
       saving = false;
@@ -401,8 +402,8 @@
       initialSettingsJson = JSON.stringify(defaults);
       resetModalOpen = false;
       toastStore.showToast('Seluruh konfigurasi berhasil dikembalikan ke setelan default pabrik.');
-    } catch (err: any) {
-      toastStore.showToast(err.message || 'Gagal mereset pengaturan', 'error');
+    } catch (err: unknown) {
+      toastStore.showToast(errorMessage(err, 'Gagal mereset pengaturan'), 'error');
     }
   }
 

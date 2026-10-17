@@ -17,22 +17,22 @@ export interface BackupRecord {
   driveWebViewLink?: string;
   driveSyncedAt?: string;
   dataSnapshot?: {
-    registrations?: any[];
-    complaints?: any[];
-    posts?: any[];
-    documents?: any[];
-    services?: any[];
-    facilities?: any[];
-    faqs?: any[];
-    microsites?: any[];
-    categories?: any[];
-    micrositeCategories?: any[];
-    announcements?: any[];
-    publicInfo?: any[];
-    surveys?: any[];
-    staffProfiles?: any[];
-    settings?: any;
-    theme?: any;
+    registrations?: Record<string, unknown>[];
+    complaints?: Record<string, unknown>[];
+    posts?: Record<string, unknown>[];
+    documents?: Record<string, unknown>[];
+    services?: Record<string, unknown>[];
+    facilities?: Record<string, unknown>[];
+    faqs?: Record<string, unknown>[];
+    microsites?: Record<string, unknown>[];
+    categories?: Record<string, unknown>[];
+    micrositeCategories?: Record<string, unknown>[];
+    announcements?: Record<string, unknown>[];
+    publicInfo?: Record<string, unknown>[];
+    surveys?: Record<string, unknown>[];
+    staffProfiles?: Record<string, unknown>[];
+    settings?: Record<string, unknown>;
+    theme?: Record<string, unknown>;
   };
 }
 
@@ -197,7 +197,7 @@ export const backupService = {
       });
 
       return currentList[idx];
-    } catch (err: any) {
+    } catch (err: unknown) {
       const currentList = this.getBackups();
       const idx = currentList.findIndex(b => b.id === newId);
       if (idx !== -1) {

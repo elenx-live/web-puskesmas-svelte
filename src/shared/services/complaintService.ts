@@ -4,6 +4,7 @@ import { serviceEngineService } from './serviceEngineService';
 import { auditService } from './auditService';
 import { notificationService } from './notificationService';
 import { getCollectionData, saveDocumentData, deleteDocumentData } from '../lib/firebase';
+import { logger } from '../lib/logger';
 
 const COMPLAINTS_STORAGE_KEY = 'puskesmas_complaints';
 const RATE_LIMIT_STORAGE_KEY = 'puskesmas_complaint_rate_limit';
@@ -511,7 +512,7 @@ export const complaintService = {
       if (waSettingsStr && cleanPhone) {
         const waSettings = JSON.parse(waSettingsStr);
         if (waSettings.isEnabled) {
-          console.log(`[WhatsApp API Simulated] Sent received notification to ${cleanPhone}: Tiket ${ticketNumber}`);
+          logger.debug(`[WhatsApp API Simulated] Sent received notification to ${cleanPhone}: Tiket ${ticketNumber}`);
         }
       }
     } catch (err) {
@@ -592,7 +593,7 @@ export const complaintService = {
         if (waSettingsStr) {
           const waSettings = JSON.parse(waSettingsStr);
           if (waSettings.isEnabled) {
-            console.log(`[WhatsApp API Simulated] Sent status update to ${updated.senderPhone}: Tiket ${updated.ticketNumber} status is now ${statusLabels[newStatus]}`);
+            logger.debug(`[WhatsApp API Simulated] Sent status update to ${updated.senderPhone}: Tiket ${updated.ticketNumber} status is now ${statusLabels[newStatus]}`);
           }
         }
       }

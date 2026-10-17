@@ -9,6 +9,7 @@
   import Badge from '../../../shared/ui/Badge.svelte';
   import { surveyService, DEFAULT_SCALE_LABELS } from '../../../shared/services/surveyService.js';
   import { auditService } from '../../../shared/services/auditService.js';
+  import { errorMessage } from '../../../shared/lib/logger.js';
   import { authStore } from '../../../shared/stores/auth.svelte.js';
   import type { SurveyEntity, SurveyResponse, SurveyQuestion, SurveyStatus, SurveyQuestionType } from '../../../shared/types/index.js';
 
@@ -20,7 +21,7 @@
   // Master Data
   let surveys = $state<SurveyEntity[]>([]);
   let responses = $state<SurveyResponse[]>([]);
-  let services = $state<any[]>([]);
+  let services = $state<string[]>([]);
   let loading = $state(true);
 
   // Filter & Search States
@@ -81,7 +82,7 @@
       // Load clinic/services names for filters
       const regsStr = localStorage.getItem('puskesmas_online_registrations') || '[]';
       const regs = JSON.parse(regsStr);
-      const uniques = Array.from(new Set(regs.map((r: any) => r.serviceName).filter(Boolean)));
+      const uniques: string[] = Array.from(new Set(regs.map((r: { serviceName?: string }) => r.serviceName).filter((sn: unknown): sn is string => typeof sn === 'string' && sn.length > 0)));
       services = uniques;
     } catch (err) {
       console.error('Failed to load surveys data:', err);
@@ -150,7 +151,7 @@
     formQuestions = formQuestions.filter(q => q.id !== id);
   }
 
-  function handleQuestionChange(id: string, field: keyof SurveyQuestion, value: any) {
+  function handleQuestionChange(id: string, field: keyof SurveyQuestion, value: unknown) {
     formQuestions = formQuestions.map(q => {
       if (q.id === id) {
         const updated = { ...q, [field]: value } as SurveyQuestion;
@@ -196,7 +197,7 @@
 
     const cleanSlug = formSlug.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-');
 
-    const surveyData: any = {
+    const surveyData: Omit<SurveyEntity, 'id' | 'version' | 'createdAt' | 'updatedAt'> = {
       title: formTitle.trim(),
       description: formDescription.trim(),
       slug: cleanSlug,
@@ -216,8 +217,8 @@
       }
       isModalOpen = false;
       loadData();
-    } catch (err: any) {
-      formError = err.message || 'Gagal menyimpan konfigurasi survei.';
+    } catch (err: unknown) {
+      formError = errorMessage(err, 'Gagal menyimpan konfigurasi survei.');
     }
   }
 
@@ -258,8 +259,8 @@
       await surveyService.createSurvey(cloneData, buildActor());
       loadData();
       alert('Berhasil menyalin draf kuesioner survei baru.');
-    } catch (err: any) {
-      alert(err.message || 'Gagal menyalin survei.');
+    } catch (err: unknown) {
+      alert(errorMessage(err, 'Gagal menyalin survei.'));
     }
   }
 
@@ -665,7 +666,7 @@
                 <div class="space-y-3.5">
                   {#each [4, 3, 2, 1] as score (score)}
                     {@const count = stats.scoreDistribution[score] || 0}
-                    {@const pct = stats.totalRespondents > 0 ? (count / (stats.totalRespondents * stats.questionsStats.filter((q: any) => q.type === 'rating').length)) * 100 : 0}
+                    {@const pct = stats.totalRespondents > 0 ? (count / (stats.totalRespondents * stats.questionsStats.filter((q: { type?: string }) => q.type === 'rating').length)) * 100 : 0}
                     {@const colors: Record<number, string> = {
                       4: 'bg-[var(--color-primary)]',
                       3: 'bg-yellow-500',

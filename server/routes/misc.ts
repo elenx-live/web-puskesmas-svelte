@@ -11,6 +11,7 @@ import {
   getDataStoreFilePath, renderHtmlWithMeta, generateShareHtml,
   generatePageScreenshotSvg, renderScreenshotPng, handlePostImageRequest,
 } from "../lib/storage.js";
+import type { CmsItem } from "../lib/storage.js";
 import { SINGLE_DOCUMENT_COLLECTIONS, DATA_STORE_DIR } from "../lib/config.js";
 const router = Router();
 
@@ -35,8 +36,8 @@ router.post("/api/posts", (req, res) => {
     return res.status(400).json({ error: "Invalid post payload" });
   }
   const current = getServerPostsList();
-  const idx = current.findIndex((p: any) => (item.id && p.id === item.id) || (item.slug && p.slug === item.slug));
-  let savedItem: any;
+  const idx = current.findIndex((p: CmsItem) => (item.id && p.id === item.id) || (item.slug && p.slug === item.slug));
+  let savedItem: CmsItem;
   if (idx >= 0) {
     savedItem = { ...current[idx], ...item, updatedAt: new Date().toISOString() };
     current[idx] = savedItem;
@@ -51,7 +52,7 @@ router.post("/api/posts", (req, res) => {
 router.delete("/api/posts/:id", (req, res) => {
   const { id } = req.params;
   const current = getServerPostsList();
-  const filtered = current.filter((p: any) => p.id !== id && p.slug !== id);
+  const filtered = current.filter((p: CmsItem) => p.id !== id && p.slug !== id);
   saveServerPostsList(filtered);
   res.json({ success: true, message: `Post ${id} deleted`, posts: filtered });
 });
@@ -123,8 +124,8 @@ router.get("/api/data/:collection", (req, res) => {
       return res.json({ success: true, data });
     }
     return res.json({ success: true, data: null });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
+  } catch (err: unknown) {
+    return res.status(500).json({ success: false, error: (err as { message?: string })?.message });
   }
 });
 
@@ -148,7 +149,7 @@ router.post("/api/data/:collection", (req, res) => {
 
     if (body && typeof body === 'object') {
       if (isSingleDoc) {
-        let existingData: any = null;
+        let existingData: Record<string, unknown> | null = null;
         if (fs.existsSync(filePath)) {
           try {
             existingData = JSON.parse(fs.readFileSync(filePath, "utf-8"));
@@ -165,7 +166,7 @@ router.post("/api/data/:collection", (req, res) => {
       } else {
         // Array collection item insert / update
         const docId = body.id || body.uid || body.docId;
-        let existingData: any[] = [];
+        let existingData: CmsItem[] = [];
         if (collection === 'posts') {
           existingData = getServerPostsList();
         } else if (collection === 'microsites') {
@@ -179,7 +180,7 @@ router.post("/api/data/:collection", (req, res) => {
 
         const payload = { ...body, id: docId || `item-${Date.now()}` };
         if (docId) {
-          const idx = existingData.findIndex((i: any) => i.id === docId || i.uid === docId || (payload.slug && i.slug === payload.slug));
+          const idx = existingData.findIndex((i: CmsItem) => i.id === docId || i.uid === docId || (payload.slug && i.slug === payload.slug));
           if (idx >= 0) {
             existingData[idx] = { ...existingData[idx], ...payload, updatedAt: new Date().toISOString() };
           } else {
@@ -200,8 +201,8 @@ router.post("/api/data/:collection", (req, res) => {
     }
 
     return res.status(400).json({ success: false, error: "Invalid payload format" });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
+  } catch (err: unknown) {
+    return res.status(500).json({ success: false, error: (err as { message?: string })?.message });
   }
 });
 
@@ -212,14 +213,14 @@ router.delete("/api/data/:collection/:id", (req, res) => {
 
     if (collection === 'posts') {
       const current = getServerPostsList();
-      const filtered = current.filter((p: any) => p.id !== id && p.slug !== id);
+      const filtered = current.filter((p: CmsItem) => p.id !== id && p.slug !== id);
       saveServerPostsList(filtered);
       return res.json({ success: true, data: filtered });
     }
 
     if (collection === 'microsites') {
       const current = getServerMicrosites();
-      const filtered = current.filter((m: any) => m.id !== id && m.slug !== id);
+      const filtered = current.filter((m: CmsItem) => m.id !== id && m.slug !== id);
       saveServerMicrosites(filtered);
       return res.json({ success: true, data: filtered });
     }
@@ -227,14 +228,14 @@ router.delete("/api/data/:collection/:id", (req, res) => {
     if (fs.existsSync(filePath)) {
       const existingData = JSON.parse(fs.readFileSync(filePath, "utf-8"));
       if (Array.isArray(existingData)) {
-        const filtered = existingData.filter((i: any) => i.id !== id && i.uid !== id && i.slug !== id);
+        const filtered = existingData.filter((i: CmsItem) => i.id !== id && i.uid !== id && i.slug !== id);
         fs.writeFileSync(filePath, JSON.stringify(filtered, null, 2), "utf-8");
         return res.json({ success: true, data: filtered });
       }
     }
     return res.json({ success: true, message: "Item deleted" });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
+  } catch (err: unknown) {
+    return res.status(500).json({ success: false, error: (err as { message?: string })?.message });
   }
 });
 
@@ -280,9 +281,9 @@ router.post("/api/sync-metadata", (req, res) => {
       fs.writeFileSync(POSTS_META_FILE, JSON.stringify(currentPosts, null, 2), "utf-8");
     }
     return res.json({ success: true, message: "Metadata synchronized successfully" });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error in /api/sync-metadata:", err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: (err as { message?: string })?.message });
   }
 });
 
@@ -580,7 +581,7 @@ const handlePostImageRequest = (req: express.Request, res: express.Response) => 
       if (fs.existsSync(dataStorePostsPath)) {
         const parsed = JSON.parse(fs.readFileSync(dataStorePostsPath, "utf-8"));
         if (Array.isArray(parsed)) {
-          const found = parsed.find((p: any) => 
+          const found = parsed.find((p: CmsItem) => 
             (p.slug && p.slug.toLowerCase() === slugLower) || 
             (p.id && p.id.toLowerCase() === slugLower) ||
             (p.title && p.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-') === slugLower)
@@ -794,7 +795,7 @@ router.get(["/api/preview-image.png", "/api/screenshot.png", "/api/preview-image
     res.setHeader("Content-Length", pngBuffer.length);
     res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
     return res.end(pngBuffer);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error generating screenshot PNG:", err);
     return res.status(500).send("Error generating screenshot");
   }
@@ -837,7 +838,7 @@ router.get(["/api/og-card.png", "/api/og-card"], (req, res) => {
     res.setHeader("Content-Length", pngBuffer.length);
     res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
     return res.end(pngBuffer);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error in /api/og-card:", err);
     return res.status(500).send("Error generating card");
   }

@@ -388,7 +388,20 @@ const DEFAULT_CATEGORIES = [
   { name: 'Kampanye & Edukasi', description: 'Materi penyuluhan kesehatan, infografis pencegahan penyakit, dan sosialisasi program hidup sehat.' }
 ];
 
-const DEFAULT_FULL_MICROSITES: any[] = [
+/** Item microsite bawaan (seed). */
+interface DefaultMicrosite {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  category: string;
+  logoUrl: string;
+  profileImageUrl: string;
+  status: string;
+  [k: string]: unknown;
+}
+
+const DEFAULT_FULL_MICROSITES: DefaultMicrosite[] = [
   {
     id: 'm-1',
     name: 'Puskesmas Mandiri Sejahtera - Portal Cepat',

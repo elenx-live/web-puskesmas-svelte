@@ -10,6 +10,7 @@
   import AIProviderSettingsModal from '../../../shared/components/admin/AIProviderSettingsModal.svelte';
   import { authStore } from '../../../shared/stores/auth.svelte.js';
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
+  import { errorMessage } from '../../../shared/lib/logger.js';
   import { postService } from '../../../shared/services/postService.js';
   import { categoryService } from '../../../shared/services/categoryService.js';
   import { tagService } from '../../../shared/services/tagService.js';
@@ -202,8 +203,8 @@
         tagNames: [...(editingPost?.tagNames || []), tag.name]
       });
       tagInput = '';
-    } catch (e: any) {
-      showToast(e.message, 'error');
+    } catch (e: unknown) {
+      showToast(errorMessage(e), 'error');
     }
   }
 
@@ -238,8 +239,8 @@
       isEditorOpen = false;
       editingPost = null;
       loadData();
-    } catch (err: any) {
-      showToast(err.message || 'Gagal menyimpan berita', 'error');
+    } catch (err: unknown) {
+      showToast(errorMessage(err, 'Gagal menyimpan berita'), 'error');
     } finally {
       saving = false;
     }
@@ -324,8 +325,8 @@
           } else {
             showToast('Foto dimuat secara lokal (Server: ' + (data.error || 'tersimpan') + ')', 'info');
           }
-        } catch (err: any) {
-          showToast('Foto dimuat secara lokal: ' + err.message, 'info');
+        } catch (err: unknown) {
+          showToast('Foto dimuat secara lokal: ' + errorMessage(err), 'info');
         } finally {
           uploadingImage = false;
           if (fileInputEl) fileInputEl.value = '';
@@ -337,9 +338,9 @@
         if (fileInputEl) fileInputEl.value = '';
       };
       reader.readAsDataURL(file);
-    } catch (err: any) {
+    } catch (err: unknown) {
       uploadingImage = false;
-      showToast('Terjadi kesalahan: ' + err.message, 'error');
+      showToast('Terjadi kesalahan: ' + errorMessage(err), 'error');
       if (fileInputEl) fileInputEl.value = '';
     }
   }
@@ -417,13 +418,14 @@
       } else {
         showToast('Gagal membuat gambar AI', 'error');
       }
-    } catch (err: any) {
-      if (err.needsConfiguration) {
-        showToast(err.message, 'error');
+    } catch (err: unknown) {
+      const _e = err as { needsConfiguration?: unknown; message?: string };
+      if (_e.needsConfiguration) {
+        showToast(errorMessage(err), 'error');
         aiSettingsModalTab = 'image';
         isAiSettingsModalOpen = true;
       } else {
-        showToast('Terjadi kesalahan generate gambar: ' + err.message, 'error');
+        showToast('Terjadi kesalahan generate gambar: ' + errorMessage(err), 'error');
       }
     } finally {
       aiImageGenerating = false;
@@ -496,8 +498,8 @@
       importRawText = '';
       importCopyrightChecked = false;
       loadData();
-    } catch (err: any) {
-      showToast(err.message || 'Gagal mengimpor URL. Anda dapat mengganti provider atau memeriksa API Key.', 'error');
+    } catch (err: unknown) {
+      showToast(errorMessage(err, 'Gagal mengimpor URL. Anda dapat mengganti provider atau memeriksa API Key.'), 'error');
     } finally {
       importing = false;
     }
@@ -517,8 +519,8 @@
       deleteModalOpen = false;
       postToDelete = null;
       loadData();
-    } catch (err: any) {
-      showToast(err.message || 'Gagal menghapus berita', 'error');
+    } catch (err: unknown) {
+      showToast(errorMessage(err, 'Gagal menghapus berita'), 'error');
     } finally {
       saving = false;
     }

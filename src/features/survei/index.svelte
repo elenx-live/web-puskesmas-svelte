@@ -5,6 +5,7 @@
   import Card from '../../shared/ui/Card.svelte';
   import Badge from '../../shared/ui/Badge.svelte';
   import { Search, HelpCircle, Calendar, QrCode, ArrowRight, Printer, Share2, ClipboardList } from 'lucide-svelte';
+  import { logger } from '../../shared/lib/logger';
 
   let activeSurveys = $state<SurveyEntity[]>([]);
   let loading = $state(true);
@@ -122,7 +123,7 @@
         title: survey.title,
         text: survey.description || 'Mari berpartisipasi dalam Survei Kepuasan Masyarakat',
         url: surveyUrl,
-      }).catch((err) => console.log(err));
+      }).catch((err) => logger.warn('Gagal membagikan survei:', err));
     } else {
       navigator.clipboard.writeText(surveyUrl);
       alert('Tautan survei telah disalin ke clipboard!');

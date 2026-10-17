@@ -1,6 +1,7 @@
 <!-- @component Halaman admin: System Backup, Restore & Recovery — manajemen backup terenkripsi, sync Google Drive, version history CMS, dan checklist disaster recovery. -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { errorMessage } from '../../../shared/lib/logger.js';
   import {
     ShieldCheck, RefreshCw, GitBranch, Activity, AlertTriangle, Settings,
     Play, ShieldAlert, Cloud, CloudUpload, CloudDownload, ExternalLink
@@ -71,9 +72,10 @@
       showDriveConnectModal = false;
       inputDriveToken = '';
       await handleLoadDriveFiles();
-    } catch (err: any) {
-      if (err.message) {
-        alert(err.message);
+    } catch (err: unknown) {
+      const _m = errorMessage(err);
+      if (_m) {
+        alert(_m);
       }
     } finally {
       loadingDrive = false;
@@ -93,8 +95,8 @@
       showDriveConnectModal = false;
       inputDriveToken = '';
       await handleLoadDriveFiles();
-    } catch (err: any) {
-      alert(err.message || 'Gagal menghubungkan ke Google Drive');
+    } catch (err: unknown) {
+      alert(errorMessage(err, 'Gagal menghubungkan ke Google Drive'));
     } finally {
       loadingDrive = false;
     }
@@ -113,7 +115,7 @@
     try {
       const files = await googleDriveService.listDriveBackups();
       driveFiles = files;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn('Load drive files error:', err);
     } finally {
       loadingDrive = false;
@@ -139,8 +141,8 @@
       backupService.updateDriveSyncInfo(bk.id, fileInfo.id, fileInfo.webViewLink);
       loadData();
       alert(`Berhasil mengunggah backup ke Google Drive!\nFile ID: ${fileInfo.id}\nNama File: ${fileInfo.name}`);
-    } catch (e: any) {
-      alert(e.message || 'Gagal mengunggah ke Google Drive');
+    } catch (e: unknown) {
+      alert(errorMessage(e, 'Gagal mengunggah ke Google Drive'));
     } finally {
       uploadingDriveId = null;
     }
@@ -190,8 +192,8 @@
 
       alert('Restore Berhasil! Sistem dipulihkan dari cadangan Google Drive.');
       loadData();
-    } catch (e: any) {
-      alert(e.message || 'Gagal restore dari Google Drive');
+    } catch (e: unknown) {
+      alert(errorMessage(e, 'Gagal restore dari Google Drive'));
     } finally {
       restoring = false;
     }
@@ -219,8 +221,8 @@
       }
 
       loadData();
-    } catch (e: any) {
-      alert(e.message || 'Gagal membuat backup');
+    } catch (e: unknown) {
+      alert(errorMessage(e, 'Gagal membuat backup'));
     } finally {
       creating = false;
     }
@@ -233,8 +235,8 @@
     try {
       backupService.deleteBackup(id, { id: u.uid, email: u.email, name: u.displayName });
       loadData();
-    } catch (e: any) {
-      alert(e.message || 'Gagal menghapus backup');
+    } catch (e: unknown) {
+      alert(errorMessage(e, 'Gagal menghapus backup'));
     }
   }
 
@@ -267,8 +269,8 @@
       restoreModalBackup = null;
       restoreConfirmText = '';
       loadData();
-    } catch (e: any) {
-      alert(e.message || 'Gagal melakukan restore');
+    } catch (e: unknown) {
+      alert(errorMessage(e, 'Gagal melakukan restore'));
     } finally {
       restoring = false;
     }

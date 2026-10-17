@@ -3,6 +3,7 @@ import { Router } from "express";
 import fs from "fs";
 import path from "path";
 import { getServerMicrosites, saveServerMicrosites, getServerMicrositeCategories, saveServerMicrositeCategories, saveServerMicrositeMeta } from "../lib/storage.js";
+import type { CmsItem } from "../lib/storage.js";
 const router = Router();
 
 router.get("/api/microsites", (req, res) => {
@@ -16,8 +17,8 @@ router.post("/api/microsites", (req, res) => {
     return res.status(400).json({ error: "Invalid microsite payload (missing id or slug)" });
   }
   const current = getServerMicrosites();
-  const idx = current.findIndex((m: any) => (item.id && m.id === item.id) || (item.slug && m.slug === item.slug));
-  let savedItem: any;
+  const idx = current.findIndex((m: CmsItem) => (item.id && m.id === item.id) || (item.slug && m.slug === item.slug));
+  let savedItem: CmsItem;
   if (idx >= 0) {
     savedItem = { ...current[idx], ...item, updatedAt: new Date().toISOString() };
     current[idx] = savedItem;
@@ -41,7 +42,7 @@ router.post("/api/microsites/sync-all", (req, res) => {
 router.delete("/api/microsites/:id", (req, res) => {
   const { id } = req.params;
   const current = getServerMicrosites();
-  const filtered = current.filter((m: any) => m.id !== id && m.slug !== id);
+  const filtered = current.filter((m: CmsItem) => m.id !== id && m.slug !== id);
   saveServerMicrosites(filtered);
   // Also delete from data_store/microsites.json
   const dataStoreMicrositesPath = path.join(process.cwd(), "data_store", "microsites.json");

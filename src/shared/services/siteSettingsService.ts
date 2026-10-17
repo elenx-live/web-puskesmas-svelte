@@ -115,10 +115,19 @@ const DEFAULT_FULL_SETTINGS: SiteSettings = {
   showEmergencyPublic: true
 };
 
-export function formatOperatingHoursText(val: any): string {
+/** Satu entri hari operasional. */
+interface OperatingDay {
+  isOpen?: boolean;
+  dayNameId?: string;
+  day?: string;
+  openTime?: string;
+  closeTime?: string;
+}
+
+export function formatOperatingHoursText(val: unknown): string {
   if (typeof val === 'string' && val.trim()) return val;
   if (Array.isArray(val) && val.length > 0) {
-    const openDays = val.filter((d: any) => d && d.isOpen);
+    const openDays = (val as OperatingDay[]).filter((d) => d && d.isOpen);
     if (openDays.length > 0) {
       const first = openDays[0];
       const last = openDays[openDays.length - 1];
@@ -132,12 +141,13 @@ export function formatOperatingHoursText(val: any): string {
   return DEFAULT_FULL_SETTINGS.operatingHours;
 }
 
-function normalizeSettings(data: any): SiteSettings {
+function normalizeSettings(data: unknown): SiteSettings {
   if (!data || typeof data !== 'object') return DEFAULT_FULL_SETTINGS;
+  const d = data as Record<string, unknown>;
   return {
     ...DEFAULT_FULL_SETTINGS,
-    ...data,
-    operatingHours: formatOperatingHoursText(data.operatingHours)
+    ...d,
+    operatingHours: formatOperatingHoursText(d.operatingHours)
   };
 }
 
@@ -253,15 +263,15 @@ export const siteSettingsService = {
 
         if (Array.isArray(contactObj.channels)) {
           if (newSettings.phone) {
-            const ch = contactObj.channels.find((c: any) => c.type === 'Phone');
+            const ch = contactObj.channels.find((c: { type?: string }) => c.type === 'Phone');
             if (ch) ch.value = newSettings.phone;
           }
           if (newSettings.whatsapp) {
-            const ch = contactObj.channels.find((c: any) => c.type === 'WhatsApp');
+            const ch = contactObj.channels.find((c: { type?: string }) => c.type === 'WhatsApp');
             if (ch) ch.value = newSettings.whatsapp;
           }
           if (newSettings.email) {
-            const ch = contactObj.channels.find((c: any) => c.type === 'Email');
+            const ch = contactObj.channels.find((c: { type?: string }) => c.type === 'Email');
             if (ch) ch.value = newSettings.email;
           }
         }

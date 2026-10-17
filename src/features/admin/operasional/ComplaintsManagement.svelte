@@ -11,6 +11,7 @@
   import Modal from '../../../shared/ui/Modal.svelte';
   import { complaintService } from '../../../shared/services/complaintService.js';
   import { serviceEngineService } from '../../../shared/services/serviceEngineService.js';
+  import { errorMessage } from '../../../shared/lib/logger.js';
   import { userService } from '../../../shared/services/userService.js';
   import { auditService } from '../../../shared/services/auditService.js';
   import { authStore } from '../../../shared/stores/auth.svelte.js';
@@ -249,8 +250,8 @@
       });
       actionSuccessMsg = `Status sukses diperbarui menjadi '${getStatusLabel(newStatus)}'`;
       await refreshCurrentComplaint(selectedComplaint.id);
-    } catch (err: any) {
-      actionErrorMsg = err.message || 'Gagal mengubah status.';
+    } catch (err: unknown) {
+      actionErrorMsg = errorMessage(err, 'Gagal mengubah status.');
     }
   }
 
@@ -268,8 +269,8 @@
       });
       actionSuccessMsg = `Prioritas diubah menjadi '${getPriorityLabel(newPriority)}'`;
       await refreshCurrentComplaint(selectedComplaint.id);
-    } catch (err: any) {
-      actionErrorMsg = err.message || 'Gagal mengubah prioritas.';
+    } catch (err: unknown) {
+      actionErrorMsg = errorMessage(err, 'Gagal mengubah prioritas.');
     }
   }
 
@@ -290,8 +291,8 @@
       });
       actionSuccessMsg = staffUid ? `Ditugaskan kepada ${staffName}` : 'Penugasan dibatalkan';
       await refreshCurrentComplaint(selectedComplaint.id);
-    } catch (err: any) {
-      actionErrorMsg = err.message || 'Gagal menugaskan.';
+    } catch (err: unknown) {
+      actionErrorMsg = errorMessage(err, 'Gagal menugaskan.');
     }
   }
 
@@ -312,8 +313,8 @@
       newNoteText = '';
       actionSuccessMsg = 'Catatan internal (rahasia) berhasil disimpan.';
       await refreshCurrentComplaint(selectedComplaint.id);
-    } catch (err: any) {
-      actionErrorMsg = err.message || 'Gagal menyimpan catatan.';
+    } catch (err: unknown) {
+      actionErrorMsg = errorMessage(err, 'Gagal menyimpan catatan.');
     } finally {
       isAddingNote = false;
     }
@@ -336,8 +337,8 @@
       newPublicText = '';
       actionSuccessMsg = 'Tanggapan resmi dipublikasikan dan dapat diakses pelapor.';
       await refreshCurrentComplaint(selectedComplaint.id);
-    } catch (err: any) {
-      actionErrorMsg = err.message || 'Gagal mengirim tanggapan.';
+    } catch (err: unknown) {
+      actionErrorMsg = errorMessage(err, 'Gagal mengirim tanggapan.');
     } finally {
       isAddingPublic = false;
     }
@@ -363,8 +364,8 @@
       });
       actionSuccessMsg = targetCode ? `Ditandai duplikat dari tiket ${targetCode}` : 'Batal tandai duplikat';
       await refreshCurrentComplaint(selectedComplaint.id);
-    } catch (err: any) {
-      actionErrorMsg = err.message || 'Gagal memproses link duplikat.';
+    } catch (err: unknown) {
+      actionErrorMsg = errorMessage(err, 'Gagal memproses link duplikat.');
     }
   }
 
@@ -382,8 +383,8 @@
       modalOpen = false;
       selectedComplaint = null;
       await loadComplaints();
-    } catch (err: any) {
-      alert(err.message || 'Gagal menghapus pengaduan.');
+    } catch (err: unknown) {
+      alert(errorMessage(err, 'Gagal menghapus pengaduan.'));
     }
   }
 
@@ -418,8 +419,8 @@
         targetName: 'Categories',
         description: `Menambahkan kategori pengaduan baru: ${name}`
       });
-    } catch (err: any) {
-      settingsErrorMsg = err.message || 'Gagal menyimpan kategori.';
+    } catch (err: unknown) {
+      settingsErrorMsg = errorMessage(err, 'Gagal menyimpan kategori.');
     }
   }
 
@@ -445,8 +446,8 @@
         targetName: 'Categories',
         description: `Menghapus kategori pengaduan: ${catToDelete}`
       });
-    } catch (err: any) {
-      settingsErrorMsg = err.message || 'Gagal menghapus kategori.';
+    } catch (err: unknown) {
+      settingsErrorMsg = errorMessage(err, 'Gagal menghapus kategori.');
     }
   }
 
@@ -474,8 +475,8 @@
         targetName: 'SLA',
         description: `Mengubah SLA Pengaduan: Respons ${responseDays} hari, Resolusi ${resolutionDays} hari`
       });
-    } catch (err: any) {
-      settingsErrorMsg = err.message || 'Gagal menyimpan SLA.';
+    } catch (err: unknown) {
+      settingsErrorMsg = errorMessage(err, 'Gagal menyimpan SLA.');
     }
   }
 
@@ -515,8 +516,8 @@
         targetName: 'Submission Types',
         description: `Mengubah ketersediaan tipe pengaduan publik menjadi: ${updated.join(', ')}`
       });
-    } catch (err: any) {
-      settingsErrorMsg = err.message || 'Gagal menyimpan konfigurasi tipe.';
+    } catch (err: unknown) {
+      settingsErrorMsg = errorMessage(err, 'Gagal menyimpan konfigurasi tipe.');
     }
   }
 

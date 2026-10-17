@@ -43,9 +43,9 @@ router.post("/api/upload-logo", (req, res) => {
       url: `/logo-custom.png?v=${timestamp}`,
       message: "Logo Puskesmas berhasil diunggah dan disimpan ke server."
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error uploading logo:", err);
-    return res.status(500).json({ error: err.message || "Gagal mengunggah logo ke server" });
+    return res.status(500).json({ error: (err as { message?: string })?.message || "Gagal mengunggah logo ke server" });
   }
 });
 
@@ -82,9 +82,9 @@ router.post("/api/upload-favicon", (req, res) => {
       url: `/favicon-custom.png?v=${timestamp}`,
       message: "Favicon browser berhasil diunggah dan disimpan ke server."
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error uploading favicon:", err);
-    return res.status(500).json({ error: err.message || "Gagal mengunggah favicon ke server" });
+    return res.status(500).json({ error: (err as { message?: string })?.message || "Gagal mengunggah favicon ke server" });
   }
 });
 
@@ -142,9 +142,9 @@ router.post("/api/upload-image", (req, res) => {
       mimeType,
       message: "Gambar berhasil diunggah dan disimpan ke server."
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error in /api/upload-image:", err);
-    return res.status(500).json({ error: err.message || "Gagal memproses unggah gambar" });
+    return res.status(500).json({ error: (err as { message?: string })?.message || "Gagal memproses unggah gambar" });
   }
 });
 

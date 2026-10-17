@@ -14,6 +14,111 @@ import {
   DEFAULT_MICROSITES, DEFAULT_POSTS, DEFAULT_THEME, DEFAULT_HOMEPAGE,
 } from "./config.js";
 
+/** Konfigurasi WhatsApp (JSON di disk). */
+export interface WhatsAppConfig {
+  enabled: boolean;
+  phone_number_id: string;
+  business_account_id: string;
+  access_token: string;
+  api_version: string;
+  webhook_verify_token: string;
+  default_country_code: string;
+  test_mode: boolean;
+  templates: Record<string, string>;
+  [k: string]: unknown;
+}
+
+/** Satu entri log notifikasi WhatsApp. */
+export interface WhatsAppLog {
+  id: string;
+  notificationId?: string;
+  recipient?: string;
+  recipientMasked?: string;
+  event?: string;
+  template?: string;
+  status?: string;
+  messageText?: string;
+  providerMessageId?: string;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  attempts?: number;
+  direction?: string;
+  relatedEntity?: string;
+  relatedEntityId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  [k: string]: unknown;
+}
+
+/** Pengaturan provider gambar AI. */
+export interface ImageProviderSettings {
+  provider?: string;
+  providerName?: string;
+  endpointUrl?: string;
+  apiKey?: string;
+  model?: string;
+  aspectRatio?: string;
+  size?: string;
+  enabled?: boolean;
+  lastStatus?: string;
+  lastTestedAt?: string;
+  lastStatusMessage?: string;
+  [k: string]: unknown;
+}
+
+/** Pengaturan provider teks AI. */
+export interface TextProviderSettings {
+  provider?: string;
+  providerName?: string;
+  endpointUrl?: string;
+  apiKey?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  enabled?: boolean;
+  lastStatus?: string;
+  lastTestedAt?: string;
+  lastStatusMessage?: string;
+  [k: string]: unknown;
+}
+
+/** Konfigurasi provider AI (JSON di disk). */
+export interface AIProviderConfig {
+  provider?: string;
+  providerName?: string;
+  endpointUrl?: string;
+  apiKey?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  enabled?: boolean;
+  lastStatus?: string;
+  lastTestedAt?: string;
+  lastStatusMessage?: string;
+  text?: TextProviderSettings;
+  image?: ImageProviderSettings;
+  [k: string]: unknown;
+}
+
+/** Item CMS generik (microsite, kategori, post) yang disimpan sebagai JSON. */
+export interface CmsItem {
+  id?: string;
+  slug?: string;
+  [k: string]: unknown;
+}
+
+/** Channel kontak (telepon/WhatsApp/email). */
+export interface ContactChannel {
+  type?: string;
+  value?: unknown;
+  [k: string]: unknown;
+}
+
+/** Respons JSON generik dari API eksternal (Meta, OpenAI-compatible, dsb). */
+export interface ExternalApiResponse {
+  [k: string]: unknown;
+}
+
 // ---------- Upload hardening ----------
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
 const UPLOAD_IMAGE_ALLOWLIST: Record<string, { ext: string; magic: number[] }> = {
@@ -87,7 +192,7 @@ function getWhatsAppConfig() {
 }
 
 // Helper to save config
-function saveWhatsAppConfig(config: any) {
+function saveWhatsAppConfig(config: WhatsAppConfig) {
   try {
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
     return true;
@@ -98,7 +203,7 @@ function saveWhatsAppConfig(config: any) {
 }
 
 // Helper to read logs
-function getWhatsAppLogs() {
+function getWhatsAppLogs(): WhatsAppLog[] {
   try {
     if (fs.existsSync(LOGS_FILE)) {
       return JSON.parse(fs.readFileSync(LOGS_FILE, "utf-8"));
@@ -110,7 +215,7 @@ function getWhatsAppLogs() {
 }
 
 // Helper to save logs
-function saveWhatsAppLogs(logs: any[]) {
+function saveWhatsAppLogs(logs: WhatsAppLog[]) {
   try {
     fs.writeFileSync(LOGS_FILE, JSON.stringify(logs, null, 2), "utf-8");
     return true;
@@ -255,7 +360,7 @@ function getAIProviderConfig() {
   };
 }
 
-function saveAIProviderConfig(config: any) {
+function saveAIProviderConfig(config: AIProviderConfig) {
   try {
     fs.writeFileSync(AI_CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
     return true;
@@ -294,7 +399,7 @@ async function executeAICompletion(params: ExecuteAIParams): Promise<{ text: str
       "gemini-flash-latest"
     ]));
 
-    let lastError: any = null;
+    let lastError: unknown = null;
     for (const m of candidateModels) {
       try {
         const response = await ai.models.generateContent({
@@ -306,9 +411,9 @@ async function executeAICompletion(params: ExecuteAIParams): Promise<{ text: str
           modelUsed: m,
           providerUsed: m === model ? "Google Gemini" : `Google Gemini (${m})`
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
         lastError = err;
-        console.warn(`Gemini model ${m} failed (${err?.message?.substring(0, 80)}), trying next candidate...`);
+        console.warn(`Gemini model ${m} failed (${(err as { message?: string })?.message?.substring(0, 80)}), trying next candidate...`);
       }
     }
     throw lastError || new Error("Semua kandidat model Gemini saat ini sedang sibuk atau tidak merespon.");
@@ -345,7 +450,7 @@ async function executeAICompletion(params: ExecuteAIParams): Promise<{ text: str
     headers["X-Title"] = "Puskesmas Portal";
   }
 
-  const messages: any[] = [];
+  const messages: { role: string; content: string }[] = [];
   if (params.systemPrompt) {
     messages.push({ role: "system", content: params.systemPrompt });
   }
@@ -378,16 +483,16 @@ async function executeAICompletion(params: ExecuteAIParams): Promise<{ text: str
       throw new Error(`Provider ${provider} gagal (HTTP ${res.status}): ${errMsg}`);
     }
 
-    const data: any = await res.json();
-    const outputText = data.choices?.[0]?.message?.content || "";
+    const data: ExternalApiResponse = await res.json();
+    const outputText = (data.choices as { message?: { content?: string } }[] | undefined)?.[0]?.message?.content || "";
     return {
       text: outputText,
       modelUsed: model,
       providerUsed: provider
     };
-  } catch (fetchErr: any) {
+  } catch (fetchErr: unknown) {
     clearTimeout(timeout);
-    if (fetchErr.name === 'AbortError') {
+    if ((fetchErr as { name?: unknown })?.name === 'AbortError') {
       throw new Error(`Koneksi ke endpoint ${chatUrl} waktu habis (timeout 25 detik).`);
     }
     throw fetchErr;
@@ -497,7 +602,7 @@ function saveServerHomepageDraft(config: Record<string, any>): boolean {
   }
 }
 
-function getServerMicrosites(): any[] {
+function getServerMicrosites(): CmsItem[] {
   try {
     if (fs.existsSync(MICROSITES_DATA_FILE)) {
       const content = fs.readFileSync(MICROSITES_DATA_FILE, "utf-8");
@@ -512,7 +617,7 @@ function getServerMicrosites(): any[] {
   return [];
 }
 
-function saveServerMicrosites(microsites: any[]): boolean {
+function saveServerMicrosites(microsites: CmsItem[]): boolean {
   try {
     fs.writeFileSync(MICROSITES_DATA_FILE, JSON.stringify(microsites, null, 2), "utf-8");
     // Rebuild metaList solely from remaining microsites to prevent ghost resurrection
@@ -538,7 +643,7 @@ function saveServerMicrosites(microsites: any[]): boolean {
   }
 }
 
-function getServerMicrositeCategories(): any[] {
+function getServerMicrositeCategories(): CmsItem[] {
   try {
     if (fs.existsSync(MICROSITES_CATEGORIES_FILE)) {
       const content = fs.readFileSync(MICROSITES_CATEGORIES_FILE, "utf-8");
@@ -553,7 +658,7 @@ function getServerMicrositeCategories(): any[] {
   return DEFAULT_CATEGORIES;
 }
 
-function saveServerMicrositeCategories(categories: any[]): boolean {
+function saveServerMicrositeCategories(categories: CmsItem[]): boolean {
   try {
     fs.writeFileSync(MICROSITES_CATEGORIES_FILE, JSON.stringify(categories, null, 2), "utf-8");
     return true;
@@ -627,15 +732,15 @@ function saveServerSiteSettings(settings: Record<string, any>): boolean {
 
         if (Array.isArray(contact.channels)) {
           if (merged.phone) {
-            const ch = contact.channels.find((c: any) => c.type === 'Phone');
+            const ch = contact.channels.find((c: ContactChannel) => c.type === 'Phone');
             if (ch) ch.value = merged.phone;
           }
           if (merged.whatsapp) {
-            const ch = contact.channels.find((c: any) => c.type === 'WhatsApp');
+            const ch = contact.channels.find((c: ContactChannel) => c.type === 'WhatsApp');
             if (ch) ch.value = merged.whatsapp;
           }
           if (merged.email) {
-            const ch = contact.channels.find((c: any) => c.type === 'Email');
+            const ch = contact.channels.find((c: ContactChannel) => c.type === 'Email');
             if (ch) ch.value = merged.email;
           }
         }
@@ -1210,7 +1315,7 @@ function renderScreenshotPng(svg: string): Buffer {
   const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } });
   return resvg.render().asPng();
 }
-function getServerPostsList(): any[] {
+function getServerPostsList(): CmsItem[] {
   const dataStorePostsPath = path.join(process.cwd(), "data_store", "posts.json");
   try {
     if (fs.existsSync(dataStorePostsPath)) {
@@ -1225,7 +1330,7 @@ function getServerPostsList(): any[] {
   return [];
 }
 
-function saveServerPostsList(posts: any[]): boolean {
+function saveServerPostsList(posts: CmsItem[]): boolean {
   try {
     const dataStorePostsPath = path.join(process.cwd(), "data_store", "posts.json");
     const dataStoreDir = path.join(process.cwd(), "data_store");
@@ -1315,7 +1420,7 @@ function getServerContactSettings() {
   return defaultContact;
 }
 
-function saveServerContactSettings(data: any) {
+function saveServerContactSettings(data: Record<string, unknown>) {
   try {
     fs.writeFileSync(CONTACT_SETTINGS_FILE, JSON.stringify(data, null, 2), "utf-8");
     
@@ -1336,11 +1441,11 @@ function saveServerContactSettings(data: any) {
         if (data.timezone) site.timezone = data.timezone;
 
         if (Array.isArray(data.channels)) {
-          const phoneCh = data.channels.find((c: any) => c.type === 'Phone');
+          const phoneCh = data.channels.find((c: ContactChannel) => c.type === 'Phone');
           if (phoneCh?.value) site.phone = phoneCh.value;
-          const waCh = data.channels.find((c: any) => c.type === 'WhatsApp');
+          const waCh = data.channels.find((c: ContactChannel) => c.type === 'WhatsApp');
           if (waCh?.value) site.whatsapp = waCh.value;
-          const emailCh = data.channels.find((c: any) => c.type === 'Email');
+          const emailCh = data.channels.find((c: ContactChannel) => c.type === 'Email');
           if (emailCh?.value) site.email = emailCh.value;
         }
         site.updatedAt = new Date().toISOString();
@@ -1396,8 +1501,8 @@ async function buildAccurateVisualPrompt(prompt: string, title?: string, style?:
           source: aiConfig.providerName || aiConfig.provider
         };
       }
-    } catch (e: any) {
-      console.warn("AI prompt enhancement failed, using semantic dictionary fallback:", e?.message || e);
+    } catch (e: unknown) {
+      console.warn("AI prompt enhancement failed, using semantic dictionary fallback:", (e as { message?: unknown })?.message || e);
     }
   }
 
