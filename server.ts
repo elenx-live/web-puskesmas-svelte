@@ -18,7 +18,7 @@ process.on("uncaughtException", (err) => {
 });
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 // Security & Hardening Headers
 app.use((req, res, next) => {
@@ -30,8 +30,221 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: true, limit: "2mb" }));
+
+// ============================================================
+// TAHAP 1 — API Security Hardening
+// - Auth: verifikasi Firebase ID Token untuk semua /api/* non-publik
+// - Admin: POST/PUT/PATCH/DELETE + baca config sensitif butuh klaim admin
+// - Rate limit sederhana untuk /api/ai/*
+// - Upload: whitelist MIME + batas ukuran + nama file aman
+// Env terkait:
+//   FIREBASE_SERVICE_ACCOUNT_JSON : JSON service account Firebase
+//       (atau biarkan kosong untuk ADC/GOOGLE_APPLICATION_CREDENTIALS)
+//   ADMIN_UIDS : daftar UID admin dipisah koma
+//       (alternatif klaim custom `admin: true` pada ID token)
+// ============================================================
+
+declare function require(id: string): any;
+
+// ---------- Firebase Admin (lazy; server tetap jalan tanpanya) ----------
+let _firebaseAdmin: any = null;
+let _firebaseAdminUnavailable = false;
+
+function getFirebaseAdmin(): any | null {
+  if (_firebaseAdmin) return _firebaseAdmin;
+  if (_firebaseAdminUnavailable) return null;
+  try {
+    // Dynamic require: firebase-admin adalah dependensi opsional saat runtime.
+    // Dibundel dengan esbuild --packages=external sehingga di-resolve saat jalan.
+    const admin = require("firebase-admin");
+    if (admin.apps.length === 0) {
+      const saJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+      if (saJson) {
+        admin.initializeApp({ credential: admin.credential.cert(JSON.parse(saJson)) });
+      } else {
+        admin.initializeApp();
+      }
+    }
+    _firebaseAdmin = admin;
+    return admin;
+  } catch (err: any) {
+    _firebaseAdminUnavailable = true;
+    console.warn("[security] firebase-admin tidak tersedia:", err && err.message);
+    return null;
+  }
+}
+
+async function verifyFirebaseIdToken(idToken: string): Promise<any> {
+  const admin = getFirebaseAdmin();
+  if (!admin) {
+    const err: any = new Error("Layanan verifikasi token belum dikonfigurasi.");
+    err.code = "auth/service-unavailable";
+    throw err;
+  }
+  return admin.auth().verifyIdToken(idToken);
+}
+
+// ---------- Middleware: authenticate (butuh user login Firebase) ----------
+async function authenticate(req: any, res: any, next: any) {
+  const header: string = req.headers.authorization || "";
+  const m = header.match(/^Bearer\s+(.+)$/i);
+  if (!m) {
+    return res.status(401).json({
+      error: "Unauthorized: sertakan Firebase ID Token pada header Authorization: Bearer <token>.",
+    });
+  }
+  try {
+    const decoded = await verifyFirebaseIdToken(m[1].trim());
+    req.user = decoded;
+    return next();
+  } catch (err: any) {
+    if (err && err.code === "auth/service-unavailable") {
+      return res.status(503).json({ error: "Layanan autentikasi belum dikonfigurasi di server." });
+    }
+    console.warn("[security] token tidak valid:", (err && err.code) || (err && err.message));
+    return res.status(401).json({ error: "Unauthorized: token tidak valid atau kedaluwarsa." });
+  }
+}
+
+// ---------- Middleware: requireAdmin (klaim custom admin / ADMIN_UIDS) ----------
+function requireAdmin(req: any, res: any, next: any) {
+  authenticate(req, res, () => {
+    const decoded = req.user || {};
+    const adminUids = (process.env.ADMIN_UIDS || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const isAdmin = decoded.admin === true || (decoded.uid && adminUids.includes(decoded.uid));
+    if (!isAdmin) {
+      console.warn(`[security] akses admin ditolak uid=${decoded.uid || "?"} path=${req.originalUrl || req.path}`);
+      return res.status(403).json({ error: "Forbidden: butuh hak akses admin." });
+    }
+    return next();
+  });
+}
+
+// ---------- Klasifikasi endpoint ----------
+function isPublicApiRequest(req: any): boolean {
+  const p: string = req.path;
+  if (req.method !== "GET") return false;
+  if (p === "/health") return true; // GET /api/health
+  if (p === "/webhooks/whatsapp") return true; // verifikasi webhook (GET)
+  if (p === "/meta-preview") return true; // link preview publik
+  const publicPrefixes = [
+    "/theme/published",
+    "/homepage/published",
+    "/data/",
+    "/posts",
+    "/microsites",
+    "/site-settings",
+    "/contact-settings",
+    "/og-image/",
+    "/post-image/",
+    "/post-og-image/",
+    "/preview-image",
+    "/screenshot",
+    "/og-card",
+  ];
+  return publicPrefixes.some((prefix) => p === prefix || p.startsWith(prefix));
+}
+
+function isAdminOnlyApiRequest(req: any): boolean {
+  const p: string = req.path;
+  const m: string = req.method;
+  // Webhook inbound WhatsApp punya validasi token sendiri di handler-nya
+  if (p === "/webhooks/whatsapp" && m === "POST") return false;
+  // Semua operasi tulis butuh admin
+  if (m === "POST" || m === "PUT" || m === "PATCH" || m === "DELETE") return true;
+  // Baca config sensitif (draf, kredensial provider) butuh admin
+  const adminOnlyGets = [
+    "/theme/draft",
+    "/homepage/draft",
+    "/whatsapp/config",
+    "/whatsapp/logs",
+    "/ai/provider-config",
+    "/ai/image-capability",
+  ];
+  if (m === "GET" && adminOnlyGets.includes(p)) return true;
+  return false;
+}
+
+function apiAuthGuard(req: any, res: any, next: any) {
+  if (isPublicApiRequest(req)) return next();
+  // Webhook inbound WhatsApp: tanpa Firebase auth, validasi verify token
+  // dilakukan di handler-nya sendiri (+ pencatatan percobaan tak sah).
+  if (req.path === "/webhooks/whatsapp" && req.method === "POST") return next();
+  if (isAdminOnlyApiRequest(req)) return requireAdmin(req, res, next);
+  return authenticate(req, res, next);
+}
+
+// ---------- Rate limit sederhana (in-memory, per IP+path) ----------
+type RateBucket = { count: number; resetAt: number };
+const _rateBuckets = new Map<string, RateBucket>();
+const _rateCleanup: any = setInterval(() => {
+  const now = Date.now();
+  for (const [k, b] of _rateBuckets) if (now > b.resetAt) _rateBuckets.delete(k);
+}, 60_000);
+if (typeof _rateCleanup?.unref === "function") _rateCleanup.unref();
+
+function rateLimit(opts: { windowMs: number; max: number; message?: string }) {
+  return (req: any, res: any, next: any) => {
+    const key = `${req.ip || "?"}:${req.method}:${req.path}`;
+    const now = Date.now();
+    let b = _rateBuckets.get(key);
+    if (!b || now > b.resetAt) {
+      b = { count: 0, resetAt: now + opts.windowMs };
+      _rateBuckets.set(key, b);
+    }
+    b.count += 1;
+    if (b.count > opts.max) {
+      res.setHeader("Retry-After", Math.max(1, Math.ceil((b.resetAt - now) / 1000)));
+      return res.status(429).json({ error: opts.message || "Terlalu banyak permintaan. Coba lagi nanti." });
+    }
+    return next();
+  };
+}
+
+// ---------- Upload hardening ----------
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
+const UPLOAD_IMAGE_ALLOWLIST: Record<string, { ext: string; magic: number[] }> = {
+  "image/png": { ext: ".png", magic: [0x89, 0x50, 0x4e, 0x47] },
+  "image/jpeg": { ext: ".jpg", magic: [0xff, 0xd8, 0xff] },
+  "image/webp": { ext: ".webp", magic: [0x52, 0x49, 0x46, 0x46] }, // "RIFF....WEBP"
+};
+
+function detectUploadImageMime(buffer: Buffer): string | null {
+  for (const [mime, spec] of Object.entries(UPLOAD_IMAGE_ALLOWLIST)) {
+    const ok = spec.magic.every((byte, i) => buffer[i] === byte);
+    if (!ok) continue;
+    if (mime === "image/webp") {
+      // WebP: bytes 8..11 harus "WEBP"
+      if (!(buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50)) continue;
+    }
+    return mime;
+  }
+  return null;
+}
+
+function safeUploadFileName(ext: string): string {
+  const rand = Math.random().toString(16).slice(2, 10).padEnd(8, "0");
+  return `upload-${Date.now()}-${rand}${ext}`;
+}
+
+function decodeBase64Image(imageBase64: string): { buffer: Buffer; declaredMime: string | null } {
+  const matches = imageBase64.match(/^data:([A-Za-z0-9+/.-]+);base64,(.+)$/);
+  if (matches && matches.length === 3) {
+    return { buffer: Buffer.from(matches[2], "base64"), declaredMime: matches[1].toLowerCase() };
+  }
+  return { buffer: Buffer.from(imageBase64, "base64"), declaredMime: null };
+}
+
+// Guard auth untuk semua /api/* — dipasang SEBELUM semua registrasi route /api/*
+// (whitelist publik + webhook WhatsApp dikecualikan di dalam guard)
+app.use("/api", apiAuthGuard);
+// Rate limit untuk endpoint AI (biaya/latensi tinggi)
+app.use("/api/ai", rateLimit({ windowMs: 60_000, max: 30 }));
 
 // Ensure public and uploads directory exist
 const publicDir = path.join(process.cwd(), "public");
@@ -601,8 +814,22 @@ app.get("/api/webhooks/whatsapp", (req, res) => {
 });
 
 // 8. POST /api/webhooks/whatsapp (Inbound & Webhook status callback)
+// Validasi: cocokkan verify token bila disertakan (query/hub.verify_token atau
+// header x-webhook-verify-token); percobaan tak sah dicatat di log.
 app.post("/api/webhooks/whatsapp", (req, res) => {
   const payload = req.body;
+  const config = getWhatsAppConfig();
+  const providedToken =
+    (req.query && (req.query["hub.verify_token"] as string)) ||
+    (req.headers["x-webhook-verify-token"] as string) ||
+    "";
+  if (providedToken && config.webhook_verify_token && providedToken !== config.webhook_verify_token) {
+    console.warn(`[security] webhook WhatsApp: verify token tidak cocok dari ${req.ip}`);
+    return res.sendStatus(403);
+  }
+  if (!providedToken) {
+    console.warn(`[security] webhook WhatsApp tanpa verify token dari ${req.ip}`);
+  }
 
   // Real API webhook signature validation is simulated here (safeguarding payload)
   if (payload.object !== "whatsapp_business_account") {
@@ -3632,17 +3859,15 @@ app.post("/api/upload-logo", (req, res) => {
       return res.status(400).json({ error: "Missing or invalid imageBase64 data" });
     }
 
-    // Extract base64 payload
-    const matches = imageBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-    let buffer: Buffer;
-    if (matches && matches.length === 3) {
-      buffer = Buffer.from(matches[2], "base64");
-    } else {
-      buffer = Buffer.from(imageBase64, "base64");
+    // Decode + validasi tipe file dari magic bytes (bukan dari klaim client)
+    const { buffer } = decodeBase64Image(imageBase64);
+    const detectedLogoMime = detectUploadImageMime(buffer);
+    if (!detectedLogoMime) {
+      return res.status(400).json({ error: "Format berkas tidak didukung. Gunakan PNG, JPG, atau WebP." });
     }
 
-    if (buffer.length > 8 * 1024 * 1024) {
-      return res.status(400).json({ error: "Ukuran berkas logo melebihi batas 8MB" });
+    if (buffer.length > MAX_UPLOAD_BYTES) {
+      return res.status(400).json({ error: "Ukuran berkas logo melebihi batas 5MB" });
     }
 
     const publicDir = path.join(process.cwd(), "public");
@@ -3678,12 +3903,15 @@ app.post("/api/upload-favicon", (req, res) => {
       return res.status(400).json({ error: "Missing or invalid imageBase64 data" });
     }
 
-    const matches = imageBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-    let buffer: Buffer;
-    if (matches && matches.length === 3) {
-      buffer = Buffer.from(matches[2], "base64");
-    } else {
-      buffer = Buffer.from(imageBase64, "base64");
+    // Decode + validasi tipe file dari magic bytes (bukan dari klaim client)
+    const { buffer } = decodeBase64Image(imageBase64);
+    const detectedFavMime = detectUploadImageMime(buffer);
+    if (!detectedFavMime) {
+      return res.status(400).json({ error: "Format berkas tidak didukung. Gunakan PNG, JPG, atau WebP." });
+    }
+
+    if (buffer.length > MAX_UPLOAD_BYTES) {
+      return res.status(400).json({ error: "Ukuran berkas favicon melebihi batas 5MB" });
     }
 
     const publicDir = path.join(process.cwd(), "public");
@@ -3707,32 +3935,24 @@ app.post("/api/upload-favicon", (req, res) => {
 });
 
 // API endpoint to upload general post / featured image
+// Hardening: whitelist PNG/JPG/WebP (validasi magic bytes), maks 5MB,
+// nama file dibuat server (tidak memakai input user).
 app.post("/api/upload-image", (req, res) => {
   try {
-    const { imageBase64, fileName: customName } = req.body;
+    const { imageBase64 } = req.body;
     if (!imageBase64 || typeof imageBase64 !== "string") {
       return res.status(400).json({ error: "Data gambar imageBase64 wajib diisi" });
     }
 
-    let mimeType = "image/jpeg";
-    let ext = ".jpg";
-    const matches = imageBase64.match(/^data:([A-Za-z0-9+/.-]+);base64,(.+)$/);
-    let buffer: Buffer;
-
-    if (matches && matches.length === 3) {
-      mimeType = matches[1].toLowerCase();
-      if (mimeType.includes("png")) ext = ".png";
-      else if (mimeType.includes("webp")) ext = ".webp";
-      else if (mimeType.includes("svg")) ext = ".svg";
-      else if (mimeType.includes("gif")) ext = ".gif";
-      else ext = ".jpg";
-      buffer = Buffer.from(matches[2], "base64");
-    } else {
-      buffer = Buffer.from(imageBase64, "base64");
+    const { buffer } = decodeBase64Image(imageBase64);
+    const mimeType = detectUploadImageMime(buffer);
+    if (!mimeType) {
+      return res.status(400).json({ error: "Format berkas tidak didukung. Gunakan PNG, JPG, atau WebP." });
     }
+    const ext = UPLOAD_IMAGE_ALLOWLIST[mimeType].ext;
 
-    if (buffer.length > 25 * 1024 * 1024) {
-      return res.status(400).json({ error: "Ukuran berkas melebihi batas 25MB" });
+    if (buffer.length > MAX_UPLOAD_BYTES) {
+      return res.status(400).json({ error: "Ukuran berkas melebihi batas 5MB" });
     }
 
     const uploadsDir = path.join(process.cwd(), "public", "uploads");
@@ -3748,10 +3968,7 @@ app.post("/api/upload-image", (req, res) => {
       }
     }
 
-    const safeBaseName = (customName || "article-image")
-      .replace(/[^a-zA-Z0-9_-]/g, "_")
-      .substring(0, 30);
-    const fileName = `${safeBaseName}-${Date.now()}${ext}`;
+    const fileName = safeUploadFileName(ext);
     const targetFilePath = path.join(uploadsDir, fileName);
 
     fs.writeFileSync(targetFilePath, buffer);

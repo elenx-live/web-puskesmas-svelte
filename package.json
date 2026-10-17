@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "firebase": "^13.0.0",
+    "firebase-admin": "^13.0.0",
     "lucide-svelte": "^1.0.1"
   }
 }
