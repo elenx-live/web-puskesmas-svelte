@@ -73,7 +73,7 @@
 
     <div class="flex flex-wrap gap-3 pt-2">
       <a
-        href="#/informasi"
+        href="#/permintaan-informasi"
         class="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-medium text-xs shadow-lg transition flex items-center gap-2"
       >
         <FileText class="w-4 h-4" /> Ajukan Permintaan Informasi

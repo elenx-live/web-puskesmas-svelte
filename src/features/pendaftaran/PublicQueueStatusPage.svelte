@@ -6,7 +6,7 @@
   import type { ServiceRegistrationEntity, ServiceEntity } from '../../shared/types/index.js';
   import Badge from '../../shared/ui/Badge.svelte';
   import {
-    Users, Search, AlertCircle, Sparkles, ListOrdered, Calendar,
+    Users, Search, AlertCircle, Sparkles, ListOrdered, Calendar, ArrowLeft,
   } from 'lucide-svelte';
 
   let services = $state<ServiceEntity[]>([]);
@@ -180,6 +180,17 @@
 </script>
 
 <div class="max-w-4xl mx-auto px-4 py-8 space-y-8">
+
+  <!-- Breadcrumb / Back button -->
+  <div>
+    <a
+      href="#/pendaftaran/cek"
+      class="inline-flex items-center gap-2 text-xs font-medium text-[var(--color-primary)] hover:text-[var(--color-primary)] transition bg-[var(--color-primary)]/10 px-3 py-1.5 rounded-xl border border-[var(--color-primary)]/20"
+    >
+      <ArrowLeft class="w-3.5 h-3.5" />
+      <span>Cek Status Pendaftaran</span>
+    </a>
+  </div>
 
   <!-- Page title -->
   <div class="text-center space-y-2">

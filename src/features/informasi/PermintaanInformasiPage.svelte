@@ -46,8 +46,7 @@
     }
   };
 
-  const handleTrack = async (e: SubmitEvent) => {
-    e.preventDefault();
+  const doTrack = async () => {
     if (!trackingCode.trim()) return;
     trackingLoading = true;
     trackingSearched = true;
@@ -59,6 +58,11 @@
     } finally {
       trackingLoading = false;
     }
+  };
+
+  const handleTrack = async (e: SubmitEvent) => {
+    e.preventDefault();
+    await doTrack();
   };
 </script>
 
@@ -113,12 +117,20 @@
             Simpan nomor tiket ini untuk melacak status proses permohonan informasi Anda. Tanggapan akan diberikan dalam jangka waktu sesuai ketentuan SLA.
           </p>
         </div>
-        <button
-          onclick={() => { successReq = null; informationRequested = ''; purpose = ''; }}
-          class="px-6 py-2.5 rounded-2xl bg-emerald-600 hover:bg-[var(--color-primary)] text-[var(--color-primary-foreground)] text-xs font-medium transition"
-        >
-          Ajukan Permohonan Lain
-        </button>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            onclick={() => { const tn = successReq?.trackingNumber; if (!tn) return; trackingCode = tn; activeTab = 'tracking'; successReq = null; void doTrack(); }}
+            class="px-6 py-2.5 rounded-2xl bg-[var(--color-primary)] text-[var(--color-primary-foreground)] text-xs font-bold transition hover:opacity-90"
+          >
+            Lacak Permohonan Ini
+          </button>
+          <button
+            onclick={() => { successReq = null; informationRequested = ''; purpose = ''; }}
+            class="px-6 py-2.5 rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text)] text-xs font-medium transition"
+          >
+            Ajukan Permohonan Lain
+          </button>
+        </div>
       </div>
     {:else}
       <form onsubmit={handleSubmit} class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl p-8 space-y-6 shadow-xl">

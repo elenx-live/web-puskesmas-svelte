@@ -169,7 +169,7 @@
           <span>5 Template Artistik Tersedia</span>
         </span>
         <a
-          href="#/admin/homepage-builder"
+          href="#/admin/builder"
           class="text-[var(--color-primary)] font-bold hover:underline flex items-center gap-1"
         >
           <span>Kelola di Admin</span>

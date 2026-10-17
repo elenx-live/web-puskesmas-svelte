@@ -221,7 +221,7 @@
 
               {#if flags.onlineQueue !== false}
                 <a
-                  href="#/antrian-display"
+                  href="#/antrian/display"
                   class="theme-bg-card border theme-border p-3.5 rounded-2xl hover:border-[var(--color-primary)] transition flex flex-col items-center text-center space-y-2 group shadow-xs"
                 >
                   <div class="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center group-hover:scale-110 transition">

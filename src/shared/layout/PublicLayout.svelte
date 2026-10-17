@@ -448,7 +448,7 @@
                   <span>Pendaftaran Pasien Online</span>
                 </a>
                 <a
-                  href="#/antrian-display"
+                  href="#/antrian/display"
                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--color-text)] hover:bg-[var(--color-bg)] transition"
                 >
                   <Clock class="w-4 h-4 text-sky-500 shrink-0" />

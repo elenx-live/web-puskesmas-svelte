@@ -99,7 +99,7 @@
           {/if}
 
           <a
-            href="#/antrian-display"
+            href="#/antrian/display"
             class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-[var(--color-card)]/90 backdrop-blur-md border border-[var(--color-border)] text-[var(--color-text)] font-extrabold text-sm hover:border-cyan-500/50 hover:bg-[var(--color-card)] transition flex items-center justify-center gap-2 shadow-lg"
           >
             <Radio class="w-4 h-4 text-cyan-500 animate-pulse" />

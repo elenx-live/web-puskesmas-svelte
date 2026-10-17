@@ -725,13 +725,19 @@
         </p>
       </div>
 
-      <div class="pt-2">
+      <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
         <button
           onclick={handleResetForm}
-          class="px-6 py-3 bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-bold text-xs rounded-2xl hover:bg-[var(--color-primary)] transition"
+          class="w-full sm:w-auto px-6 py-3 bg-[var(--color-card)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text)] font-bold text-xs rounded-2xl transition"
         >
           Kirim Penyampaian Lainnya
         </button>
+        <a
+          href={`#/pengaduan/cek?ticket=${submittedData.ticketNumber}`}
+          class="w-full sm:w-auto px-6 py-3 bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-bold text-xs rounded-2xl hover:bg-[var(--color-primary)] transition text-center"
+        >
+          Cek Status Tiket Ini
+        </a>
       </div>
     </Card>
   {:else}
