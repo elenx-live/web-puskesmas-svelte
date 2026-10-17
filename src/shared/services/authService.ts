@@ -16,8 +16,8 @@ export { getGoogleIdToken } from '../lib/gis';
  * 2. Kirim ke backend /api/auth/google untuk verifikasi.
  * 3. Backend mengembalikan info user terverifikasi.
  */
-async function authenticateWithGoogle(): Promise<{ email: string; displayName: string; photoURL: string; credential: string }> {
-  const credential = await requestGoogleCredential();
+async function authenticateWithGoogle(providedCredential?: string): Promise<{ email: string; displayName: string; photoURL: string; credential: string }> {
+  const credential = providedCredential || await requestGoogleCredential();
 
   const res = await fetch('/api/auth/google', {
     method: 'POST',
@@ -177,13 +177,18 @@ export const authService = {
 
     return fullUser;
   },
+  /** Login dengan credential GIS langsung (dari tombol Google resmi). */
+  async loginWithGoogleCredential(credential: string): Promise<AppUser> {
+    return this.loginWithGoogle(undefined, undefined, undefined, credential);
+  }
+
   /**
    * Google Authentication Login
    * - Performs Google OAuth login (Account selector popup)
    * - Validates authenticated email against system database
    * - If email is not in the database, rejects access immediately
    */
-  async loginWithGoogle(overrideEmail?: string, overrideName?: string, overridePhoto?: string): Promise<AppUser> {
+  async loginWithGoogle(overrideEmail?: string, overrideName?: string, overridePhoto?: string, googleCredential?: string): Promise<AppUser> {
     let email = '';
     let displayName = '';
     let photoURL = '';
@@ -193,7 +198,7 @@ export const authService = {
       displayName = overrideName || email.split('@')[0];
       photoURL = overridePhoto || '';
     } else {
-      const googleUser = await authenticateWithGoogle();
+      const googleUser = await authenticateWithGoogle(googleCredential);
       email = googleUser.email;
       displayName = googleUser.displayName;
       photoURL = googleUser.photoURL;

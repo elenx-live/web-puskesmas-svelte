@@ -51,6 +51,18 @@ export class AuthStore {
     }
   }
 
+  /** Login dengan credential GIS langsung (dari tombol Google resmi). */
+  async loginWithGoogleCredential(credential: string): Promise<AppUser> {
+    this.loading = true;
+    try {
+      const loggedUser = await authService.loginWithGoogleCredential(credential);
+      this.user = loggedUser;
+      return loggedUser;
+    } finally {
+      this.loading = false;
+    }
+  }
+
   /** Logout dan kembali ke halaman login (mengganti history). */
   async logout(): Promise<void> {
     this.loading = true;

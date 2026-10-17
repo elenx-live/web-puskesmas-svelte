@@ -107,6 +107,41 @@ export async function requestGoogleCredential(): Promise<string> {
   });
 }
 
+/**
+ * Render tombol Google resmi (GIS) ke dalam elemen container.
+ * Tombol resmi selalu membuka popup pemilih akun — lebih andal daripada One Tap (prompt()).
+ * Callback menerima credential (ID token) atau error bila dibatalkan.
+ */
+export async function renderGoogleButton(
+  container: HTMLElement,
+  onCredential: (credential: string) => void,
+  onError: (err: Error) => void
+): Promise<void> {
+  await loadGisScript();
+  const clientId = await getGoogleClientId();
+  const gid = window.google?.accounts?.id;
+  if (!gid) throw new Error("Layanan Google Sign-In tidak tersedia di peramban ini.");
+  gid.initialize({
+    client_id: clientId,
+    auto_select: false,
+    cancel_on_tap_outside: true,
+    callback: (resp: GisCredentialResponse) => {
+      if (resp?.credential) {
+        onCredential(resp.credential as string);
+      } else {
+        onError(new Error("Login Google dibatalkan."));
+      }
+    },
+  });
+  gid.renderButton(container, {
+    theme: "outline",
+    size: "large",
+    width: "100%",
+    text: "signin_with",
+    locale: "id",
+  });
+}
+
 /** Nonaktifkan auto-select GIS (dipakai saat logout). */
 export function disableGisAutoSelect(): void {
   try {
