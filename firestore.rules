@@ -1,0 +1,101 @@
+// Firestore Security Rules — Puskesmas Manding (Svelte).
+//
+// DRAF untuk dipasang di Firebase Console → Firestore Database → Rules.
+// Menggantikan rules lama yang membuka `allow write: if true` ke publik.
+//
+// Model keamanan:
+// - Konten publik (situs, berita, layanan, dsb.): boleh DIBACA publik,
+//   hanya boleh DITULIS oleh admin (klaim custom `admin: true`).
+// - Tulis dari panel admin IDEALNYA lewat backend /api/* (Firebase Admin SDK),
+//   rules ini adalah pertahanan lapis kedua untuk akses langsung via Web SDK.
+// - Formulir publik (pengaduan, pendaftaran, respons survei): boleh CREATE
+//   tanpa login, tetapi TIDAK boleh dibaca/diubah publik.
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    // ---------- Konten publik: baca bebas, tulis admin ----------
+    function publicContent(collection) {
+      return collection in [
+        'site_settings', 'site_homepage', 'site_themes',
+        'posts', 'categories', 'cms_tags',
+        'services', 'service_categories', 'service_clusters',
+        'service_units', 'service_locations', 'service_products',
+        'service_procedures', 'service_requirements',
+        'service_standards', 'service_pricing', 'service_schedules',
+        'announcements', 'documents', 'gallery', 'media',
+        'menus', 'pages', 'microsites', 'facilities',
+        'faqs', 'public_info', 'staff_org', 'staff_profiles',
+        'theme_config', 'surveys'
+      ];
+    }
+
+    match /{collection}/{docId} {
+      allow read: if publicContent(collection);
+      allow write: if isAdmin() && publicContent(collection);
+    }
+
+    // ---------- Formulir publik: create bebas, baca/tulis admin ----------
+    match /complaints/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /registrations/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /survey_responses/{responseId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /info_requests/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ---------- Data internal: admin saja ----------
+    match /users/{userId} {
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow write: if isAdmin();
+    }
+
+    match /roles/{roleId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /audit_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /backups/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /notifications/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /contacts/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ---------- Default: tolak ----------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
