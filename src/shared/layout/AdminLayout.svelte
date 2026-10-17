@@ -126,7 +126,7 @@
     } catch { /* abaikan */ }
   });
 
-  // Hotkey Ctrl+K untuk pencarian menu
+  // Hotkey Ctrl+K untuk pencarian menu; Escape menutup drawer mobile
   $effect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -136,6 +136,8 @@
           try { localStorage.setItem('admin_sidebar_collapsed', 'false'); } catch { /* abaikan */ }
         }
         searchInputRef?.focus();
+      } else if (e.key === 'Escape' && sidebarOpen) {
+        sidebarOpen = false;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -211,7 +213,12 @@
 
 <div class="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-sans flex flex-col md:flex-row">
   {#if sidebarOpen}
-    <div class="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs md:hidden" onclick={() => (sidebarOpen = false)} role="presentation"></div>
+    <button
+      type="button"
+      aria-label="Tutup menu navigasi"
+      class="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs md:hidden cursor-default"
+      onclick={() => (sidebarOpen = false)}
+    ></button>
   {/if}
 
   <aside
@@ -346,6 +353,8 @@
               <button
                 type="button"
                 onclick={() => toggleGroup(group.id || group.group)}
+                aria-expanded={isOpen}
+                aria-label="{isOpen ? 'Tutup' : 'Buka'} grup menu {group.group}"
                 class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition select-none {hasActiveChild
                   ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10 font-extrabold'
                   : isOpen
@@ -381,6 +390,7 @@
                       >
                         <button
                           type="button"
+                          aria-current={isItemActive ? 'page' : undefined}
                           onclick={() => {
                             if (hasSubItems && !isSubOpen) {
                               openSubNavs = { ...openSubNavs, [item.id]: true };
@@ -410,6 +420,8 @@
                               type="button"
                               onclick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSubNav(item.id); }}
                               title={isSubOpen ? 'Tutup sub-menu' : 'Buka sub-menu'}
+                              aria-expanded={isSubOpen}
+                              aria-label="{isSubOpen ? 'Tutup' : 'Buka'} sub-menu {item.label}"
                               class="p-1 rounded-md hover:bg-black/10 transition {isItemActive ? 'text-[var(--color-text)]' : 'text-[var(--color-muted-foreground)]'}"
                             >
                               <ChevronDown class="w-3 h-3 transition-transform duration-200 {isSubOpen ? 'rotate-180' : ''}" />

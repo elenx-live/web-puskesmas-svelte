@@ -7,6 +7,8 @@
   } from 'lucide-svelte';
   import Card from '../../../shared/ui/Card.svelte';
   import Badge from '../../../shared/ui/Badge.svelte';
+  import LoadingSkeleton from '../../../shared/ui/LoadingSkeleton.svelte';
+  import ConfirmModal from '../../../shared/components/ConfirmModal.svelte';
   import { surveyService, DEFAULT_SCALE_LABELS } from '../../../shared/services/surveyService.js';
   import { auditService } from '../../../shared/services/auditService.js';
   import { errorMessage } from '../../../shared/lib/logger.js';
@@ -34,6 +36,7 @@
   // Form Modal States
   let isModalOpen = $state(false);
   let editingSurvey = $state<SurveyEntity | null>(null);
+  let deleteSurveyTarget = $state<SurveyEntity | null>(null);
   let formTitle = $state('');
   let formDescription = $state('');
   let formSlug = $state('');
@@ -231,14 +234,19 @@
     }
   }
 
-  async function handleDeleteSurvey(id: string) {
-    if (confirm('Apakah Anda yakin ingin menghapus kuesioner survei ini? Riwayat pengisian kuesioner tidak akan dihapus, namun URL kuesioner akan hilang.')) {
-      try {
-        await surveyService.deleteSurvey(id, buildActor());
-        loadData();
-      } catch (err) {
-        console.error(err);
-      }
+  function requestDeleteSurvey(survey: SurveyEntity) {
+    deleteSurveyTarget = survey;
+  }
+
+  async function confirmDeleteSurvey() {
+    const survey = deleteSurveyTarget;
+    if (!survey) return;
+    deleteSurveyTarget = null;
+    try {
+      await surveyService.deleteSurvey(survey.id, buildActor());
+      loadData();
+    } catch (err) {
+      console.error(err);
     }
   }
 
@@ -433,10 +441,7 @@
 
   <!-- Loading state -->
   {#if loading}
-    <div class="flex flex-col items-center justify-center py-20 space-y-4">
-      <div class="w-10 h-10 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin"></div>
-      <span class="text-xs text-[var(--color-muted-foreground)]">Memuat data kuesioner dan respons...</span>
-    </div>
+    <LoadingSkeleton variant="list" count={6} />
   {:else}
     <!-- TAB 1: SURVEYS LISTING -->
     {#if activeTab === 'list'}
@@ -563,7 +568,7 @@
 
                   <!-- Delete -->
                   <button
-                    onclick={() => handleDeleteSurvey(survey.id)}
+                    onclick={() => requestDeleteSurvey(survey)}
                     class="p-1.5 text-[var(--color-muted-foreground)] hover:text-red-400 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg transition"
                     title="Hapus"
                   >
@@ -1110,3 +1115,15 @@
     </Card>
   </div>
 {/if}
+
+<!-- Konfirmasi hapus survei -->
+<ConfirmModal
+  isOpen={deleteSurveyTarget !== null}
+  onClose={() => (deleteSurveyTarget = null)}
+  onConfirm={confirmDeleteSurvey}
+  title="Hapus Survei"
+  message={deleteSurveyTarget
+    ? `Apakah Anda yakin ingin menghapus kuesioner "${deleteSurveyTarget.title}"? Riwayat pengisian kuesioner tidak akan dihapus, namun URL kuesioner akan hilang.`
+    : ''}
+  confirmLabel="Ya, Hapus"
+/>

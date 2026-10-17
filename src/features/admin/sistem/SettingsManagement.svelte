@@ -18,6 +18,7 @@
   import { authStore } from '../../../shared/stores/auth.svelte.js';
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
   import { errorMessage } from '../../../shared/lib/logger.js';
+  import { onMount } from 'svelte';
     import { navigate, routerState } from '../../../app/router.svelte.js';
   import { MAINTENANCE_BG_PRESETS } from '../../../shared/data/maintenancePresets.js';
   import AIProviderSettingsCard from '../components/AIProviderSettingsCard.svelte';
@@ -322,6 +323,17 @@
   const isDirty = $derived(
     !settings || !initialSettingsJson ? false : JSON.stringify(settings) !== initialSettingsJson
   );
+
+  // Peringatkan pengguna jika menutup/refresh dengan perubahan belum disimpan
+  onMount(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  });
 
   const currentDomainObj = $derived(
     SETTING_DOMAINS.find(d => d.id === activeDomain) || SETTING_DOMAINS[0]

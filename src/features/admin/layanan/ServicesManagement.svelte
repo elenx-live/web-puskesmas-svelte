@@ -85,6 +85,20 @@
   // Editor Modal State
   let isEditorOpen = $state(false);
   let editingService = $state<Partial<ServiceEntity> | null>(null);
+  let initialEditingJson = $state('');
+  const isEditorDirty = $derived(
+    !editingService ? false : JSON.stringify(editingService) !== initialEditingJson
+  );
+
+  function requestCloseEditor() {
+    if (isEditorDirty && !window.confirm('Ada perubahan yang belum disimpan. Tutup editor dan buang perubahan?')) {
+      return;
+    }
+    isEditorOpen = false;
+    editingService = null;
+    initialEditingJson = '';
+  }
+
   let saving = $state(false);
   let autoSlug = $state(true);
   let editorTab = $state<EditorTab>('info');
@@ -249,6 +263,7 @@
     };
     autoSlug = true;
     editorTab = 'info';
+    initialEditingJson = JSON.stringify(editingService);
     isEditorOpen = true;
   }
 
@@ -256,6 +271,7 @@
     editingService = { ...service };
     autoSlug = false;
     editorTab = 'info';
+    initialEditingJson = JSON.stringify(editingService);
     isEditorOpen = true;
   }
 
@@ -306,6 +322,7 @@
 
       isEditorOpen = false;
       editingService = null;
+      initialEditingJson = '';
       await loadServices();
     } catch (error: any) {
       console.error('Failed to save service:', error);
@@ -340,6 +357,7 @@
       toastStore.showToast(`Layanan "${editingService.name}" telah berhasil dikirim untuk review.`, 'success');
       isEditorOpen = false;
       editingService = null;
+      initialEditingJson = '';
       await loadServices();
     } catch (error: any) {
       toastStore.showToast(error.message || 'Gagal mengajukan review layanan', 'error');
@@ -1021,7 +1039,7 @@
 <!-- EDITOR MODAL WITH PHASE 4B & 4C TABS -->
 <Modal
   isOpen={isEditorOpen}
-  onClose={() => (isEditorOpen = false)}
+  onClose={requestCloseEditor}
   title={editingService?.id ? `Kelola Layanan: ${editingService.name}` : 'Tambah Layanan Kesehatan Baru'}
   size="2xl"
 >
@@ -1377,7 +1395,13 @@
             </div>
 
             <div class="flex items-center space-x-3">
-              <Button type="button" variant="ghost" onclick={() => (isEditorOpen = false)}>
+              {#if isEditorDirty}
+                <span class="text-[10px] font-bold text-amber-600 flex items-center gap-1" title="Ada perubahan yang belum disimpan">
+                  <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                  Belum disimpan
+                </span>
+              {/if}
+              <Button type="button" variant="ghost" onclick={requestCloseEditor}>
                 Batal
               </Button>
               <Button

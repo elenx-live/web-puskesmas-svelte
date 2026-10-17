@@ -14,6 +14,8 @@
   import Button from '../../../shared/ui/Button.svelte';
   import Badge from '../../../shared/ui/Badge.svelte';
   import Modal from '../../../shared/ui/Modal.svelte';
+  import LoadingSkeleton from '../../../shared/ui/LoadingSkeleton.svelte';
+  import ConfirmModal from '../../../shared/components/ConfirmModal.svelte';
   import MicrositeStudioEditor from '../../microsite/builder/MicrositeStudioEditor.svelte';
   import {
     Globe,
@@ -55,6 +57,7 @@
   // Studio Visual Editor State
   let studioOpen = $state(false);
   let studioMicrosite = $state<MicrositeEntity | null>(null);
+  let deleteTarget = $state<MicrositeEntity | null>(null);
 
   // Advanced Analytics State
   let analyticsModalOpen = $state(false);
@@ -192,9 +195,14 @@
     }
   }
 
-  async function handleDelete(m: MicrositeEntity) {
-    if (!window.confirm(`Apakah Anda yakin ingin menghapus microsite "${m.name}"? Tindakan ini tidak dapat dibatalkan.`))
-      return;
+  function requestDelete(m: MicrositeEntity) {
+    deleteTarget = m;
+  }
+
+  async function confirmDelete() {
+    const m = deleteTarget;
+    if (!m) return;
+    deleteTarget = null;
     try {
       await micrositeService.deleteMicrosite(m.id, {
         id: authStore.user?.uid || 'usr-anon',
@@ -495,9 +503,7 @@
 
   <!-- List of Microsites -->
   {#if loading}
-    <div class="p-12 text-center text-[var(--color-muted-foreground)] font-mono text-xs">
-      Memuat daftar microsite...
-    </div>
+    <LoadingSkeleton variant="card" count={4} />
   {:else if filteredMicrosites.length === 0}
     <div
       class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl p-12 text-center text-[var(--color-muted-foreground)] space-y-3"
@@ -675,7 +681,7 @@
                           <CheckCircle class="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onclick={() => handleDelete(m)}
+                          onclick={() => requestDelete(m)}
                           class="p-1.5 rounded-xl bg-rose-500/10 border border-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition"
                           title="Hapus Portal"
                         >
@@ -998,3 +1004,15 @@
     />
   {/if}
 </div>
+
+<!-- Konfirmasi hapus microsite -->
+<ConfirmModal
+  isOpen={deleteTarget !== null}
+  onClose={() => (deleteTarget = null)}
+  onConfirm={confirmDelete}
+  title="Hapus Microsite"
+  message={deleteTarget
+    ? `Apakah Anda yakin ingin menghapus microsite "${deleteTarget.name}"? Tindakan ini tidak dapat dibatalkan.`
+    : ''}
+  confirmLabel="Ya, Hapus"
+/>

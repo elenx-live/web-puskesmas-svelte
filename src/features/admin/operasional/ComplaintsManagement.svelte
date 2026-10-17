@@ -9,6 +9,8 @@
   import Card from '../../../shared/ui/Card.svelte';
   import Badge from '../../../shared/ui/Badge.svelte';
   import Modal from '../../../shared/ui/Modal.svelte';
+  import LoadingSkeleton from '../../../shared/ui/LoadingSkeleton.svelte';
+  import ConfirmModal from '../../../shared/components/ConfirmModal.svelte';
   import { complaintService } from '../../../shared/services/complaintService.js';
   import { serviceEngineService } from '../../../shared/services/serviceEngineService.js';
   import { errorMessage } from '../../../shared/lib/logger.js';
@@ -70,6 +72,11 @@
   let newCategoryName = $state('');
   let settingsSuccessMsg = $state('');
   let settingsErrorMsg = $state('');
+
+  // Konfirmasi hapus (ConfirmModal)
+  let deleteComplaintTarget = $state<{ id: string; ticketNumber: string } | null>(null);
+  let deleteCategoryTarget = $state<string | null>(null);
+  let isDeleting = $state(false);
 
   // URL parameters → initial filters
   $effect(() => {
@@ -369,22 +376,29 @@
     }
   }
 
-  async function handleDeleteComplaint(id: string) {
-    const user = authStore.user;
-    if (!user) return;
-    if (!confirm('Apakah Anda yakin ingin menghapus pengaduan ini secara permanen dari database? Tindakan ini dicatat di Audit Log.')) return;
+  function requestDeleteComplaint(id: string, ticketNumber: string) {
+    deleteComplaintTarget = { id, ticketNumber };
+  }
 
+  async function confirmDeleteComplaint() {
+    const target = deleteComplaintTarget;
+    const user = authStore.user;
+    if (!target || !user) return;
+    isDeleting = true;
     try {
-      await complaintService.deleteComplaint(id, {
+      await complaintService.deleteComplaint(target.id, {
         id: user.uid,
         email: user.email,
         name: user.displayName
       });
+      deleteComplaintTarget = null;
       modalOpen = false;
       selectedComplaint = null;
       await loadComplaints();
     } catch (err: unknown) {
-      alert(errorMessage(err, 'Gagal menghapus pengaduan.'));
+      actionErrorMsg = errorMessage(err, 'Gagal menghapus pengaduan.');
+    } finally {
+      isDeleting = false;
     }
   }
 
@@ -424,10 +438,15 @@
     }
   }
 
-  function handleDeleteCategory(catToDelete: string) {
+  function requestDeleteCategory(catToDelete: string) {
     settingsSuccessMsg = '';
     settingsErrorMsg = '';
-    if (!confirm(`Hapus kategori '${catToDelete}'? Ini tidak menghapus laporan lama, tapi laporan baru tidak bisa memilih kategori ini.`)) return;
+    deleteCategoryTarget = catToDelete;
+  }
+
+  function confirmDeleteCategory() {
+    const catToDelete = deleteCategoryTarget;
+    if (!catToDelete) return;
 
     const updated = categories.filter(c => c !== catToDelete);
     try {
@@ -448,6 +467,8 @@
       });
     } catch (err: unknown) {
       settingsErrorMsg = errorMessage(err, 'Gagal menghapus kategori.');
+    } finally {
+      deleteCategoryTarget = null;
     }
   }
 
@@ -1018,6 +1039,9 @@
 
       <!-- MAIN DIRECTORY DATA TABLE -->
       <Card class="overflow-hidden border border-[var(--color-border)]">
+        {#if loading}
+          <LoadingSkeleton variant="list" count={6} />
+        {:else}
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs border-collapse">
             <thead>
@@ -1137,6 +1161,7 @@
             </div>
           </div>
         {/if}
+        {/if}
       </Card>
 
     </div>
@@ -1190,7 +1215,7 @@
             <div class="p-3 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl flex items-center justify-between">
               <span class="text-xs font-semibold text-[var(--color-text)]">{cat}</span>
               <button
-                onclick={() => handleDeleteCategory(cat)}
+                onclick={() => requestDeleteCategory(cat)}
                 class="p-1.5 hover:bg-rose-500/10 text-[var(--color-muted-foreground)] hover:text-rose-400 rounded-lg transition"
                 title="Hapus Kategori"
               >
@@ -1751,7 +1776,7 @@
           <div class="pt-2">
             <button
               type="button"
-              onclick={() => handleDeleteComplaint(selectedComplaint.id)}
+              onclick={() => selectedComplaint && requestDeleteComplaint(selectedComplaint.id, selectedComplaint.ticketNumber)}
               class="w-full py-2.5 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5"
             >
               <Trash2 class="w-4 h-4" />
@@ -1765,3 +1790,28 @@
     </div>
   </Modal>
 {/if}
+
+<!-- Konfirmasi hapus pengaduan -->
+<ConfirmModal
+  isOpen={deleteComplaintTarget !== null}
+  onClose={() => (deleteComplaintTarget = null)}
+  onConfirm={confirmDeleteComplaint}
+  title="Hapus Pengaduan"
+  message={deleteComplaintTarget
+    ? `Apakah Anda yakin ingin menghapus pengaduan ${deleteComplaintTarget.ticketNumber} secara permanen dari database? Tindakan ini dicatat di Audit Log.`
+    : ''}
+  confirmLabel="Ya, Hapus"
+  isLoading={isDeleting}
+/>
+
+<!-- Konfirmasi hapus kategori -->
+<ConfirmModal
+  isOpen={deleteCategoryTarget !== null}
+  onClose={() => (deleteCategoryTarget = null)}
+  onConfirm={confirmDeleteCategory}
+  title="Hapus Kategori"
+  message={deleteCategoryTarget
+    ? `Hapus kategori '${deleteCategoryTarget}'? Ini tidak menghapus laporan lama, tapi laporan baru tidak bisa memilih kategori ini.`
+    : ''}
+  confirmLabel="Ya, Hapus"
+/>

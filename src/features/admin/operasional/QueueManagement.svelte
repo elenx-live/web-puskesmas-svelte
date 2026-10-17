@@ -6,6 +6,7 @@
     Layers, MapPin, AlertTriangle
   } from 'lucide-svelte';
   import Badge from '../../../shared/ui/Badge.svelte';
+  import ConfirmModal from '../../../shared/components/ConfirmModal.svelte';
   import { registrationService } from '../../../shared/services/registrationService.js';
   import { serviceEngineService } from '../../../shared/services/serviceEngineService.js';
   import { authStore } from '../../../shared/stores/auth.svelte.js';
@@ -23,6 +24,7 @@
   let skipReason = $state('');
   let isSkipModalOpen = $state(false);
   let regToSkip = $state<string | null>(null);
+  let regToCancel = $state<{ id: string; queueNumber: string } | null>(null);
 
   // Data state
   let registrations = $state<ServiceRegistrationEntity[]>([]);
@@ -299,9 +301,15 @@
   }
 
   // 6. CANCEL (BATALKAN)
-  async function handleCancelQueue(regId: string) {
+  function requestCancelQueue(regId: string, queueNumber?: string) {
     if (loading) return;
-    if (!window.confirm('Apakah Anda yakin ingin membatalkan antrean ini? Tindakan ini tidak dapat dibatalkan.')) return;
+    regToCancel = { id: regId, queueNumber: queueNumber || regId };
+  }
+
+  async function confirmCancelQueue() {
+    const target = regToCancel;
+    if (!target || loading) return;
+    regToCancel = null;
 
     loading = true;
     errorMsg = '';
@@ -311,7 +319,7 @@
       const actor = buildActor();
 
       const updated = await registrationService.updateQueueStatus(
-        regId,
+        target.id,
         'cancelled',
         actor,
         selectedCounter,
@@ -676,9 +684,10 @@
 
                         {#if r.queueStatus !== 'completed' && r.queueStatus !== 'cancelled'}
                           <button
-                            onclick={() => handleCancelQueue(r.id)}
+                            onclick={() => requestCancelQueue(r.id, r.queueNumber)}
                             class="p-1.5 bg-[var(--color-card)] hover:bg-red-500 hover:text-[var(--color-text)] text-red-400 rounded-lg transition"
                             title="Batalkan Antrean"
+                            aria-label="Batalkan antrean {r.queueNumber}"
                           >
                             <XCircle class="w-3.5 h-3.5" />
                           </button>
@@ -784,3 +793,15 @@
     </div>
   </div>
 {/if}
+
+<!-- Konfirmasi batalkan antrean -->
+<ConfirmModal
+  isOpen={regToCancel !== null}
+  onClose={() => (regToCancel = null)}
+  onConfirm={confirmCancelQueue}
+  title="Batalkan Antrean"
+  message={regToCancel
+    ? `Apakah Anda yakin ingin membatalkan antrean ${regToCancel.queueNumber}? Tindakan ini tidak dapat dibatalkan.`
+    : ''}
+  confirmLabel="Ya, Batalkan"
+/>
