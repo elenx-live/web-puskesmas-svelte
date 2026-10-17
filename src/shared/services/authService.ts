@@ -180,7 +180,7 @@ export const authService = {
   /** Login dengan credential GIS langsung (dari tombol Google resmi). */
   async loginWithGoogleCredential(credential: string): Promise<AppUser> {
     return authService.loginWithGoogle(undefined, undefined, undefined, credential);
-  }
+  },
 
   /**
    * Google Authentication Login
