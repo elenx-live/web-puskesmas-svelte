@@ -3,6 +3,7 @@
   pencarian menu Ctrl+K, breadcrumb dinamis, topbar, dan kartu user.
 -->
 <script lang="ts">
+import { memStore } from '../lib/memStore';
   import type { Snippet } from 'svelte';
   import { authStore } from '../../shared/stores/auth.svelte.js';
   import NotificationBell from '../../features/admin/NotificationBell.svelte';
@@ -44,7 +45,7 @@
   let sidebarCollapsed = $state(
     (() => {
       try {
-        return localStorage.getItem('admin_sidebar_collapsed') === 'true';
+        return memStore.getItem('admin_sidebar_collapsed') === 'true';
       } catch {
         return false;
       }
@@ -54,11 +55,11 @@
   let searchInputRef = $state<HTMLInputElement | null>(null);
   let sidebarNavRef = $state<HTMLDivElement | null>(null);
 
-  // Grup terbuka (persisten di sessionStorage)
+  // Grup terbuka (in-memory, reset saat refresh)
   let openGroups = $state<Record<string, boolean>>(
     (() => {
       try {
-        const saved = sessionStorage.getItem('admin_open_groups');
+        const saved = memStore.getItem('admin_open_groups');
         if (saved) return JSON.parse(saved);
       } catch { /* abaikan */ }
       return {
@@ -76,11 +77,11 @@
     })()
   );
 
-  // Sub-nav terbuka (persisten di sessionStorage)
+  // Sub-nav terbuka (in-memory, reset saat refresh)
   let openSubNavs = $state<Record<string, boolean>>(
     (() => {
       try {
-        const saved = sessionStorage.getItem('admin_open_subnavs');
+        const saved = memStore.getItem('admin_open_subnavs');
         if (saved) return JSON.parse(saved);
       } catch { /* abaikan */ }
       return {};
@@ -108,16 +109,16 @@
     if (activeGroupId) {
       const next = { ...openGroups, [activeGroupId]: true };
       openGroups = next;
-      try { sessionStorage.setItem('admin_open_groups', JSON.stringify(next)); } catch { /* abaikan */ }
+      try { memStore.setItem('admin_open_groups', JSON.stringify(next)); } catch { /* abaikan */ }
     }
     if (activeParentId) {
       const next = { ...openSubNavs, [activeParentId]: true };
       openSubNavs = next;
-      try { sessionStorage.setItem('admin_open_subnavs', JSON.stringify(next)); } catch { /* abaikan */ }
+      try { memStore.setItem('admin_open_subnavs', JSON.stringify(next)); } catch { /* abaikan */ }
     }
     // Restore posisi scroll sidebar
     try {
-      const saved = sessionStorage.getItem('admin_sidebar_scroll');
+      const saved = memStore.getItem('admin_sidebar_scroll');
       const targetScroll = saved ? parseInt(saved, 10) : moduleSidebarScrollTop;
       if (sidebarNavRef && !isNaN(targetScroll) && targetScroll > 0) {
         sidebarNavRef.scrollTop = targetScroll;
@@ -133,7 +134,7 @@
         e.preventDefault();
         if (sidebarCollapsed) {
           sidebarCollapsed = false;
-          try { localStorage.setItem('admin_sidebar_collapsed', 'false'); } catch { /* abaikan */ }
+          try { memStore.setItem('admin_sidebar_collapsed', 'false'); } catch { /* abaikan */ }
         }
         searchInputRef?.focus();
       } else if (e.key === 'Escape' && sidebarOpen) {
@@ -180,29 +181,29 @@
   function toggleGroup(groupId: string) {
     const next = { ...openGroups, [groupId]: !openGroups[groupId] };
     openGroups = next;
-    try { sessionStorage.setItem('admin_open_groups', JSON.stringify(next)); } catch { /* abaikan */ }
+    try { memStore.setItem('admin_open_groups', JSON.stringify(next)); } catch { /* abaikan */ }
   }
 
   function toggleSubNav(itemId: string) {
     const next = { ...openSubNavs, [itemId]: !openSubNavs[itemId] };
     openSubNavs = next;
-    try { sessionStorage.setItem('admin_open_subnavs', JSON.stringify(next)); } catch { /* abaikan */ }
+    try { memStore.setItem('admin_open_subnavs', JSON.stringify(next)); } catch { /* abaikan */ }
   }
 
   function toggleSidebarCollapse() {
     sidebarCollapsed = !sidebarCollapsed;
-    try { localStorage.setItem('admin_sidebar_collapsed', String(sidebarCollapsed)); } catch { /* abaikan */ }
+    try { memStore.setItem('admin_sidebar_collapsed', String(sidebarCollapsed)); } catch { /* abaikan */ }
   }
 
   function handleSidebarScroll(e: Event) {
     moduleSidebarScrollTop = (e.currentTarget as HTMLDivElement).scrollTop;
-    try { sessionStorage.setItem('admin_sidebar_scroll', String(moduleSidebarScrollTop)); } catch { /* abaikan */ }
+    try { memStore.setItem('admin_sidebar_scroll', String(moduleSidebarScrollTop)); } catch { /* abaikan */ }
   }
 
   function navigateTo(href: string) {
     if (sidebarNavRef) {
       moduleSidebarScrollTop = sidebarNavRef.scrollTop;
-      try { sessionStorage.setItem('admin_sidebar_scroll', String(moduleSidebarScrollTop)); } catch { /* abaikan */ }
+      try { memStore.setItem('admin_sidebar_scroll', String(moduleSidebarScrollTop)); } catch { /* abaikan */ }
     }
     navigate(href);
     sidebarOpen = false;

@@ -1,5 +1,6 @@
 import type { AppUser } from '../types/index.js';
 import { authService } from '../services/authService.js';
+import { memStore } from '../lib/memStore';
 
 /**
  * Auth store — single source of truth untuk sesi pengguna.
@@ -70,9 +71,9 @@ export class AuthStore {
       await authService.logout();
       this.user = null;
       try {
-        sessionStorage.removeItem('admin_open_groups');
-        sessionStorage.removeItem('admin_open_subnavs');
-        sessionStorage.removeItem('admin_sidebar_scroll');
+        memStore.removeItem('admin_open_groups');
+        memStore.removeItem('admin_open_subnavs');
+        memStore.removeItem('admin_sidebar_scroll');
       } catch {
         /* abaikan */
       }
