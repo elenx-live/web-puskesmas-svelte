@@ -742,6 +742,7 @@
   {/snippet}
 
   {#if editingPost}
+  {#key editingPost.id || 'new'}
     <form onsubmit={handleSavePost} class="space-y-4">
       <Input
         label="Judul Berita Utama *"
@@ -896,14 +897,14 @@
         </label>
         <textarea
           rows={8}
-          value={editingPost.content || ''}
           oninput={(e) => patchEditingPost({ content: e.currentTarget.value })}
           placeholder="Tuliskan isi berita lengkap di sini..."
           class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl p-4 text-xs text-[var(--color-text)] font-mono leading-relaxed"
           required
-        ></textarea>
+        >{editingPost.content || ''}</textarea>
       </div>
     </form>
+  {/key}
   {/if}
 </Modal>
 
