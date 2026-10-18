@@ -20,46 +20,52 @@ export const isFirebaseReady = (): boolean => {
 };
 
 /**
+ * Cache in-memory per sesi — TIDAK disimpan di browser (aturan: jangan simpan data di browser).
+ * Hilang saat refresh. TTL pendek 60 detik agar data tetap segar.
+ */
+const memCache = new Map<string, { data: unknown; ts: number }>();
+const CACHE_TTL_MS = 60_000;
+
+function memGet<T>(key: string): T | null {
+  const entry = memCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > CACHE_TTL_MS) {
+    memCache.delete(key);
+    return null;
+  }
+  return entry.data as T;
+}
+
+function memSet(key: string, data: unknown): void {
+  memCache.set(key, { data, ts: Date.now() });
+}
+
+/**
  * Universal VPS SQLite Database Persistence Helper (/api/db/*)
- * Cache-First (Stale-While-Revalidate): Returns local cache instantly (0ms)
- * and synchronizes authoritative state with VPS SQLite database.
- * Firestore fallback has been removed - /api/db/* is the only source.
+ * In-memory cache (stale-while-revalidate): kembalikan cache memori instan (0ms)
+ * dan sinkronkan state otoritatif dengan database SQLite VPS.
+ * TIDAK ada localStorage. Firestore fallback sudah dihapus - /api/db/* satu-satunya sumber.
  */
 export async function getCollectionData<T extends { id?: string; uid?: string }>(
   collectionName: string,
-  localStorageKey: string,
+  cacheKey: string,
   defaultInitialData: T[] = []
 ): Promise<T[]> {
-  // 1. Check local cache first for instant 0ms initial rendering
-  let localItems: T[] | null = null;
-  try {
-    const local = localStorage.getItem(localStorageKey);
-    if (local !== null) {
-      const parsed = JSON.parse(local);
-      if (Array.isArray(parsed)) {
-        localItems = parsed;
-      }
-    }
-  } catch (e) {
-    console.warn(`[Storage Cache] Read error for ${localStorageKey}:`, e);
-  }
+  // 1. Cek cache memori dulu untuk render instan
+  const cached = memGet<T[]>(cacheKey);
 
-  // Helper to update cache and dispatch update event
+  // Helper untuk update cache memori dan dispatch event update
   const applyAuthoritativeData = (authoritativeList: T[]) => {
-    try {
-      localStorage.setItem(localStorageKey, JSON.stringify(authoritativeList));
-      window.dispatchEvent(new CustomEvent('puskesmas_collection_updated', {
-        detail: { collectionName, localStorageKey, count: authoritativeList.length }
-      }));
-      window.dispatchEvent(new CustomEvent(`puskesmas_${collectionName}_updated`, {
-        detail: authoritativeList
-      }));
-    } catch (e) {
-      console.warn(`[Storage Cache] Write error for ${localStorageKey}:`, e);
-    }
+    memSet(cacheKey, authoritativeList);
+    window.dispatchEvent(new CustomEvent('puskesmas_collection_updated', {
+      detail: { collectionName, cacheKey, count: authoritativeList.length }
+    }));
+    window.dispatchEvent(new CustomEvent(`puskesmas_${collectionName}_updated`, {
+      detail: authoritativeList
+    }));
   };
 
-  // Helper to fetch from VPS SQLite database (/api/db/*) - the ONLY source
+  // Helper untuk fetch dari VPS SQLite database (/api/db/*) - satu-satunya sumber
   const fetchFromVpsDb = async (): Promise<T[] | null> => {
     try {
       const res = await apiFetch(`/api/db/${collectionName}?t=${Date.now()}`);
@@ -73,7 +79,7 @@ export async function getCollectionData<T extends { id?: string; uid?: string }>
     return null;
   };
 
-  // 2. Authoritative sync - VPS SQLite database only (no Firestore fallback)
+  // 2. Sinkronisasi otoritatif - VPS SQLite database saja (tanpa Firestore fallback)
   const revalidateFromVps = async (): Promise<T[] | null> => {
     try {
       const vpsList = await fetchFromVpsDb();
@@ -87,40 +93,40 @@ export async function getCollectionData<T extends { id?: string; uid?: string }>
     return null;
   };
 
-  // If we had local cache, return it immediately and revalidate in background
-  if (localItems !== null) {
+  // Jika ada cache memori, kembalikan langsung dan revalidasi di background
+  if (cached !== null) {
     revalidateFromVps().catch(() => {});
-    return localItems;
+    return cached;
   }
 
-  // If no local cache, fetch from VPS DB
+  // Jika tidak ada cache, fetch dari VPS DB
   const freshData = await revalidateFromVps();
   if (freshData !== null) {
     return freshData;
   }
 
-  // Fallback if completely offline
+  // Fallback jika benar-benar offline
   const fallback = defaultInitialData || [];
   applyAuthoritativeData(fallback);
   return fallback;
 }
 
 /**
- * Save or Update a single entity in VPS SQLite database (/api/db/*) and LocalStorage
+ * Save or Update a single entity in VPS SQLite database (/api/db/*)
+ * Optimistic update ke cache memori dulu, lalu sinkron ke server.
  */
 export async function saveDocumentData<T extends { id?: string; uid?: string; slug?: string }>(
   collectionName: string,
   docId: string,
   data: T,
-  localStorageKey: string
+  cacheKey: string
 ): Promise<void> {
   const entityId = docId || (data as any).id || (data as any).uid || String(Date.now());
   const payload = { ...data, id: entityId };
 
-  // 1. Optimistic immediate update to LocalStorage cache (0ms)
+  // 1. Optimistic immediate update ke cache memori (0ms)
   try {
-    const local = localStorage.getItem(localStorageKey);
-    let items: Record<string, unknown>[] = local ? JSON.parse(local) : [];
+    let items = memGet<Record<string, unknown>[]>(cacheKey);
     if (!Array.isArray(items)) items = [];
     const index = items.findIndex((i: Record<string, unknown>) => (i.id === entityId || i.uid === entityId));
     if (index >= 0) {
@@ -128,18 +134,18 @@ export async function saveDocumentData<T extends { id?: string; uid?: string; sl
     } else {
       items.unshift(payload);
     }
-    localStorage.setItem(localStorageKey, JSON.stringify(items));
+    memSet(cacheKey, items);
     window.dispatchEvent(new CustomEvent('puskesmas_collection_updated', {
-      detail: { collectionName, localStorageKey, count: items.length }
+      detail: { collectionName, cacheKey, count: items.length }
     }));
     window.dispatchEvent(new CustomEvent(`puskesmas_${collectionName}_updated`, {
       detail: items
     }));
   } catch (e) {
-    console.warn(`[Storage] Local cache save failed for ${localStorageKey}:`, e);
+    console.warn(`[Storage] Memory cache save failed for ${cacheKey}:`, e);
   }
 
-  // 2. Persist to VPS SQLite Database via /api/db/* (only)
+  // 2. Persist ke VPS SQLite Database via /api/db/* (satu-satunya)
   try {
     apiFetch(`/api/db/${collectionName}`, {
       method: 'POST',
@@ -152,34 +158,32 @@ export async function saveDocumentData<T extends { id?: string; uid?: string; sl
 }
 
 /**
- * Delete a document from VPS SQLite database (/api/db/*) and LocalStorage
+ * Delete a document from VPS SQLite database (/api/db/*)
+ * Optimistic removal dari cache memori dulu, lalu sinkron ke server.
  */
 export async function deleteDocumentData(
   collectionName: string,
   docId: string,
-  localStorageKey: string
+  cacheKey: string
 ): Promise<void> {
-  // 1. Optimistic immediate removal from LocalStorage cache (0ms)
+  // 1. Optimistic immediate removal dari cache memori (0ms)
   try {
-    const local = localStorage.getItem(localStorageKey);
-    if (local) {
-      const items: Record<string, unknown>[] = JSON.parse(local);
-      if (Array.isArray(items)) {
-        const filtered = items.filter((i: Record<string, unknown>) => i.id !== docId && i.uid !== docId && i.slug !== docId);
-        localStorage.setItem(localStorageKey, JSON.stringify(filtered));
-        window.dispatchEvent(new CustomEvent('puskesmas_collection_updated', {
-          detail: { collectionName, localStorageKey, count: filtered.length }
-        }));
-        window.dispatchEvent(new CustomEvent(`puskesmas_${collectionName}_updated`, {
-          detail: filtered
-        }));
-      }
+    const items = memGet<Record<string, unknown>[]>(cacheKey);
+    if (Array.isArray(items)) {
+      const filtered = items.filter((i: Record<string, unknown>) => i.id !== docId && i.uid !== docId && i.slug !== docId);
+      memSet(cacheKey, filtered);
+      window.dispatchEvent(new CustomEvent('puskesmas_collection_updated', {
+        detail: { collectionName, cacheKey, count: filtered.length }
+      }));
+      window.dispatchEvent(new CustomEvent(`puskesmas_${collectionName}_updated`, {
+        detail: filtered
+      }));
     }
   } catch (e) {
-    console.warn(`[Storage] Local delete failed for ${localStorageKey}:`, e);
+    console.warn(`[Storage] Memory delete failed for ${cacheKey}:`, e);
   }
 
-  // 2. Delete from VPS SQLite Database via /api/db/* (only)
+  // 2. Delete dari VPS SQLite Database via /api/db/* (satu-satunya)
   try {
     apiFetch(`/api/db/${collectionName}/${encodeURIComponent(docId)}`, {
       method: 'DELETE'
@@ -208,31 +212,31 @@ function cleanUndefinedValues(obj: any): any {
 
 /**
  * Save Single Object (e.g. site_settings, contact_settings, homepage, theme)
- * Optimistic local write first, followed by VPS SQLite database (/api/db/*) sync.
- * Firestore fallback has been removed.
+ * Optimistic write ke memori dulu, diikuti sinkron VPS SQLite database (/api/db/*).
+ * Firestore fallback sudah dihapus.
  */
 export async function saveSingleDocument<T>(
   collectionName: string,
   docId: string,
   data: T,
-  localStorageKey: string
+  cacheKey: string
 ): Promise<void> {
   const cleanedData = cleanUndefinedValues(data);
 
-  // 1. Optimistic immediate write to LocalStorage (0ms)
+  // 1. Optimistic immediate write ke cache memori (0ms)
   try {
-    localStorage.setItem(localStorageKey, JSON.stringify(cleanedData));
+    memSet(cacheKey, cleanedData);
     window.dispatchEvent(new CustomEvent('puskesmas_doc_updated', {
-      detail: { collectionName, docId, localStorageKey, data: cleanedData }
+      detail: { collectionName, docId, cacheKey, data: cleanedData }
     }));
     if (collectionName === 'site_settings') {
       window.dispatchEvent(new CustomEvent('puskesmas_settings_updated', { detail: cleanedData }));
     }
   } catch (e) {
-    console.warn(`[Storage] Local save failed for ${localStorageKey}:`, e);
+    console.warn(`[Storage] Memory save failed for ${cacheKey}:`, e);
   }
 
-  // 2. Sync to VPS SQLite Database via /api/db/* (only)
+  // 2. Sync ke VPS SQLite Database via /api/db/* (satu-satunya)
   try {
     apiFetch(`/api/db/${collectionName}`, {
       method: 'POST',
@@ -254,45 +258,30 @@ export async function saveSingleDocument<T>(
 
 /**
  * Get Single Object (e.g. site_settings, contact_settings, homepage)
- * Cache-First: Returns local cache instantly (0ms) and revalidates from VPS SQLite database (/api/db/*).
- * Firestore fallback has been removed.
+ * In-memory cache: kembalikan cache memori instan (0ms) dan revalidasi dari VPS SQLite database (/api/db/*).
+ * Firestore fallback sudah dihapus.
  */
 export async function getSingleDocument<T>(
   collectionName: string,
   docId: string,
-  localStorageKey: string,
+  cacheKey: string,
   defaultInitialData: T
 ): Promise<T> {
-  let localData: T | null = null;
-
-  // 1. Check local cache first for instant 0ms rendering
-  try {
-    const local = localStorage.getItem(localStorageKey);
-    if (local) {
-      const parsed = JSON.parse(local);
-      if (parsed && typeof parsed === 'object') {
-        localData = parsed;
-      }
-    }
-  } catch (e) {
-    console.warn(`[Storage] Read error for ${localStorageKey}:`, e);
-  }
+  const cached = memGet<T>(cacheKey);
 
   const applyDoc = (authoritativeData: T) => {
-    try {
-      localStorage.setItem(localStorageKey, JSON.stringify(authoritativeData));
-      window.dispatchEvent(new CustomEvent('puskesmas_doc_updated', {
-        detail: { collectionName, docId, localStorageKey, data: authoritativeData }
-      }));
-      if (collectionName === 'site_settings') {
-        window.dispatchEvent(new CustomEvent('puskesmas_settings_updated', { detail: authoritativeData }));
-      }
-    } catch {}
+    memSet(cacheKey, authoritativeData);
+    window.dispatchEvent(new CustomEvent('puskesmas_doc_updated', {
+      detail: { collectionName, docId, cacheKey, data: authoritativeData }
+    }));
+    if (collectionName === 'site_settings') {
+      window.dispatchEvent(new CustomEvent('puskesmas_settings_updated', { detail: authoritativeData }));
+    }
   };
 
   const revalidateDoc = async (): Promise<T | null> => {
     try {
-      // Try VPS SQLite database via /api/db/* (the ONLY source - no Firestore fallback)
+      // Coba VPS SQLite database via /api/db/* (satu-satunya sumber - tanpa Firestore fallback)
       try {
         const vpsRes = await apiFetch(`/api/db/${collectionName}/${encodeURIComponent(docId)}?t=${Date.now()}`);
         if (vpsRes.ok) {
@@ -306,7 +295,7 @@ export async function getSingleDocument<T>(
         }
       } catch {}
 
-      // Try dedicated server API endpoints (backend, not Firestore)
+      // Coba dedicated server API endpoints (backend, bukan Firestore)
       try {
         const url = collectionName === 'site_settings'
           ? `/api/site-settings?t=${Date.now()}`
@@ -328,9 +317,9 @@ export async function getSingleDocument<T>(
     return null;
   };
 
-  if (localData !== null) {
+  if (cached !== null) {
     revalidateDoc().catch(() => {});
-    return localData;
+    return cached;
   }
 
   const fresh = await revalidateDoc();
