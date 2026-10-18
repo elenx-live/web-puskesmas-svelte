@@ -2,9 +2,15 @@
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
+import sharp from "sharp";
 import { decodeBase64Image, detectUploadImageMime, safeUploadFileName, MAX_UPLOAD_BYTES } from "../lib/storage.js";
 import { publicDir, uploadsDir } from "../lib/config.js";
 const router = Router();
+
+// Resolusi maksimal saat simpan (hemat storage VPS & bandwidth).
+// Gambar diperkecil ke max 1280px sisi terpanjang, kualitas 80%.
+const MAX_IMAGE_DIMENSION = 1280;
+const IMAGE_QUALITY = 80;
 
 router.post("/api/upload-logo", (req, res) => {
   try {
@@ -91,7 +97,7 @@ router.post("/api/upload-favicon", (req, res) => {
 // API endpoint to upload general post / featured image
 // Hardening: whitelist PNG/JPG/WebP (validasi magic bytes), maks 5MB,
 // nama file dibuat server (tidak memakai input user).
-router.post("/api/upload-image", (req, res) => {
+router.post("/api/upload-image", async (req, res) => {
   try {
     const { imageBase64 } = req.body;
     if (!imageBase64 || typeof imageBase64 !== "string") {
@@ -107,6 +113,28 @@ router.post("/api/upload-image", (req, res) => {
 
     if (buffer.length > MAX_UPLOAD_BYTES) {
       return res.status(400).json({ error: "Ukuran berkas melebihi batas 5MB" });
+    }
+
+    // Kecilkan resolusi: max 1280px sisi terpanjang, kualitas 80% (hemat storage & bandwidth)
+    let processedBuffer: Buffer = buffer;
+    try {
+      const image = sharp(buffer);
+      const metadata = await image.metadata();
+      const w = metadata.width || 0;
+      const h = metadata.height || 0;
+      if (w > MAX_IMAGE_DIMENSION || h > MAX_IMAGE_DIMENSION) {
+        image.resize(MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION, { fit: 'inside', withoutEnlargement: true });
+      }
+      if (mimeType === 'image/jpeg') {
+        processedBuffer = await image.jpeg({ quality: IMAGE_QUALITY }).toBuffer();
+      } else if (mimeType === 'image/webp') {
+        processedBuffer = await image.webp({ quality: IMAGE_QUALITY }).toBuffer();
+      } else if (mimeType === 'image/png') {
+        processedBuffer = await image.png({ compressionLevel: 8 }).toBuffer();
+      }
+    } catch (e) {
+      console.warn("Gagal resize gambar, pakai original:", e);
+      processedBuffer = buffer;
     }
 
     const uploadsDir = path.join(process.cwd(), "public", "uploads");
@@ -125,11 +153,11 @@ router.post("/api/upload-image", (req, res) => {
     const fileName = safeUploadFileName(ext);
     const targetFilePath = path.join(uploadsDir, fileName);
 
-    fs.writeFileSync(targetFilePath, buffer);
+    fs.writeFileSync(targetFilePath, processedBuffer);
 
     if (fs.existsSync(distUploadsDir)) {
       try {
-        fs.writeFileSync(path.join(distUploadsDir, fileName), buffer);
+        fs.writeFileSync(path.join(distUploadsDir, fileName), processedBuffer);
       } catch {}
     }
 
@@ -138,7 +166,8 @@ router.post("/api/upload-image", (req, res) => {
       success: true,
       url: publicUrl,
       fileName,
-      sizeBytes: buffer.length,
+      sizeBytes: processedBuffer.length,
+      originalSizeBytes: buffer.length,
       mimeType,
       message: "Gambar berhasil diunggah dan disimpan ke server."
     });
