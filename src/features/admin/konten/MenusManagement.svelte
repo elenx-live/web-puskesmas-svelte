@@ -37,8 +37,13 @@
   let deleteModalOpen = $state(false);
   let itemToDelete = $state<MenuItem | null>(null);
 
+  // Mutasi properti langsung (bukan spread-replace) agar Svelte hanya
+  // menginvalidasi properti yang berubah — tidak re-render seluruh form per keystroke.
   const patchEditingItem = (patch: Partial<MenuItem>) => {
-    if (editingItem) editingItem = { ...editingItem, ...patch };
+    if (!editingItem) return;
+    for (const k of Object.keys(patch) as (keyof MenuItem)[]) {
+      (editingItem as Record<string, unknown>)[k] = patch[k];
+    }
   };
 
   async function loadData() {

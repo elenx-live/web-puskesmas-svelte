@@ -48,8 +48,13 @@
   let editorTab = $state<'code' | 'preview'>('code');
   let textareaEl = $state<HTMLTextAreaElement | null>(null);
 
+  // Mutasi properti langsung (bukan spread-replace) agar Svelte hanya
+  // menginvalidasi properti yang berubah — tidak re-render seluruh editor per keystroke.
   const patchEditingPage = (patch: Partial<PageEntity>) => {
-    if (editingPage) editingPage = { ...editingPage, ...patch };
+    if (!editingPage) return;
+    for (const k of Object.keys(patch) as (keyof PageEntity)[]) {
+      (editingPage as Record<string, unknown>)[k] = patch[k];
+    }
   };
 
   function insertHtmlTag(openTag: string, closeTag: string, placeholder = '') {

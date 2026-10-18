@@ -72,8 +72,13 @@
   let saving = $state(false);
   let tagInput = $state('');
 
+  // Mutasi properti langsung (bukan spread-replace) agar Svelte hanya
+  // menginvalidasi properti yang berubah — tidak re-render seluruh editor per keystroke.
   const patchEditingPost = (patch: Partial<PostEntity>) => {
-    if (editingPost) editingPost = { ...editingPost, ...patch };
+    if (!editingPost) return;
+    for (const k of Object.keys(patch) as (keyof PostEntity)[]) {
+      (editingPost as Record<string, unknown>)[k] = patch[k];
+    }
   };
 
   // Direct File Upload & AI Image Generation
