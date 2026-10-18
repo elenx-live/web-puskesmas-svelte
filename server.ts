@@ -143,8 +143,7 @@ async function startViteMiddleware() {
         rawHtml = await viteDevServer.transformIndexHtml(req.originalUrl, rawHtml);
       }
 
-      const html = renderHtmlWithMeta(req, rawHtml);
-      return res.status(200).set({ "Content-Type": "text/html; charset=utf-8" }).send(html);
+      return res.status(200).set({ "Content-Type": "text/html; charset=utf-8" }).send(rawHtml);
     } catch (err) {
       console.error("HTML Meta Handler Error:", err);
       if (viteDevServer) return viteDevServer.middlewares(req, res, next);
