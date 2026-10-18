@@ -1097,7 +1097,7 @@ router.post("/api/ai/generate-image", async (req, res) => {
       const model = imageConfig.model || "flux";
       logger.info(`Generating image with connected provider: Pollinations AI (${model})...`);
       const cleanPrompt = encodeURIComponent(finalEnglishPrompt.substring(0, 450));
-      const pollinationsUrl = `https://image.pollinations.ai/prompt/${cleanPrompt}?width=1280&height=720&model=${model}&nologo=true&enhance=false&seed=${Date.now() % 100000}`;
+      const pollinationsUrl = `https://image.pollinations.ai/prompt/${cleanPrompt}?width=1024&height=576&model=${model}&nologo=true&enhance=false&seed=${Date.now() % 100000}`;
 
       return res.json({
         success: true,
