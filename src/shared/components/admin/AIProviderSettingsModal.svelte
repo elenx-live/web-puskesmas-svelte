@@ -17,6 +17,11 @@
   }
 
   let { isOpen, initialTab = 'text', onClose, onSaved }: Props = $props();
+
+  function handleCardSaved() {
+    // Refresh config untuk parent, lalu teruskan callback
+    onSaved?.({} as AIProviderConfig);
+  }
 </script>
 
 <Modal {isOpen} {onClose} title="Pengaturan AI Provider" size="xl">
@@ -24,5 +29,5 @@
     <Button variant="secondary" onclick={onClose}>Tutup</Button>
   {/snippet}
 
-  <AIProviderSettingsCard />
+  <AIProviderSettingsCard onSaved={handleCardSaved} />
 </Modal>

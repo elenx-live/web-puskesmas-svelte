@@ -1,6 +1,7 @@
 import type { PuskesmasContactSettings, ContactChannelEntity, OperatingDayEntity, SpecialHourEntity, EmergencyInfoEntity } from '../types/index.js';
 import { auditService } from './auditService';
 import { getSingleDocument, saveSingleDocument } from '../lib/firebase';
+import { apiFetch } from '../lib/api.js';
 
 const CONTACT_SETTINGS_KEY = 'puskesmas_contact_settings_v1';
 const FIRESTORE_COLLECTION = 'site_settings';
@@ -170,7 +171,7 @@ export const contactService = {
 
     // 2. Server API save for cross-device & cross-browser synchronization
     try {
-      await fetch('/api/contact-settings', {
+      await apiFetch('/api/contact-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated)
@@ -211,7 +212,7 @@ export const contactService = {
         localStorage.setItem('puskesmas_site_settings', JSON.stringify(siteObj));
         saveSingleDocument('site_settings', 'global_settings', siteObj, 'puskesmas_site_settings').catch(() => {});
         try {
-          fetch('/api/site-settings', {
+          apiFetch('/api/site-settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(siteObj)

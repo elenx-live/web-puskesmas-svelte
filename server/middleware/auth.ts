@@ -80,6 +80,8 @@ function isPublicApiRequest(req: Request): boolean {
   // Endpoint auth Google selalu publik (login & config)
   if (p === "/auth/config" && req.method === "GET") return true;
   if (p === "/auth/google" && req.method === "POST") return true;
+  // Form publik: pengaduan & pendaftaran boleh POST tanpa login
+  if (req.method === "POST" && (p === "/data/complaints" || p === "/data/registrations")) return true;
   if (req.method !== "GET") return false;
   if (p === "/health") return true; // GET /api/health
   if (p === "/webhooks/whatsapp") return true; // verifikasi webhook (GET)

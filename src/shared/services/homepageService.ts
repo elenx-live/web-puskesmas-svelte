@@ -1,6 +1,7 @@
 import type { HomepageSection, HomepageBuilderConfig, HomepageTemplateType, BackgroundAnimationType } from '../types/index.js';
 import { auditService } from './auditService';
 import { saveSingleDocument } from '../lib/firebase';
+import { apiFetch } from '../lib/api.js';
 
 const DRAFT_KEY = 'puskesmas_homepage_draft';
 const PUBLISHED_KEY = 'puskesmas_homepage_published';
@@ -218,7 +219,7 @@ export const homepageService = {
 
     // 2. Fetch latest draft from server
     try {
-      const res = await fetch('/api/homepage/draft?_t=' + Date.now(), {
+      const res = await apiFetch('/api/homepage/draft?_t=' + Date.now(), {
         headers: { 'Cache-Control': 'no-cache' }
       });
       if (res.ok) {
@@ -304,7 +305,7 @@ export const homepageService = {
 
     // 2. Persist to Node.js backend
     try {
-      await fetch('/api/homepage/draft', {
+      await apiFetch('/api/homepage/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
@@ -355,7 +356,7 @@ export const homepageService = {
 
     // 2. Persist to Node.js backend for all other devices
     try {
-      await fetch('/api/homepage/publish', {
+      await apiFetch('/api/homepage/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
@@ -401,7 +402,7 @@ export const homepageService = {
 
     // 2. Reset on Server
     try {
-      await fetch('/api/homepage/reset', { method: 'POST' });
+      await apiFetch('/api/homepage/reset', { method: 'POST' });
     } catch (err) {
       console.warn('Server homepage reset failed:', err);
     }

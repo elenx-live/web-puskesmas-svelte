@@ -5,6 +5,7 @@ import type {
   NotificationJob 
 } from '../types/index.js';
 import { auditService } from './auditService';
+import { apiFetch } from '../lib/api.js';
 
 const STORAGE_NOTIFICATIONS = 'puskesmas_notifications';
 const STORAGE_TEMPLATES = 'puskesmas_notification_templates';
@@ -528,7 +529,7 @@ export const notificationService = {
 
       // WhatsApp Integration (Phase 5D)
       try {
-        const configRes = await fetch('/api/whatsapp/config');
+        const configRes = await apiFetch('/api/whatsapp/config');
         if (configRes.ok) {
           const config = await configRes.json();
           if (config.enabled) {
@@ -552,7 +553,7 @@ export const notificationService = {
             }
 
             if (phone && consented) {
-              const waRes = await fetch('/api/whatsapp/send', {
+              const waRes = await apiFetch('/api/whatsapp/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

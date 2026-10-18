@@ -1,6 +1,7 @@
 import type { GlobalThemeConfig } from '../types/index.js';
 import { auditService } from './auditService';
 import { saveSingleDocument } from '../lib/firebase';
+import { apiFetch } from '../lib/api.js';
 
 const DRAFT_KEY = 'puskesmas_theme_draft';
 const PUBLISHED_KEY = 'puskesmas_theme_published';
@@ -179,7 +180,7 @@ export const themeService = {
 
     // 2. Try fetching from server
     try {
-      const res = await fetch('/api/theme/draft?_t=' + Date.now(), {
+      const res = await apiFetch('/api/theme/draft?_t=' + Date.now(), {
         headers: { 'Cache-Control': 'no-cache' }
       });
       if (res.ok) {
@@ -245,7 +246,7 @@ export const themeService = {
 
     // 2. Save to server backend
     try {
-      await fetch('/api/theme/draft', {
+      await apiFetch('/api/theme/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(fullConfig)
@@ -288,7 +289,7 @@ export const themeService = {
 
     // 2. Persist to Node.js server so all visitors get this theme instantly
     try {
-      await fetch('/api/theme/publish', {
+      await apiFetch('/api/theme/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(fullConfig)
@@ -328,7 +329,7 @@ export const themeService = {
 
     // 2. Reset on server
     try {
-      await fetch('/api/theme/reset', { method: 'POST' });
+      await apiFetch('/api/theme/reset', { method: 'POST' });
     } catch (err) {
       console.warn('Server theme reset failed:', err);
     }

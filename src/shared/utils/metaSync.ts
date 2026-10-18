@@ -1,4 +1,5 @@
 import type { SiteSettings } from '../types/index.js';
+import { apiFetch } from '../lib/api.js';
 
 interface SyncMetadataPayload {
   settings?: Partial<SiteSettings>;
@@ -79,7 +80,7 @@ export async function syncMetadataToServer(customSettings?: Partial<SiteSettings
       }
     } catch {}
 
-    const res = await fetch('/api/sync-metadata', {
+    const res = await apiFetch('/api/sync-metadata', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -104,7 +105,7 @@ export async function syncPostItemToServer(post: {
 }): Promise<void> {
   if (!post.slug) return;
   try {
-    await fetch('/api/posts/sync-item', {
+    await apiFetch('/api/posts/sync-item', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -131,7 +132,7 @@ export async function syncMicrositeItemToServer(microsite: {
 }): Promise<void> {
   if (!microsite.slug) return;
   try {
-    await fetch('/api/microsites/sync-item', {
+    await apiFetch('/api/microsites/sync-item', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

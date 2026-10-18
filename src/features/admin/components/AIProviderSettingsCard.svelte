@@ -42,6 +42,12 @@
     reply?: string;
   }
 
+  interface Props {
+    onSaved?: () => void;
+  }
+
+  let { onSaved }: Props = $props();
+
   let activeTab = $state<'text' | 'image'>('text');
   let loading = $state(false);
   let saving = $state(false);
@@ -308,6 +314,7 @@
       });
 
       toastStore.showToast('Konfigurasi Provider AI (Teks & Gambar) berhasil disimpan!', 'success');
+      onSaved?.();
       await loadConfig();
     } catch (err: any) {
       toastStore.showToast(err.message || 'Gagal menyimpan pengaturan AI', 'error');

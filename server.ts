@@ -86,6 +86,13 @@ app.use(themeRouter);
 app.use(homepageRouter);
 app.use(micrositesRouter);
 app.use(uploadsRouter);
+// Alias /api/db/* -> /api/data/* (frontend firebase.ts memakai /api/db/)
+app.use((req, _res, next) => {
+  if (req.path.startsWith("/api/db/")) {
+    req.url = req.url.replace("/api/db/", "/api/data/");
+  }
+  next();
+});
 app.use(miscRouter);
 app.use(authRouter);
 

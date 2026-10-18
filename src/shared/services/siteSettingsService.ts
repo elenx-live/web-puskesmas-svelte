@@ -3,6 +3,7 @@ import { INITIAL_SITE_SETTINGS } from '../firebase/seedData';
 import { auditService } from './auditService';
 import { getSingleDocument, saveSingleDocument } from '../lib/firebase';
 import { syncMetadataToServer, updateClientMetaTags } from '../utils/metaSync';
+import { apiFetch } from '../lib/api.js';
 
 const LOCAL_STORAGE_KEY = 'puskesmas_site_settings';
 const FIRESTORE_COLLECTION = 'site_settings';
@@ -279,7 +280,7 @@ export const siteSettingsService = {
         localStorage.setItem('puskesmas_contact_settings_v1', JSON.stringify(contactObj));
         saveSingleDocument('site_settings', 'contact_settings_v1', contactObj, 'puskesmas_contact_settings_v1').catch(() => {});
         try {
-          fetch('/api/contact-settings', {
+          apiFetch('/api/contact-settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(contactObj)
@@ -295,7 +296,7 @@ export const siteSettingsService = {
 
     // Direct server POST for immediate reflection across all devices & browsers
     try {
-      fetch('/api/site-settings', {
+      apiFetch('/api/site-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSettings)
@@ -313,7 +314,7 @@ export const siteSettingsService = {
           themeObj.updatedAt = new Date().toISOString();
           localStorage.setItem('puskesmas_theme_published_config', JSON.stringify(themeObj));
           saveSingleDocument('theme_config', 'published', themeObj, 'puskesmas_theme_published_config').catch(() => {});
-          fetch('/api/theme/publish', {
+          apiFetch('/api/theme/publish', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(themeObj)
