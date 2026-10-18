@@ -152,31 +152,20 @@ export function disableGisAutoSelect(): void {
 }
 
 // ---------- Penyimpanan Google ID Token (untuk Bearer di API requests) ----------
-const TOKEN_KEY = 'puskesmas_google_token';
+/** Token disimpan di memori saja — TIDAK di localStorage (permintaan user: jangan simpan data di browser). */
+let _inMemoryToken: string | null = null;
 
 /** Ambil Google ID Token tersimpan (null bila belum login). */
 export function getGoogleIdToken(): string | null {
-  try {
-    return typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
-  } catch {
-    return null;
-  }
+  return _inMemoryToken;
 }
 
-/** Simpan Google ID Token setelah login berhasil. */
+/** Simpan Google ID Token setelah login berhasil (memori saja). */
 export function setGoogleIdToken(token: string): void {
-  try {
-    localStorage.setItem(TOKEN_KEY, token);
-  } catch {
-    /* abaikan */
-  }
+  _inMemoryToken = token;
 }
 
 /** Hapus token saat logout. */
 export function clearGoogleIdToken(): void {
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-  } catch {
-    /* abaikan */
-  }
+  _inMemoryToken = null;
 }

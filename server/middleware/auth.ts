@@ -27,13 +27,15 @@ async function verifyBearerToken(idToken: string): Promise<AuthedRequest["user"]
 async function authenticate(req: AuthedRequest, res: Response, next: NextFunction) {
   const header: string = req.headers.authorization || "";
   const m = header.match(/^Bearer\s+(.+)$/i);
-  if (!m) {
+  // Token dari header Authorization ATAU httpOnly cookie (tanpa browser storage).
+  const token = m ? m[1].trim() : (req as any).cookies?.puskesmas_session || "";
+  if (!token) {
     return res.status(401).json({
       error: "Unauthorized: sertakan Google ID Token pada header Authorization: Bearer <token>.",
     });
   }
   try {
-    const user = await verifyBearerToken(m[1].trim());
+    const user = await verifyBearerToken(token);
     req.user = user;
     return next();
   } catch (err: unknown) {

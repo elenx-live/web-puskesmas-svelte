@@ -5,7 +5,8 @@ import { userService } from './userService';
 import { roleService } from './roleService';
 import { auditService } from './auditService';
 
-const SESSION_KEY = 'puskesmas_auth_session';
+/** User disimpan di memori saja — TIDAK di localStorage (permintaan user: jangan simpan data di browser). */
+let _inMemoryUser: AppUser | null = null;
 
 // Re-export untuk kompatibilitas (dipakai api.ts)
 export { getGoogleIdToken } from '../lib/gis';
@@ -119,7 +120,7 @@ export const authService = {
         lastLoginAt: new Date().toISOString()
       };
 
-      localStorage.setItem(SESSION_KEY, JSON.stringify(superAdminUser));
+      _inMemoryUser = superAdminUser;
 
       await auditService.recordLog({
         userId: superAdminUser.uid,
@@ -164,7 +165,7 @@ export const authService = {
       lastLoginAt: new Date().toISOString()
     };
 
-    localStorage.setItem(SESSION_KEY, JSON.stringify(fullUser));
+    _inMemoryUser = fullUser;
 
     await auditService.recordLog({
       userId: fullUser.uid,
@@ -220,7 +221,7 @@ export const authService = {
         lastLoginAt: new Date().toISOString()
       };
 
-      localStorage.setItem(SESSION_KEY, JSON.stringify(superAdminUser));
+      _inMemoryUser = superAdminUser;
 
       await auditService.recordLog({
         userId: superAdminUser.uid,
@@ -267,7 +268,7 @@ export const authService = {
       lastLoginAt: new Date().toISOString()
     };
 
-    localStorage.setItem(SESSION_KEY, JSON.stringify(fullUser));
+    _inMemoryUser = fullUser;
 
     await auditService.recordLog({
       userId: fullUser.uid,
@@ -290,23 +291,38 @@ export const authService = {
 
   async getCurrentUser(): Promise<AppUser | null> {
     try {
-      const session = localStorage.getItem(SESSION_KEY);
-      if (!session) return null;
-      const user: AppUser = JSON.parse(session);
-      
-      // If role refresh is needed, trigger asynchronously in background without blocking instant login/page render
-      roleService.getRoleById(user.roleId).then((role) => {
-        if (role) {
-          const updatedUser: AppUser = {
-            ...user,
-            permissions: role.permissions,
-            roleName: role.name
-          };
-          localStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser));
+      // 1. Return in-memory jika ada
+      if (_inMemoryUser) {
+        const user = _inMemoryUser;
+        // Refresh role async di background
+        roleService.getRoleById(user.roleId).then((role) => {
+          if (role) {
+            _inMemoryUser = { ...user, permissions: role.permissions, roleName: role.name };
+          }
+        }).catch(() => {});
+        return user;
+      }
+      // 2. Coba rehidrasi dari cookie via /api/auth/me (tanpa browser storage)
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok && data.user?.email) {
+            // Verifikasi user terdaftar di database
+            const dbUser = await userService.getUserByEmail(data.user.email);
+            if (dbUser) {
+              const role = await roleService.getRoleById(dbUser.roleId).catch(() => null);
+              _inMemoryUser = {
+                ...dbUser,
+                permissions: role?.permissions || dbUser.permissions || [],
+                roleName: role?.name || dbUser.roleName,
+              } as AppUser;
+              return _inMemoryUser;
+            }
+          }
         }
-      }).catch(() => {});
-
-      return user;
+      } catch {}
+      return null;
     } catch {
       return null;
     }
@@ -324,9 +340,13 @@ export const authService = {
         description: `Pengguna ${user.displayName} melakukan logout.`
       }).catch(() => {});
     }
-    localStorage.removeItem(SESSION_KEY);
+    _inMemoryUser = null;
     clearGoogleIdToken();
     disableGisAutoSelect();
+    // Hapus cookie sesi di backend
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch {}
     window.dispatchEvent(new Event('storage'));
   }
 };

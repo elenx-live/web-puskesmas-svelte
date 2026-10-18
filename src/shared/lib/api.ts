@@ -20,5 +20,5 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
   for (const [k, v] of Object.entries(auth)) {
     if (!headers.has(k)) headers.set(k, v);
   }
-  return fetch(input, { ...init, headers });
+  return fetch(input, { ...init, headers, credentials: 'include' });
 }
