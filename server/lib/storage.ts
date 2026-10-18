@@ -850,7 +850,8 @@ function getServerPosts(): Record<string, any> {
               excerpt: item.excerpt || item.summary || '',
               featuredImage: item.featuredImage || item.coverImage || item.imageUrl || '',
               category: item.category || 'Berita & Informasi',
-              publishedAt: item.publishedAt || item.date || ''
+              publishedAt: item.publishedAt || item.date || '',
+              updatedAt: item.updatedAt || item.publishedAt || ''
             };
           }
         }
