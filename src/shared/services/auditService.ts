@@ -1,13 +1,14 @@
 import type { AuditLog } from '../types/index.js';
 import { INITIAL_AUDIT_LOGS } from '../firebase/seedData';
+import { memStore } from '../lib/memStore';
 
 const LOCAL_STORAGE_KEY = 'puskesmas_audit_logs';
 
 function getStoredAuditLogs(): AuditLog[] {
   try {
-    const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const data = memStore.getItem(LOCAL_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_AUDIT_LOGS));
+      memStore.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_AUDIT_LOGS));
       return INITIAL_AUDIT_LOGS;
     }
     return JSON.parse(data);
@@ -18,9 +19,9 @@ function getStoredAuditLogs(): AuditLog[] {
 
 function saveStoredAuditLogs(logs: AuditLog[]) {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
+    memStore.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
   } catch (err) {
-    console.error('Failed to save audit logs to localStorage:', err);
+    console.error('Failed to save audit logs to memory store:', err);
   }
 }
 

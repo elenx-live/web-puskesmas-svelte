@@ -6,6 +6,7 @@ import type {
 } from '../types/index.js';
 import { auditService } from './auditService';
 import { apiFetch } from '../lib/api.js';
+import { memStore } from '../lib/memStore';
 
 const STORAGE_NOTIFICATIONS = 'puskesmas_notifications';
 const STORAGE_TEMPLATES = 'puskesmas_notification_templates';
@@ -131,7 +132,7 @@ const DEFAULT_TEMPLATES: NotificationTemplate[] = [
 // Helper Storage
 function getNotifications(): NotificationEntity[] {
   try {
-    const data = localStorage.getItem(STORAGE_NOTIFICATIONS);
+    const data = memStore.getItem(STORAGE_NOTIFICATIONS);
     return data ? JSON.parse(data) : [];
   } catch {
     return [];
@@ -139,14 +140,14 @@ function getNotifications(): NotificationEntity[] {
 }
 
 function saveNotifications(list: NotificationEntity[]) {
-  localStorage.setItem(STORAGE_NOTIFICATIONS, JSON.stringify(list));
+  memStore.setItem(STORAGE_NOTIFICATIONS, JSON.stringify(list));
 }
 
 function getTemplates(): NotificationTemplate[] {
   try {
-    const data = localStorage.getItem(STORAGE_TEMPLATES);
+    const data = memStore.getItem(STORAGE_TEMPLATES);
     if (!data) {
-      localStorage.setItem(STORAGE_TEMPLATES, JSON.stringify(DEFAULT_TEMPLATES));
+      memStore.setItem(STORAGE_TEMPLATES, JSON.stringify(DEFAULT_TEMPLATES));
       return DEFAULT_TEMPLATES;
     }
     return JSON.parse(data);
@@ -156,12 +157,12 @@ function getTemplates(): NotificationTemplate[] {
 }
 
 function saveTemplates(list: NotificationTemplate[]) {
-  localStorage.setItem(STORAGE_TEMPLATES, JSON.stringify(list));
+  memStore.setItem(STORAGE_TEMPLATES, JSON.stringify(list));
 }
 
 function getPreferences(): NotificationPreference[] {
   try {
-    const data = localStorage.getItem(STORAGE_PREFERENCES);
+    const data = memStore.getItem(STORAGE_PREFERENCES);
     return data ? JSON.parse(data) : [];
   } catch {
     return [];
@@ -169,12 +170,12 @@ function getPreferences(): NotificationPreference[] {
 }
 
 function savePreferences(list: NotificationPreference[]) {
-  localStorage.setItem(STORAGE_PREFERENCES, JSON.stringify(list));
+  memStore.setItem(STORAGE_PREFERENCES, JSON.stringify(list));
 }
 
 function getJobs(): NotificationJob[] {
   try {
-    const data = localStorage.getItem(STORAGE_JOBS);
+    const data = memStore.getItem(STORAGE_JOBS);
     return data ? JSON.parse(data) : [];
   } catch {
     return [];
@@ -182,7 +183,7 @@ function getJobs(): NotificationJob[] {
 }
 
 function saveJobs(list: NotificationJob[]) {
-  localStorage.setItem(STORAGE_JOBS, JSON.stringify(list));
+  memStore.setItem(STORAGE_JOBS, JSON.stringify(list));
 }
 
 // Security & Sanitization
@@ -321,7 +322,7 @@ export const notificationService = {
     createdAt: string;
   }> {
     try {
-      const data = localStorage.getItem('puskesmas_audit_logs');
+      const data = memStore.getItem('puskesmas_audit_logs');
       if (!data) return [];
       const logs: any[] = JSON.parse(data);
       return logs
@@ -539,7 +540,7 @@ export const notificationService = {
 
             if (relatedEntityId && (relatedEntity === 'pendaftaran' || relatedEntity === 'antrean')) {
               try {
-                const regsData = localStorage.getItem('puskesmas_online_registrations');
+                const regsData = memStore.getItem('puskesmas_online_registrations');
                 const registrations = regsData ? JSON.parse(regsData) : [];
                 const matchedReg = registrations.find((r: any) => r.id === relatedEntityId);
                 if (matchedReg) {

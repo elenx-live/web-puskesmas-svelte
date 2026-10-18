@@ -3,6 +3,7 @@ import { auditService } from './auditService';
 import { sanitizeHtml, sanitizeText } from '../utils/sanitize';
 import { getCollectionData, saveDocumentData, deleteDocumentData } from '../lib/firebase';
 import { syncMetadataToServer, syncPostItemToServer } from '../utils/metaSync';
+import { memStore } from '../lib/memStore';
 
 const POSTS_STORAGE_KEY = 'puskesmas_cms_posts';
 const FIRESTORE_COLLECTION = 'posts';
@@ -104,7 +105,7 @@ async function fetchPosts(): Promise<PostEntity[]> {
 
 function getStoredPosts(): PostEntity[] {
   try {
-    const data = localStorage.getItem(POSTS_STORAGE_KEY);
+    const data = memStore.getItem(POSTS_STORAGE_KEY);
     if (data) {
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed)) return parsed;

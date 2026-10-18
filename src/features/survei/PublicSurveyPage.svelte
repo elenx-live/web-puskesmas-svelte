@@ -1,5 +1,6 @@
 <!-- @component Kuesioner survei publik — menerima prop `id` (slug survei dari rute /survei/:id); mendukung verifikasi kode registrasi, rating/multiple_choice/teks, dan privasi anonim. -->
 <script lang="ts">
+import { memStore } from '../../shared/lib/memStore';
   import { surveyService } from '../../shared/services/surveyService.js';
   import type { SurveyEntity, SurveyAnswer } from '../../shared/types/index.js';
   import Card from '../../shared/ui/Card.svelte';
@@ -83,7 +84,7 @@
 
     try {
       // Direct call to registrationService or checking local registrations via API mock pattern
-      const dataStr = localStorage.getItem('puskesmas_online_registrations');
+      const dataStr = memStore.getItem('puskesmas_online_registrations');
       const registrations = dataStr ? JSON.parse(dataStr) : [];
       const matched = registrations.find(
         (r: { registrationNumber: string }) => r.registrationNumber === registrationCode.trim().toUpperCase(),

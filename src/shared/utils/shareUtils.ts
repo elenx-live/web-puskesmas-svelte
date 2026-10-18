@@ -1,3 +1,4 @@
+import { memStore } from '../lib/memStore';
 /**
  * WhatsApp & Social Media Dynamic Link Generator
  * Memastikan setiap tautan yang dibagikan ke WhatsApp memiliki judul, deskripsi,
@@ -18,7 +19,7 @@ export function getPublicCanonicalOrigin(): string {
   
   // 1. Check if user configured a production custom domain in site settings
   try {
-    const rawSettings = localStorage.getItem('puskesmas_site_settings');
+    const rawSettings = memStore.getItem('puskesmas_site_settings');
     if (rawSettings) {
       const parsed = JSON.parse(rawSettings);
       if (parsed.siteUrl && (parsed.siteUrl.startsWith('http://') || parsed.siteUrl.startsWith('https://'))) {

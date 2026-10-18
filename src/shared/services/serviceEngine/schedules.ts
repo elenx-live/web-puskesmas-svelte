@@ -7,6 +7,7 @@ import type {
 } from '../../types/index.js';
 import { servicesApi } from "./services.js";
 import { sanitizeInput, generateSlug, auditService, saveSingleDocument, SCHEDULES_STORAGE_KEY, EXCEPTIONS_STORAGE_KEY, PRICING_STORAGE_KEY, getStoredRequirements, getStoredProcedures, getStoredProducts, getStoredStandards, getStoredServices, saveStoredServices, getStoredCategories, getStoredClusters, getStoredUnits, getStoredLocations } from "./common.js";
+import { memStore } from '../../lib/memStore';
 export const schedulesApi = {
   async getServiceSchedule(serviceId: string): Promise<ServiceScheduleEntity> {
     const all = getStoredSchedules();
@@ -819,7 +820,7 @@ export function createDefaultScheduleRules(serviceId: string): ServiceScheduleRu
 
 function getStoredSchedules(): ServiceScheduleEntity[] {
   try {
-    const raw = localStorage.getItem(SCHEDULES_STORAGE_KEY);
+    const raw = memStore.getItem(SCHEDULES_STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -828,7 +829,7 @@ function getStoredSchedules(): ServiceScheduleEntity[] {
 
 function saveStoredSchedules(data: ServiceScheduleEntity[]) {
   try {
-    localStorage.setItem(SCHEDULES_STORAGE_KEY, JSON.stringify(data));
+    memStore.setItem(SCHEDULES_STORAGE_KEY, JSON.stringify(data));
     saveSingleDocument('service_engine', 'schedules', data, SCHEDULES_STORAGE_KEY).catch(() => {});
     fetch('/api/db/service_schedules', {
       method: 'POST',
@@ -842,7 +843,7 @@ function saveStoredSchedules(data: ServiceScheduleEntity[]) {
 
 function getStoredExceptions(): ServiceScheduleExceptionEntity[] {
   try {
-    const raw = localStorage.getItem(EXCEPTIONS_STORAGE_KEY);
+    const raw = memStore.getItem(EXCEPTIONS_STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -851,7 +852,7 @@ function getStoredExceptions(): ServiceScheduleExceptionEntity[] {
 
 function saveStoredExceptions(data: ServiceScheduleExceptionEntity[]) {
   try {
-    localStorage.setItem(EXCEPTIONS_STORAGE_KEY, JSON.stringify(data));
+    memStore.setItem(EXCEPTIONS_STORAGE_KEY, JSON.stringify(data));
     saveSingleDocument('service_engine', 'schedule_exceptions', data, EXCEPTIONS_STORAGE_KEY).catch(() => {});
     fetch('/api/db/service_schedule_exceptions', {
       method: 'POST',
@@ -896,11 +897,11 @@ export const INITIAL_PRICING: ServicePricingEntity[] = [
 
 function getStoredPricing(): ServicePricingEntity[] {
   try {
-    const raw = localStorage.getItem(PRICING_STORAGE_KEY);
+    const raw = memStore.getItem(PRICING_STORAGE_KEY);
     if (!raw) {
       fetch('/api/db/service_pricing').then(r => r.json()).then(res => {
         const arrData = Array.isArray(res) ? res : (res && Array.isArray(res.docs) ? res.docs : (res && res.success && Array.isArray(res.data) ? res.data : null)); if (arrData) {
-          localStorage.setItem(PRICING_STORAGE_KEY, JSON.stringify(arrData));
+          memStore.setItem(PRICING_STORAGE_KEY, JSON.stringify(arrData));
         }
       }).catch(() => {});
       return [];
@@ -913,7 +914,7 @@ function getStoredPricing(): ServicePricingEntity[] {
 
 function saveStoredPricing(data: ServicePricingEntity[]) {
   try {
-    localStorage.setItem(PRICING_STORAGE_KEY, JSON.stringify(data));
+    memStore.setItem(PRICING_STORAGE_KEY, JSON.stringify(data));
     saveSingleDocument('service_engine', 'pricing', data, PRICING_STORAGE_KEY).catch(() => {});
     fetch('/api/db/service_pricing', {
       method: 'POST',

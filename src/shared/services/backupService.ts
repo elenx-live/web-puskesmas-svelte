@@ -1,5 +1,6 @@
 import { auditService } from './auditService';
 import { getCollectionData, saveDocumentData, deleteDocumentData, saveSingleDocument } from '../lib/firebase';
+import { memStore } from '../lib/memStore';
 
 export interface BackupRecord {
   id: string;
@@ -77,9 +78,9 @@ const INITIAL_BACKUPS: BackupRecord[] = [
 export const backupService = {
   getBackups(): BackupRecord[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
+      const data = memStore.getItem(STORAGE_KEY);
       if (!data) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_BACKUPS));
+        memStore.setItem(STORAGE_KEY, JSON.stringify(INITIAL_BACKUPS));
         // Also sync from VPS database in background
         getCollectionData<BackupRecord>(FIRESTORE_COLLECTION, STORAGE_KEY, INITIAL_BACKUPS).catch(() => {});
         return INITIAL_BACKUPS;
@@ -95,12 +96,12 @@ export const backupService = {
   },
 
   saveBackups(backups: BackupRecord[]) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(backups));
+    memStore.setItem(STORAGE_KEY, JSON.stringify(backups));
   },
 
   getRetentionConfig() {
     try {
-      const data = localStorage.getItem(RETENTION_KEY);
+      const data = memStore.getItem(RETENTION_KEY);
       return data ? JSON.parse(data) : defaultRetentionConfig;
     } catch {
       return defaultRetentionConfig;
@@ -108,7 +109,7 @@ export const backupService = {
   },
 
   saveRetentionConfig(config: typeof defaultRetentionConfig, actor: { id: string; email: string; name: string }) {
-    localStorage.setItem(RETENTION_KEY, JSON.stringify(config));
+    memStore.setItem(RETENTION_KEY, JSON.stringify(config));
     saveSingleDocument('site_settings', 'backup_retention_config', config, RETENTION_KEY).catch(() => {});
     auditService.recordLog({
       userId: actor.id,
@@ -148,22 +149,22 @@ export const backupService = {
 
     try {
       const snapshot = {
-        registrations: JSON.parse(localStorage.getItem('puskesmas_online_registrations') || localStorage.getItem('puskesmas_registrations') || '[]'),
-        complaints: JSON.parse(localStorage.getItem('puskesmas_complaints') || '[]'),
-        posts: JSON.parse(localStorage.getItem('puskesmas_posts') || localStorage.getItem('puskesmas_cms_posts') || '[]'),
-        documents: JSON.parse(localStorage.getItem('puskesmas_documents') || '[]'),
-        services: JSON.parse(localStorage.getItem('puskesmas_services') || '[]'),
-        facilities: JSON.parse(localStorage.getItem('puskesmas_facilities_data') || localStorage.getItem('puskesmas_facilities') || '[]'),
-        faqs: JSON.parse(localStorage.getItem('puskesmas_faqs') || '[]'),
-        microsites: JSON.parse(localStorage.getItem('puskesmas_microsites') || localStorage.getItem('puskesmas_cms_microsites') || '[]'),
-        categories: JSON.parse(localStorage.getItem('puskesmas_cms_categories') || '[]'),
-        micrositeCategories: JSON.parse(localStorage.getItem('puskesmas_cms_microsite_categories') || '[]'),
-        announcements: JSON.parse(localStorage.getItem('puskesmas_announcements') || '[]'),
-        publicInfo: JSON.parse(localStorage.getItem('puskesmas_public_information') || '[]'),
-        surveys: JSON.parse(localStorage.getItem('puskesmas_surveys') || '[]'),
-        staffProfiles: JSON.parse(localStorage.getItem('puskesmas_staff_profiles') || '[]'),
-        settings: JSON.parse(localStorage.getItem('puskesmas_site_settings') || '{}'),
-        theme: JSON.parse(localStorage.getItem('puskesmas_theme_settings') || '{}')
+        registrations: JSON.parse(memStore.getItem('puskesmas_online_registrations') || memStore.getItem('puskesmas_registrations') || '[]'),
+        complaints: JSON.parse(memStore.getItem('puskesmas_complaints') || '[]'),
+        posts: JSON.parse(memStore.getItem('puskesmas_posts') || memStore.getItem('puskesmas_cms_posts') || '[]'),
+        documents: JSON.parse(memStore.getItem('puskesmas_documents') || '[]'),
+        services: JSON.parse(memStore.getItem('puskesmas_services') || '[]'),
+        facilities: JSON.parse(memStore.getItem('puskesmas_facilities_data') || memStore.getItem('puskesmas_facilities') || '[]'),
+        faqs: JSON.parse(memStore.getItem('puskesmas_faqs') || '[]'),
+        microsites: JSON.parse(memStore.getItem('puskesmas_microsites') || memStore.getItem('puskesmas_cms_microsites') || '[]'),
+        categories: JSON.parse(memStore.getItem('puskesmas_cms_categories') || '[]'),
+        micrositeCategories: JSON.parse(memStore.getItem('puskesmas_cms_microsite_categories') || '[]'),
+        announcements: JSON.parse(memStore.getItem('puskesmas_announcements') || '[]'),
+        publicInfo: JSON.parse(memStore.getItem('puskesmas_public_information') || '[]'),
+        surveys: JSON.parse(memStore.getItem('puskesmas_surveys') || '[]'),
+        staffProfiles: JSON.parse(memStore.getItem('puskesmas_staff_profiles') || '[]'),
+        settings: JSON.parse(memStore.getItem('puskesmas_site_settings') || '{}'),
+        theme: JSON.parse(memStore.getItem('puskesmas_theme_settings') || '{}')
       };
 
       const dataString = JSON.stringify(snapshot);
@@ -231,57 +232,57 @@ export const backupService = {
 
     const snap = bk.dataSnapshot;
     if (snap.registrations) {
-      localStorage.setItem('puskesmas_online_registrations', JSON.stringify(snap.registrations));
-      localStorage.setItem('puskesmas_registrations', JSON.stringify(snap.registrations));
+      memStore.setItem('puskesmas_online_registrations', JSON.stringify(snap.registrations));
+      memStore.setItem('puskesmas_registrations', JSON.stringify(snap.registrations));
     }
     if (snap.complaints) {
-      localStorage.setItem('puskesmas_complaints', JSON.stringify(snap.complaints));
+      memStore.setItem('puskesmas_complaints', JSON.stringify(snap.complaints));
     }
     if (snap.posts) {
-      localStorage.setItem('puskesmas_posts', JSON.stringify(snap.posts));
-      localStorage.setItem('puskesmas_cms_posts', JSON.stringify(snap.posts));
+      memStore.setItem('puskesmas_posts', JSON.stringify(snap.posts));
+      memStore.setItem('puskesmas_cms_posts', JSON.stringify(snap.posts));
     }
     if (snap.documents) {
-      localStorage.setItem('puskesmas_documents', JSON.stringify(snap.documents));
+      memStore.setItem('puskesmas_documents', JSON.stringify(snap.documents));
     }
     if (snap.services) {
-      localStorage.setItem('puskesmas_services', JSON.stringify(snap.services));
+      memStore.setItem('puskesmas_services', JSON.stringify(snap.services));
     }
     if (snap.facilities) {
-      localStorage.setItem('puskesmas_facilities_data', JSON.stringify(snap.facilities));
-      localStorage.setItem('puskesmas_facilities', JSON.stringify(snap.facilities));
+      memStore.setItem('puskesmas_facilities_data', JSON.stringify(snap.facilities));
+      memStore.setItem('puskesmas_facilities', JSON.stringify(snap.facilities));
     }
     if (snap.faqs) {
-      localStorage.setItem('puskesmas_faqs', JSON.stringify(snap.faqs));
+      memStore.setItem('puskesmas_faqs', JSON.stringify(snap.faqs));
     }
     if (snap.microsites) {
-      localStorage.setItem('puskesmas_microsites', JSON.stringify(snap.microsites));
-      localStorage.setItem('puskesmas_cms_microsites', JSON.stringify(snap.microsites));
+      memStore.setItem('puskesmas_microsites', JSON.stringify(snap.microsites));
+      memStore.setItem('puskesmas_cms_microsites', JSON.stringify(snap.microsites));
     }
     if (snap.categories) {
-      localStorage.setItem('puskesmas_cms_categories', JSON.stringify(snap.categories));
+      memStore.setItem('puskesmas_cms_categories', JSON.stringify(snap.categories));
     }
     if (snap.micrositeCategories) {
-      localStorage.setItem('puskesmas_cms_microsite_categories', JSON.stringify(snap.micrositeCategories));
+      memStore.setItem('puskesmas_cms_microsite_categories', JSON.stringify(snap.micrositeCategories));
     }
     if (snap.announcements) {
-      localStorage.setItem('puskesmas_announcements', JSON.stringify(snap.announcements));
+      memStore.setItem('puskesmas_announcements', JSON.stringify(snap.announcements));
     }
     if (snap.publicInfo) {
-      localStorage.setItem('puskesmas_public_information', JSON.stringify(snap.publicInfo));
+      memStore.setItem('puskesmas_public_information', JSON.stringify(snap.publicInfo));
     }
     if (snap.surveys) {
-      localStorage.setItem('puskesmas_surveys', JSON.stringify(snap.surveys));
+      memStore.setItem('puskesmas_surveys', JSON.stringify(snap.surveys));
     }
     if (snap.staffProfiles) {
-      localStorage.setItem('puskesmas_staff_profiles', JSON.stringify(snap.staffProfiles));
+      memStore.setItem('puskesmas_staff_profiles', JSON.stringify(snap.staffProfiles));
     }
     if (snap.settings) {
-      localStorage.setItem('puskesmas_site_settings', JSON.stringify(snap.settings));
+      memStore.setItem('puskesmas_site_settings', JSON.stringify(snap.settings));
       saveSingleDocument('site_settings', 'global_settings', snap.settings, 'puskesmas_site_settings').catch(() => {});
     }
     if (snap.theme) {
-      localStorage.setItem('puskesmas_theme_settings', JSON.stringify(snap.theme));
+      memStore.setItem('puskesmas_theme_settings', JSON.stringify(snap.theme));
     }
 
     await auditService.recordLog({

@@ -8,6 +8,7 @@ import { faqService } from './faqService';
 import { facilityService } from './facilityService';
 import { staffOrgService } from './staffOrgService';
 import { publicInfoService } from './publicInfoService';
+import { memStore } from '../lib/memStore';
 
 export const searchService = {
   async searchAll(query: string, filterType?: string): Promise<SearchResultItem[]> {
@@ -308,7 +309,7 @@ export const searchService = {
 
   getRecentSearches(): string[] {
     try {
-      const stored = localStorage.getItem('puskesmas_recent_searches');
+      const stored = memStore.getItem('puskesmas_recent_searches');
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -321,7 +322,7 @@ export const searchService = {
       const clean = keyword.trim();
       let recent = this.getRecentSearches();
       recent = [clean, ...recent.filter(item => item.toLowerCase() !== clean.toLowerCase())].slice(0, 5);
-      localStorage.setItem('puskesmas_recent_searches', JSON.stringify(recent));
+      memStore.setItem('puskesmas_recent_searches', JSON.stringify(recent));
     } catch (e) {
       console.error('Failed to save recent search:', e);
     }
@@ -329,7 +330,7 @@ export const searchService = {
 
   clearRecentSearches() {
     try {
-      localStorage.removeItem('puskesmas_recent_searches');
+      memStore.removeItem('puskesmas_recent_searches');
     } catch (e) {
       console.error('Failed to clear recent searches:', e);
     }

@@ -2,6 +2,7 @@ import type { PublicInfoEntity, InformationRequestEntity, PublicInfoCategory, Pu
 import { auditService } from './auditService';
 import { notificationService } from './notificationService';
 import { getCollectionData, saveDocumentData, deleteDocumentData } from '../lib/firebase';
+import { memStore } from '../lib/memStore';
 
 const PUBLIC_INFO_STORAGE_KEY = 'puskesmas_public_infos';
 const INFO_REQUESTS_STORAGE_KEY = 'puskesmas_info_requests';
@@ -130,9 +131,9 @@ const INITIAL_INFO_REQUESTS: InformationRequestEntity[] = [
 
 function getStoredPublicInfos(): PublicInfoEntity[] {
   try {
-    const data = localStorage.getItem(PUBLIC_INFO_STORAGE_KEY);
+    const data = memStore.getItem(PUBLIC_INFO_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(PUBLIC_INFO_STORAGE_KEY, JSON.stringify(INITIAL_PUBLIC_INFOS));
+      memStore.setItem(PUBLIC_INFO_STORAGE_KEY, JSON.stringify(INITIAL_PUBLIC_INFOS));
       return INITIAL_PUBLIC_INFOS;
     }
     return JSON.parse(data);
@@ -143,7 +144,7 @@ function getStoredPublicInfos(): PublicInfoEntity[] {
 
 function saveStoredPublicInfos(list: PublicInfoEntity[]) {
   try {
-    localStorage.setItem(PUBLIC_INFO_STORAGE_KEY, JSON.stringify(list));
+    memStore.setItem(PUBLIC_INFO_STORAGE_KEY, JSON.stringify(list));
   } catch (err) {
     console.error('Failed to save public infos:', err);
   }
@@ -151,9 +152,9 @@ function saveStoredPublicInfos(list: PublicInfoEntity[]) {
 
 function getStoredInfoRequests(): InformationRequestEntity[] {
   try {
-    const data = localStorage.getItem(INFO_REQUESTS_STORAGE_KEY);
+    const data = memStore.getItem(INFO_REQUESTS_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(INFO_REQUESTS_STORAGE_KEY, JSON.stringify(INITIAL_INFO_REQUESTS));
+      memStore.setItem(INFO_REQUESTS_STORAGE_KEY, JSON.stringify(INITIAL_INFO_REQUESTS));
       return INITIAL_INFO_REQUESTS;
     }
     return JSON.parse(data);
@@ -164,7 +165,7 @@ function getStoredInfoRequests(): InformationRequestEntity[] {
 
 function saveStoredInfoRequests(list: InformationRequestEntity[]) {
   try {
-    localStorage.setItem(INFO_REQUESTS_STORAGE_KEY, JSON.stringify(list));
+    memStore.setItem(INFO_REQUESTS_STORAGE_KEY, JSON.stringify(list));
   } catch (err) {
     console.error('Failed to save info requests:', err);
   }

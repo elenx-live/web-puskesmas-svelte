@@ -1,5 +1,6 @@
 <!-- @component Pusat informasi kontak & operasional: alamat, kanal kontak, jam operasional, dan info darurat IGD. -->
 <script lang="ts">
+import { memStore } from '../../../shared/lib/memStore';
   import { onMount } from 'svelte';
   import {
     Building2, Phone, MessageSquare, Mail, Globe, MapPin, Clock, ShieldAlert,
@@ -55,7 +56,7 @@
     try {
       const data = await contactService.getContactSettings();
       try {
-        const storedSite = localStorage.getItem('puskesmas_site_settings');
+        const storedSite = memStore.getItem('puskesmas_site_settings');
         if (storedSite) {
           const site = JSON.parse(storedSite);
           if (site.siteName) data.name = site.siteName;

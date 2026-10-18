@@ -1,4 +1,5 @@
 import { auditService } from './auditService';
+import { memStore } from '../lib/memStore';
 
 export interface ContentVersion {
   id: string;
@@ -16,7 +17,7 @@ const STORAGE_KEY = 'puskesmas_content_versions_v1';
 export const versioningService = {
   getVersions(targetType?: string, targetId?: string): ContentVersion[] {
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
+      const data = memStore.getItem(STORAGE_KEY);
       let list: ContentVersion[] = data ? JSON.parse(data) : [];
       if (targetType) {
         list = list.filter(v => v.targetType === targetType);
@@ -31,7 +32,7 @@ export const versioningService = {
   },
 
   saveVersions(versions: ContentVersion[]) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(versions));
+    memStore.setItem(STORAGE_KEY, JSON.stringify(versions));
   },
 
   createVersion(

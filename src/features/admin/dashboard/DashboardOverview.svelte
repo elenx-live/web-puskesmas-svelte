@@ -1,5 +1,6 @@
 <!-- @component Admin Command Center — ringkasan terpadu operasional, layanan, konten, antrean, dan pengawasan sistem. -->
 <script lang="ts">
+import { memStore } from '../../../shared/lib/memStore';
   import Card from '../../../shared/ui/Card.svelte';
   import Badge from '../../../shared/ui/Badge.svelte';
   import Button from '../../../shared/ui/Button.svelte';
@@ -49,7 +50,7 @@
 
   function loadSavedWidgets(): Record<string, boolean> {
     try {
-      const saved = localStorage.getItem('puskesmas_admin_dashboard_widgets');
+      const saved = memStore.getItem('puskesmas_admin_dashboard_widgets');
       return saved ? JSON.parse(saved) : { ...defaultWidgets };
     } catch {
       return { ...defaultWidgets };
@@ -90,13 +91,13 @@
 
       let notifList: any[] = [];
       try {
-        const rawNotif = localStorage.getItem('puskesmas_notifications_v1');
+        const rawNotif = memStore.getItem('puskesmas_notifications_v1');
         notifList = rawNotif ? JSON.parse(rawNotif) : [];
       } catch { notifList = []; }
 
       let schList: any[] = [];
       try {
-        const rawSch = localStorage.getItem('puskesmas_service_schedules');
+        const rawSch = memStore.getItem('puskesmas_service_schedules');
         schList = rawSch ? JSON.parse(rawSch) : [];
       } catch { schList = []; }
 
@@ -138,7 +139,7 @@
 
   function saveWidgetConfig() {
     try {
-      localStorage.setItem('puskesmas_admin_dashboard_widgets', JSON.stringify(widgetConfig));
+      memStore.setItem('puskesmas_admin_dashboard_widgets', JSON.stringify(widgetConfig));
     } catch (e) {
       console.error(e);
     }

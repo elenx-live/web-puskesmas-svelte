@@ -2,6 +2,7 @@ import type { PageEntity, PageRevision, ContentStatus } from '../types/index.js'
 import { auditService } from './auditService';
 import { sanitizeHtml, sanitizeText } from '../utils/sanitize';
 import { getCollectionData, saveDocumentData, deleteDocumentData } from '../lib/firebase';
+import { memStore } from '../lib/memStore';
 
 const PAGES_STORAGE_KEY = 'puskesmas_cms_pages';
 const REVISIONS_STORAGE_KEY = 'puskesmas_cms_page_revisions';
@@ -90,9 +91,9 @@ const INITIAL_PAGES: PageEntity[] = [
 
 function getStoredPages(): PageEntity[] {
   try {
-    const data = localStorage.getItem(PAGES_STORAGE_KEY);
+    const data = memStore.getItem(PAGES_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(PAGES_STORAGE_KEY, JSON.stringify(INITIAL_PAGES));
+      memStore.setItem(PAGES_STORAGE_KEY, JSON.stringify(INITIAL_PAGES));
       return INITIAL_PAGES;
     }
     return JSON.parse(data);
@@ -103,7 +104,7 @@ function getStoredPages(): PageEntity[] {
 
 function saveStoredPages(pages: PageEntity[]) {
   try {
-    localStorage.setItem(PAGES_STORAGE_KEY, JSON.stringify(pages));
+    memStore.setItem(PAGES_STORAGE_KEY, JSON.stringify(pages));
   } catch (err) {
     console.error('Failed to save pages:', err);
   }
@@ -111,7 +112,7 @@ function saveStoredPages(pages: PageEntity[]) {
 
 function getStoredRevisions(): PageRevision[] {
   try {
-    const data = localStorage.getItem(REVISIONS_STORAGE_KEY);
+    const data = memStore.getItem(REVISIONS_STORAGE_KEY);
     return data ? JSON.parse(data) : [];
   } catch {
     return [];
@@ -120,7 +121,7 @@ function getStoredRevisions(): PageRevision[] {
 
 function saveStoredRevisions(revisions: PageRevision[]) {
   try {
-    localStorage.setItem(REVISIONS_STORAGE_KEY, JSON.stringify(revisions));
+    memStore.setItem(REVISIONS_STORAGE_KEY, JSON.stringify(revisions));
   } catch (err) {
     console.error('Failed to save revisions:', err);
   }

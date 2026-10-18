@@ -4,6 +4,7 @@ import { auditService } from './auditService';
 import { getSingleDocument, saveSingleDocument } from '../lib/firebase';
 import { syncMetadataToServer, updateClientMetaTags } from '../utils/metaSync';
 import { apiFetch } from '../lib/api.js';
+import { memStore } from '../lib/memStore';
 
 const LOCAL_STORAGE_KEY = 'puskesmas_site_settings';
 const FIRESTORE_COLLECTION = 'site_settings';
@@ -155,7 +156,7 @@ function normalizeSettings(data: unknown): SiteSettings {
 export const siteSettingsService = {
   getCachedSettings(): SiteSettings {
     try {
-      const local = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const local = memStore.getItem(LOCAL_STORAGE_KEY);
       if (local) {
         return normalizeSettings(JSON.parse(local));
       }
@@ -171,7 +172,7 @@ export const siteSettingsService = {
         const json = await res.json();
         if (json.success && json.settings && typeof json.settings === 'object') {
           const merged: SiteSettings = normalizeSettings(json.settings);
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+          memStore.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
           return merged;
         }
       }
@@ -186,7 +187,7 @@ export const siteSettingsService = {
     );
     const normalized = normalizeSettings(rawData);
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(normalized));
+      memStore.setItem(LOCAL_STORAGE_KEY, JSON.stringify(normalized));
     } catch {}
     return normalized;
   },
@@ -232,10 +233,10 @@ export const siteSettingsService = {
       updatedBy: actorId
     });
 
-    // 2. Optimistic instant write to localStorage (0ms)
+    // 2. Optimistic instant write ke memori (0ms)
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newSettings));
-      localStorage.setItem('puskesmas_maintenance_mode', newSettings.maintenanceMode ? 'true' : 'false');
+      memStore.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newSettings));
+      memStore.setItem('puskesmas_maintenance_mode', newSettings.maintenanceMode ? 'true' : 'false');
     } catch (e) {
       console.warn('LocalStorage settings save failed:', e);
     }
@@ -247,7 +248,7 @@ export const siteSettingsService = {
 
     // 4. Bi-directional synchronization to contactService (puskesmas_contact_settings_v1)
     try {
-      const storedContact = localStorage.getItem('puskesmas_contact_settings_v1');
+      const storedContact = memStore.getItem('puskesmas_contact_settings_v1');
       const contactObj = storedContact ? JSON.parse(storedContact) : null;
       if (contactObj) {
         if (newSettings.siteName) contactObj.name = newSettings.siteName;
@@ -277,7 +278,7 @@ export const siteSettingsService = {
           }
         }
         contactObj.updatedAt = new Date().toISOString();
-        localStorage.setItem('puskesmas_contact_settings_v1', JSON.stringify(contactObj));
+        memStore.setItem('puskesmas_contact_settings_v1', JSON.stringify(contactObj));
         saveSingleDocument('site_settings', 'contact_settings_v1', contactObj, 'puskesmas_contact_settings_v1').catch(() => {});
         try {
           apiFetch('/api/contact-settings', {
@@ -306,13 +307,13 @@ export const siteSettingsService = {
     // Bi-directional synchronization of primary/secondary colors to theme
     if (updated.primaryColor || updated.secondaryColor) {
       try {
-        const themeRaw = localStorage.getItem('puskesmas_theme_published_config');
+        const themeRaw = memStore.getItem('puskesmas_theme_published_config');
         if (themeRaw) {
           const themeObj = JSON.parse(themeRaw);
           if (updated.primaryColor) themeObj.primaryColor = updated.primaryColor;
           if (updated.secondaryColor) themeObj.secondaryColor = updated.secondaryColor;
           themeObj.updatedAt = new Date().toISOString();
-          localStorage.setItem('puskesmas_theme_published_config', JSON.stringify(themeObj));
+          memStore.setItem('puskesmas_theme_published_config', JSON.stringify(themeObj));
           saveSingleDocument('theme_config', 'published', themeObj, 'puskesmas_theme_published_config').catch(() => {});
           apiFetch('/api/theme/publish', {
             method: 'POST',
@@ -362,7 +363,7 @@ export const siteSettingsService = {
 
   async resetToDefault(updatedBy: { id: string; email: string; name: string }): Promise<SiteSettings> {
     await saveSingleDocument(FIRESTORE_COLLECTION, FIRESTORE_DOC_ID, DEFAULT_FULL_SETTINGS, LOCAL_STORAGE_KEY);
-    localStorage.setItem('puskesmas_maintenance_mode', 'false');
+    memStore.setItem('puskesmas_maintenance_mode', 'false');
     const defaults = await this.getSettings();
 
     if (typeof window !== 'undefined') {

@@ -1,6 +1,7 @@
 import type { FaqEntity, GuideEntity, FaqCategory, GuideCategory } from '../types/index.js';
 import { auditService } from './auditService';
 import { getCollectionData, saveDocumentData, deleteDocumentData } from '../lib/firebase';
+import { memStore } from '../lib/memStore';
 
 const FAQ_STORAGE_KEY = 'puskesmas_faqs_v1';
 const GUIDES_STORAGE_KEY = 'puskesmas_guides_v1';
@@ -231,7 +232,7 @@ export const faqService = {
     if (!target) throw new Error('FAQ not found');
 
     // Prevent duplicate voting in same session storage
-    const votedMap = JSON.parse(localStorage.getItem(VOTE_TRACKER_KEY) || '{}');
+    const votedMap = JSON.parse(memStore.getItem(VOTE_TRACKER_KEY) || '{}');
     if (votedMap[id]) {
       return { helpfulCount: target.helpfulCount, notHelpfulCount: target.notHelpfulCount };
     }
@@ -247,7 +248,7 @@ export const faqService = {
     }
 
     votedMap[id] = isHelpful ? 'helpful' : 'not_helpful';
-    localStorage.setItem(VOTE_TRACKER_KEY, JSON.stringify(votedMap));
+    memStore.setItem(VOTE_TRACKER_KEY, JSON.stringify(votedMap));
     await saveDocumentData(FIRESTORE_FAQS, target.id, target, FAQ_STORAGE_KEY);
 
     return { helpfulCount: target.helpfulCount, notHelpfulCount: target.notHelpfulCount };
@@ -302,9 +303,9 @@ export const faqService = {
   // Categories
   async getFaqCategories(): Promise<FaqCategory[]> {
     try {
-      const stored = localStorage.getItem(FAQ_CATEGORIES_KEY);
+      const stored = memStore.getItem(FAQ_CATEGORIES_KEY);
       if (!stored) {
-        localStorage.setItem(FAQ_CATEGORIES_KEY, JSON.stringify(DEFAULT_FAQ_CATEGORIES));
+        memStore.setItem(FAQ_CATEGORIES_KEY, JSON.stringify(DEFAULT_FAQ_CATEGORIES));
         return DEFAULT_FAQ_CATEGORIES;
       }
       return JSON.parse(stored);
@@ -318,14 +319,14 @@ export const faqService = {
     const idx = cats.findIndex(c => c.id === cat.id);
     if (idx >= 0) cats[idx] = cat;
     else cats.push(cat);
-    localStorage.setItem(FAQ_CATEGORIES_KEY, JSON.stringify(cats));
+    memStore.setItem(FAQ_CATEGORIES_KEY, JSON.stringify(cats));
   },
 
   async getGuideCategories(): Promise<GuideCategory[]> {
     try {
-      const stored = localStorage.getItem(GUIDE_CATEGORIES_KEY);
+      const stored = memStore.getItem(GUIDE_CATEGORIES_KEY);
       if (!stored) {
-        localStorage.setItem(GUIDE_CATEGORIES_KEY, JSON.stringify(DEFAULT_GUIDE_CATEGORIES));
+        memStore.setItem(GUIDE_CATEGORIES_KEY, JSON.stringify(DEFAULT_GUIDE_CATEGORIES));
         return DEFAULT_GUIDE_CATEGORIES;
       }
       return JSON.parse(stored);

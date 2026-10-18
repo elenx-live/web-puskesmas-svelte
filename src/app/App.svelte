@@ -10,6 +10,7 @@
   - Mendukung hash (`#/layanan`) dan fallback path-based (`/layanan`).
 -->
 <script lang="ts">
+import { memStore } from '../shared/lib/memStore';
   import { onMount } from 'svelte';
   import type { Component } from 'svelte';
   import { routerState, matchRoute, type MatchedRoute } from './router.svelte.js';
@@ -98,7 +99,7 @@
 
   const isPublicRoute = $derived(!currentPath.startsWith('/admin') && currentPath !== '/login');
   const isMaintenanceActive = $derived(
-    Boolean(settings?.maintenanceMode || (typeof localStorage !== 'undefined' && localStorage.getItem('puskesmas_maintenance_mode') === 'true'))
+    Boolean(settings?.maintenanceMode || memStore.getItem('puskesmas_maintenance_mode') === 'true')
   );
   const showMaintenanceScreen = $derived.by(() => {
     if (!isMaintenanceActive || !isPublicRoute) return false;

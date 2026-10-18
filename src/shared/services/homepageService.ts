@@ -2,6 +2,7 @@ import type { HomepageSection, HomepageBuilderConfig, HomepageTemplateType, Back
 import { auditService } from './auditService';
 import { saveSingleDocument } from '../lib/firebase';
 import { apiFetch } from '../lib/api.js';
+import { memStore } from '../lib/memStore';
 
 const DRAFT_KEY = 'puskesmas_homepage_draft';
 const PUBLISHED_KEY = 'puskesmas_homepage_published';
@@ -211,7 +212,7 @@ export const homepageService = {
 
     // 1. Read local cache for immediate reactivity
     try {
-      const data = localStorage.getItem(DRAFT_KEY);
+      const data = memStore.getItem(DRAFT_KEY);
       if (data) {
         cachedDraft = JSON.parse(data);
       }
@@ -225,7 +226,7 @@ export const homepageService = {
       if (res.ok) {
         const json = await res.json();
         if (json && json.config && Array.isArray(json.config.sections)) {
-          localStorage.setItem(DRAFT_KEY, JSON.stringify(json.config));
+          memStore.setItem(DRAFT_KEY, JSON.stringify(json.config));
           return json.config;
         }
       }
@@ -248,7 +249,7 @@ export const homepageService = {
 
     // 1. Read local storage for instant zero-latency paint
     try {
-      const data = localStorage.getItem(PUBLISHED_KEY);
+      const data = memStore.getItem(PUBLISHED_KEY);
       if (data) {
         cachedPublished = JSON.parse(data);
       }
@@ -270,7 +271,7 @@ export const homepageService = {
           const serverStr = JSON.stringify(serverConfig);
           const cachedStr = JSON.stringify(cachedPublished);
           if (serverStr !== cachedStr) {
-            localStorage.setItem(PUBLISHED_KEY, serverStr);
+            memStore.setItem(PUBLISHED_KEY, serverStr);
             window.dispatchEvent(new Event('puskesmas_homepage_updated'));
           }
           return serverConfig;
@@ -301,7 +302,7 @@ export const homepageService = {
     };
 
     // 1. Local Cache
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(config));
+    memStore.setItem(DRAFT_KEY, JSON.stringify(config));
 
     // 2. Persist to Node.js backend
     try {
@@ -351,7 +352,7 @@ export const homepageService = {
     };
 
     // 1. Local Cache & Trigger Instant App Refresh
-    localStorage.setItem(PUBLISHED_KEY, JSON.stringify(config));
+    memStore.setItem(PUBLISHED_KEY, JSON.stringify(config));
     window.dispatchEvent(new Event('puskesmas_homepage_updated'));
 
     // 2. Persist to Node.js backend for all other devices
@@ -396,8 +397,8 @@ export const homepageService = {
     };
 
     // 1. Local Reset & Dispatch
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...resetConfig, status: 'draft' }));
-    localStorage.setItem(PUBLISHED_KEY, JSON.stringify(resetConfig));
+    memStore.setItem(DRAFT_KEY, JSON.stringify({ ...resetConfig, status: 'draft' }));
+    memStore.setItem(PUBLISHED_KEY, JSON.stringify(resetConfig));
     window.dispatchEvent(new Event('puskesmas_homepage_updated'));
 
     // 2. Reset on Server

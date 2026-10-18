@@ -4,13 +4,14 @@ import { auditService } from './auditService';
 import { notificationService } from './notificationService';
 import { sanitizeText } from '../utils/sanitize';
 import { getCollectionData, saveDocumentData } from '../lib/firebase';
+import { memStore } from '../lib/memStore';
 
 const REGISTRATIONS_STORAGE_KEY = 'puskesmas_online_registrations';
 const REGISTRATIONS_COLLECTION = 'registrations';
 
 function getStoredRegistrations(): ServiceRegistrationEntity[] {
   try {
-    const data = localStorage.getItem(REGISTRATIONS_STORAGE_KEY);
+    const data = memStore.getItem(REGISTRATIONS_STORAGE_KEY);
     return data ? JSON.parse(data) : [];
   } catch {
     return [];
@@ -19,7 +20,7 @@ function getStoredRegistrations(): ServiceRegistrationEntity[] {
 
 function saveStoredRegistrations(list: ServiceRegistrationEntity[]): void {
   try {
-    localStorage.setItem(REGISTRATIONS_STORAGE_KEY, JSON.stringify(list));
+    memStore.setItem(REGISTRATIONS_STORAGE_KEY, JSON.stringify(list));
     fetch('/api/data/registrations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

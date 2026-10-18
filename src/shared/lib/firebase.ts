@@ -2,6 +2,7 @@ import type { FirebaseApp } from 'firebase/app';
 import { app as sharedApp } from '../firebase/firebase';
 import firebaseConfigJson from '../../firebase-applet-config.json';
 import { apiFetch } from './api';
+import { memStore } from './memStore';
 
 const firebaseConfig = {
   apiKey: firebaseConfigJson.apiKey,
@@ -21,23 +22,35 @@ export const isFirebaseReady = (): boolean => {
 
 /**
  * Cache in-memory per sesi — TIDAK disimpan di browser (aturan: jangan simpan data di browser).
+ * Memakai memStore bersama agar tulis/baca antar-service konsisten (mis. restore backup).
  * Hilang saat refresh. TTL pendek 60 detik agar data tetap segar.
  */
-const memCache = new Map<string, { data: unknown; ts: number }>();
 const CACHE_TTL_MS = 60_000;
 
 function memGet<T>(key: string): T | null {
-  const entry = memCache.get(key);
-  if (!entry) return null;
-  if (Date.now() - entry.ts > CACHE_TTL_MS) {
-    memCache.delete(key);
+  const raw = memStore.getItem(key);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    // Envelope {__ts, data} yang ditulis memSet → terapkan TTL
+    if (parsed && typeof parsed === 'object' && '__ts' in parsed && 'data' in parsed) {
+      if (Date.now() - (parsed as any).__ts > CACHE_TTL_MS) {
+        memStore.removeItem(key);
+        return null;
+      }
+      return (parsed as any).data as T;
+    }
+    // Nilai polos (mis. ditulis service lain / restore) → anggap segar
+    return parsed as T;
+  } catch {
     return null;
   }
-  return entry.data as T;
 }
 
 function memSet(key: string, data: unknown): void {
-  memCache.set(key, { data, ts: Date.now() });
+  try {
+    memStore.setItem(key, JSON.stringify({ __ts: Date.now(), data }));
+  } catch {}
 }
 
 /**

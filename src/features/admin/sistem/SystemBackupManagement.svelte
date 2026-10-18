@@ -1,5 +1,6 @@
 <!-- @component Halaman admin: System Backup, Restore & Recovery — manajemen backup terenkripsi, sync Google Drive, version history CMS, dan checklist disaster recovery. -->
 <script lang="ts">
+import { memStore } from '../../../shared/lib/memStore';
   import { onMount } from 'svelte';
   import { errorMessage } from '../../../shared/lib/logger.js';
   import {
@@ -162,33 +163,33 @@
 
       const snap = driveData.dataSnapshot;
       if (snap.registrations) {
-        localStorage.setItem('puskesmas_online_registrations', JSON.stringify(snap.registrations));
-        localStorage.setItem('puskesmas_registrations', JSON.stringify(snap.registrations));
+        memStore.setItem('puskesmas_online_registrations', JSON.stringify(snap.registrations));
+        memStore.setItem('puskesmas_registrations', JSON.stringify(snap.registrations));
       }
-      if (snap.complaints) localStorage.setItem('puskesmas_complaints', JSON.stringify(snap.complaints));
+      if (snap.complaints) memStore.setItem('puskesmas_complaints', JSON.stringify(snap.complaints));
       if (snap.posts) {
-        localStorage.setItem('puskesmas_posts', JSON.stringify(snap.posts));
-        localStorage.setItem('puskesmas_cms_posts', JSON.stringify(snap.posts));
+        memStore.setItem('puskesmas_posts', JSON.stringify(snap.posts));
+        memStore.setItem('puskesmas_cms_posts', JSON.stringify(snap.posts));
       }
-      if (snap.documents) localStorage.setItem('puskesmas_documents', JSON.stringify(snap.documents));
-      if (snap.services) localStorage.setItem('puskesmas_services', JSON.stringify(snap.services));
+      if (snap.documents) memStore.setItem('puskesmas_documents', JSON.stringify(snap.documents));
+      if (snap.services) memStore.setItem('puskesmas_services', JSON.stringify(snap.services));
       if (snap.facilities) {
-        localStorage.setItem('puskesmas_facilities_data', JSON.stringify(snap.facilities));
-        localStorage.setItem('puskesmas_facilities', JSON.stringify(snap.facilities));
+        memStore.setItem('puskesmas_facilities_data', JSON.stringify(snap.facilities));
+        memStore.setItem('puskesmas_facilities', JSON.stringify(snap.facilities));
       }
-      if (snap.faqs) localStorage.setItem('puskesmas_faqs', JSON.stringify(snap.faqs));
+      if (snap.faqs) memStore.setItem('puskesmas_faqs', JSON.stringify(snap.faqs));
       if (snap.microsites) {
-        localStorage.setItem('puskesmas_microsites', JSON.stringify(snap.microsites));
-        localStorage.setItem('puskesmas_cms_microsites', JSON.stringify(snap.microsites));
+        memStore.setItem('puskesmas_microsites', JSON.stringify(snap.microsites));
+        memStore.setItem('puskesmas_cms_microsites', JSON.stringify(snap.microsites));
       }
-      if (snap.categories) localStorage.setItem('puskesmas_cms_categories', JSON.stringify(snap.categories));
-      if (snap.micrositeCategories) localStorage.setItem('puskesmas_cms_microsite_categories', JSON.stringify(snap.micrositeCategories));
-      if (snap.announcements) localStorage.setItem('puskesmas_announcements', JSON.stringify(snap.announcements));
-      if (snap.publicInfo) localStorage.setItem('puskesmas_public_information', JSON.stringify(snap.publicInfo));
-      if (snap.surveys) localStorage.setItem('puskesmas_surveys', JSON.stringify(snap.surveys));
-      if (snap.staffProfiles) localStorage.setItem('puskesmas_staff_profiles', JSON.stringify(snap.staffProfiles));
-      if (snap.settings) localStorage.setItem('puskesmas_site_settings', JSON.stringify(snap.settings));
-      if (snap.theme) localStorage.setItem('puskesmas_theme_settings', JSON.stringify(snap.theme));
+      if (snap.categories) memStore.setItem('puskesmas_cms_categories', JSON.stringify(snap.categories));
+      if (snap.micrositeCategories) memStore.setItem('puskesmas_cms_microsite_categories', JSON.stringify(snap.micrositeCategories));
+      if (snap.announcements) memStore.setItem('puskesmas_announcements', JSON.stringify(snap.announcements));
+      if (snap.publicInfo) memStore.setItem('puskesmas_public_information', JSON.stringify(snap.publicInfo));
+      if (snap.surveys) memStore.setItem('puskesmas_surveys', JSON.stringify(snap.surveys));
+      if (snap.staffProfiles) memStore.setItem('puskesmas_staff_profiles', JSON.stringify(snap.staffProfiles));
+      if (snap.settings) memStore.setItem('puskesmas_site_settings', JSON.stringify(snap.settings));
+      if (snap.theme) memStore.setItem('puskesmas_theme_settings', JSON.stringify(snap.theme));
 
       alert('Restore Berhasil! Sistem dipulihkan dari cadangan Google Drive.');
       loadData();

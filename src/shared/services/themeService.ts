@@ -2,6 +2,7 @@ import type { GlobalThemeConfig } from '../types/index.js';
 import { auditService } from './auditService';
 import { saveSingleDocument } from '../lib/firebase';
 import { apiFetch } from '../lib/api.js';
+import { memStore } from '../lib/memStore';
 
 const DRAFT_KEY = 'puskesmas_theme_draft';
 const PUBLISHED_KEY = 'puskesmas_theme_published';
@@ -172,7 +173,7 @@ export const themeService = {
     // 1. Check local cache first
     let cachedDraft = INITIAL_THEME;
     try {
-      const data = localStorage.getItem(DRAFT_KEY);
+      const data = memStore.getItem(DRAFT_KEY);
       if (data) {
         cachedDraft = JSON.parse(data);
       }
@@ -186,7 +187,7 @@ export const themeService = {
       if (res.ok) {
         const json = await res.json();
         if (json && json.theme && json.theme.themeName) {
-          localStorage.setItem(DRAFT_KEY, JSON.stringify(json.theme));
+          memStore.setItem(DRAFT_KEY, JSON.stringify(json.theme));
           return json.theme;
         }
       }
@@ -201,7 +202,7 @@ export const themeService = {
 
     // 1. Read local storage for 0ms initial render
     try {
-      const data = localStorage.getItem(PUBLISHED_KEY);
+      const data = memStore.getItem(PUBLISHED_KEY);
       if (data) {
         cachedPublished = { ...defaultPublished, ...JSON.parse(data), status: 'published' };
       }
@@ -219,7 +220,7 @@ export const themeService = {
           const serverStr = JSON.stringify(serverTheme);
           const cachedStr = JSON.stringify(cachedPublished);
           if (serverStr !== cachedStr) {
-            localStorage.setItem(PUBLISHED_KEY, serverStr);
+            memStore.setItem(PUBLISHED_KEY, serverStr);
             window.dispatchEvent(new Event('puskesmas_theme_updated'));
           }
           return serverTheme;
@@ -242,7 +243,7 @@ export const themeService = {
     };
 
     // 1. Save locally
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(fullConfig));
+    memStore.setItem(DRAFT_KEY, JSON.stringify(fullConfig));
 
     // 2. Save to server backend
     try {
@@ -284,7 +285,7 @@ export const themeService = {
     };
 
     // 1. Save locally and dispatch event immediately
-    localStorage.setItem(PUBLISHED_KEY, JSON.stringify(fullConfig));
+    memStore.setItem(PUBLISHED_KEY, JSON.stringify(fullConfig));
     window.dispatchEvent(new Event('puskesmas_theme_updated'));
 
     // 2. Persist to Node.js server so all visitors get this theme instantly
@@ -323,8 +324,8 @@ export const themeService = {
     };
 
     // 1. Reset locally
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(resetConfig));
-    localStorage.setItem(PUBLISHED_KEY, JSON.stringify({ ...resetConfig, status: 'published' }));
+    memStore.setItem(DRAFT_KEY, JSON.stringify(resetConfig));
+    memStore.setItem(PUBLISHED_KEY, JSON.stringify({ ...resetConfig, status: 'published' }));
     window.dispatchEvent(new Event('puskesmas_theme_updated'));
 
     // 2. Reset on server

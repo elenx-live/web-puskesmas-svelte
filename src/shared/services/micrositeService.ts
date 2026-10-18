@@ -12,6 +12,7 @@ import { apiFetch } from '../lib/api';
 import { sanitizeText, sanitizeHtml } from '../utils/sanitize';
 import { getCollectionData, saveDocumentData, deleteDocumentData } from '../lib/firebase';
 import { syncMicrositeItemToServer, syncMetadataToServer } from '../utils/metaSync';
+import { memStore } from '../lib/memStore';
 
 const MICROSITES_STORAGE_KEY = 'puskesmas_microsites';
 const FIRESTORE_COLLECTION = 'microsites';
@@ -293,16 +294,16 @@ const INITIAL_MICROSITES: MicrositeEntity[] = [
 
 function getStoredMicrosites(): MicrositeEntity[] {
   try {
-    const data = localStorage.getItem(MICROSITES_STORAGE_KEY);
+    const data = memStore.getItem(MICROSITES_STORAGE_KEY);
     if (data) {
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed)) return parsed;
     }
-    const legacyData = localStorage.getItem('puskesmas_cms_microsites');
+    const legacyData = memStore.getItem('puskesmas_cms_microsites');
     if (legacyData) {
       const parsed = JSON.parse(legacyData);
       if (Array.isArray(parsed)) {
-        localStorage.setItem(MICROSITES_STORAGE_KEY, legacyData);
+        memStore.setItem(MICROSITES_STORAGE_KEY, legacyData);
         return parsed;
       }
     }
@@ -314,8 +315,8 @@ function getStoredMicrosites(): MicrositeEntity[] {
 
 function saveStoredMicrosites(microsites: MicrositeEntity[], emitEvent: boolean = true) {
   try {
-    localStorage.setItem(MICROSITES_STORAGE_KEY, JSON.stringify(microsites));
-    localStorage.setItem('puskesmas_cms_microsites', JSON.stringify(microsites));
+    memStore.setItem(MICROSITES_STORAGE_KEY, JSON.stringify(microsites));
+    memStore.setItem('puskesmas_cms_microsites', JSON.stringify(microsites));
     if (emitEvent) {
       window.dispatchEvent(new CustomEvent('puskesmas_microsites_updated', { detail: microsites }));
     }
@@ -352,7 +353,7 @@ export const micrositeService = {
   async getCategories(): Promise<MicrositeCategory[]> {
     let localCategories = INITIAL_CATEGORIES;
     try {
-      const data = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+      const data = memStore.getItem(CATEGORIES_STORAGE_KEY);
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -371,7 +372,7 @@ export const micrositeService = {
           if (!serverCats.some(c => c.name?.toLowerCase() === 'umum')) {
             serverCats.unshift({ name: 'Umum', description: 'Portal informasi umum, layanan harian, dan tautan serbaguna Puskesmas.' });
           }
-          localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(serverCats));
+          memStore.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(serverCats));
           return serverCats;
         }
       }
@@ -383,7 +384,7 @@ export const micrositeService = {
   async saveCategories(categories: MicrositeCategory[], actor?: { id: string; email: string; name: string }): Promise<void> {
     const hasUmum = categories.some(c => c.name.toLowerCase() === 'umum');
     const finalCategories = hasUmum ? categories : [{ name: 'Umum', description: 'Portal informasi umum, layanan harian, dan tautan serbaguna Puskesmas.' }, ...categories];
-    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(finalCategories));
+    memStore.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(finalCategories));
 
     // Save to server
     try {
@@ -1003,7 +1004,7 @@ export const micrositeService = {
 
       // Save event log locally
       const eventKey = `puskesmas_microsite_analytics_${micrositeId}`;
-      const existingEventsStr = localStorage.getItem(eventKey);
+      const existingEventsStr = memStore.getItem(eventKey);
       const events: any[] = existingEventsStr ? JSON.parse(existingEventsStr) : [];
       events.push({
         id: 'evt-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
@@ -1014,7 +1015,7 @@ export const micrositeService = {
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : ''
       });
       if (events.length > 100) events.splice(0, events.length - 100);
-      localStorage.setItem(eventKey, JSON.stringify(events));
+      memStore.setItem(eventKey, JSON.stringify(events));
     } catch (e) {
       console.warn('Analytics tracking error:', e);
     }
@@ -1031,7 +1032,7 @@ export const micrositeService = {
 
   getDetailedAnalytics(micrositeId: string) {
     const eventKey = `puskesmas_microsite_analytics_${micrositeId}`;
-    const existingEventsStr = localStorage.getItem(eventKey);
+    const existingEventsStr = memStore.getItem(eventKey);
     const events: any[] = existingEventsStr ? JSON.parse(existingEventsStr) : [];
     
     let mobileCount = 0;

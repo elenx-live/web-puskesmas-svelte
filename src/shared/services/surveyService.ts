@@ -3,6 +3,7 @@ import { auditService } from './auditService';
 import { notificationService } from './notificationService';
 import { registrationService } from './registrationService';
 import { getCollectionData, saveDocumentData, deleteDocumentData } from '../lib/firebase';
+import { memStore } from '../lib/memStore';
 
 const SURVEYS_STORAGE_KEY = 'puskesmas_surveys';
 const RESPONSES_STORAGE_KEY = 'puskesmas_survey_responses';
@@ -191,9 +192,9 @@ const INITIAL_RESPONSES: SurveyResponse[] = [
 
 function getStoredSurveys(): SurveyEntity[] {
   try {
-    const data = localStorage.getItem(SURVEYS_STORAGE_KEY);
+    const data = memStore.getItem(SURVEYS_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(SURVEYS_STORAGE_KEY, JSON.stringify(INITIAL_SURVEYS));
+      memStore.setItem(SURVEYS_STORAGE_KEY, JSON.stringify(INITIAL_SURVEYS));
       return INITIAL_SURVEYS;
     }
     return JSON.parse(data);
@@ -203,14 +204,14 @@ function getStoredSurveys(): SurveyEntity[] {
 }
 
 function saveStoredSurveys(items: SurveyEntity[]) {
-  localStorage.setItem(SURVEYS_STORAGE_KEY, JSON.stringify(items));
+  memStore.setItem(SURVEYS_STORAGE_KEY, JSON.stringify(items));
 }
 
 function getStoredResponses(): SurveyResponse[] {
   try {
-    const data = localStorage.getItem(RESPONSES_STORAGE_KEY);
+    const data = memStore.getItem(RESPONSES_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(RESPONSES_STORAGE_KEY, JSON.stringify(INITIAL_RESPONSES));
+      memStore.setItem(RESPONSES_STORAGE_KEY, JSON.stringify(INITIAL_RESPONSES));
       return INITIAL_RESPONSES;
     }
     return JSON.parse(data);
@@ -220,7 +221,7 @@ function getStoredResponses(): SurveyResponse[] {
 }
 
 function saveStoredResponses(items: SurveyResponse[]) {
-  localStorage.setItem(RESPONSES_STORAGE_KEY, JSON.stringify(items));
+  memStore.setItem(RESPONSES_STORAGE_KEY, JSON.stringify(items));
 }
 
 function sanitizeText(str: string | undefined): string {
@@ -240,7 +241,7 @@ function checkRateLimit(): boolean {
     const windowMs = 5 * 60 * 1000; // 5 minutes
     const maxSubmissions = 5;
 
-    const raw = localStorage.getItem(SURVEY_RATE_LIMIT_KEY);
+    const raw = memStore.getItem(SURVEY_RATE_LIMIT_KEY);
     let timestamps: number[] = raw ? JSON.parse(raw) : [];
 
     // Clean old
@@ -251,7 +252,7 @@ function checkRateLimit(): boolean {
     }
 
     timestamps.push(now);
-    localStorage.setItem(SURVEY_RATE_LIMIT_KEY, JSON.stringify(timestamps));
+    memStore.setItem(SURVEY_RATE_LIMIT_KEY, JSON.stringify(timestamps));
     return true;
   } catch {
     return true;

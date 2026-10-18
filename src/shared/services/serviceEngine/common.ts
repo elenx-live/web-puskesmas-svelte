@@ -21,6 +21,7 @@ import type {
 } from '../../types/index.js';
 import { auditService } from '../auditService';
 import { saveSingleDocument } from '../../lib/firebase';
+import { memStore } from '../../lib/memStore';
 
 export const SERVICES_STORAGE_KEY = 'puskesmas_services';
 export const CATEGORIES_STORAGE_KEY = 'puskesmas_service_categories';
@@ -47,11 +48,11 @@ export function sanitizeInput(input?: string): string {
 
 function getStoredRequirements(): ServiceRequirementEntity[] {
   try {
-    const data = localStorage.getItem(REQUIREMENTS_STORAGE_KEY);
+    const data = memStore.getItem(REQUIREMENTS_STORAGE_KEY);
     if (!data) {
       fetch('/api/db/service_requirements').then(r => r.json()).then(res => {
         const arrData = Array.isArray(res) ? res : (res && Array.isArray(res.docs) ? res.docs : (res && res.success && Array.isArray(res.data) ? res.data : null)); if (arrData) {
-          localStorage.setItem(REQUIREMENTS_STORAGE_KEY, JSON.stringify(arrData));
+          memStore.setItem(REQUIREMENTS_STORAGE_KEY, JSON.stringify(arrData));
         }
       }).catch(() => {});
       return [];
@@ -64,7 +65,7 @@ function getStoredRequirements(): ServiceRequirementEntity[] {
 
 function saveStoredRequirements(items: ServiceRequirementEntity[]) {
   try {
-    localStorage.setItem(REQUIREMENTS_STORAGE_KEY, JSON.stringify(items));
+    memStore.setItem(REQUIREMENTS_STORAGE_KEY, JSON.stringify(items));
     saveSingleDocument('service_engine', 'requirements', items, REQUIREMENTS_STORAGE_KEY).catch(() => {});
     fetch('/api/db/service_requirements', {
       method: 'POST',
@@ -78,11 +79,11 @@ function saveStoredRequirements(items: ServiceRequirementEntity[]) {
 
 function getStoredProcedures(): ServiceProcedureEntity[] {
   try {
-    const data = localStorage.getItem(PROCEDURES_STORAGE_KEY);
+    const data = memStore.getItem(PROCEDURES_STORAGE_KEY);
     if (!data) {
       fetch('/api/db/service_procedures').then(r => r.json()).then(res => {
         const arrData = Array.isArray(res) ? res : (res && Array.isArray(res.docs) ? res.docs : (res && res.success && Array.isArray(res.data) ? res.data : null)); if (arrData) {
-          localStorage.setItem(PROCEDURES_STORAGE_KEY, JSON.stringify(arrData));
+          memStore.setItem(PROCEDURES_STORAGE_KEY, JSON.stringify(arrData));
         }
       }).catch(() => {});
       return [];
@@ -95,7 +96,7 @@ function getStoredProcedures(): ServiceProcedureEntity[] {
 
 function saveStoredProcedures(items: ServiceProcedureEntity[]) {
   try {
-    localStorage.setItem(PROCEDURES_STORAGE_KEY, JSON.stringify(items));
+    memStore.setItem(PROCEDURES_STORAGE_KEY, JSON.stringify(items));
     saveSingleDocument('service_engine', 'procedures', items, PROCEDURES_STORAGE_KEY).catch(() => {});
     fetch('/api/db/service_procedures', {
       method: 'POST',
@@ -109,11 +110,11 @@ function saveStoredProcedures(items: ServiceProcedureEntity[]) {
 
 function getStoredProducts(): ServiceProductEntity[] {
   try {
-    const data = localStorage.getItem(PRODUCTS_STORAGE_KEY);
+    const data = memStore.getItem(PRODUCTS_STORAGE_KEY);
     if (!data) {
       fetch('/api/db/service_products').then(r => r.json()).then(res => {
         const arrData = Array.isArray(res) ? res : (res && Array.isArray(res.docs) ? res.docs : (res && res.success && Array.isArray(res.data) ? res.data : null)); if (arrData) {
-          localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(arrData));
+          memStore.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(arrData));
         }
       }).catch(() => {});
       return [];
@@ -126,7 +127,7 @@ function getStoredProducts(): ServiceProductEntity[] {
 
 function saveStoredProducts(items: ServiceProductEntity[]) {
   try {
-    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(items));
+    memStore.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(items));
     saveSingleDocument('service_engine', 'products', items, PRODUCTS_STORAGE_KEY).catch(() => {});
     fetch('/api/db/service_products', {
       method: 'POST',
@@ -140,11 +141,11 @@ function saveStoredProducts(items: ServiceProductEntity[]) {
 
 function getStoredStandards(): ServiceStandardEntity[] {
   try {
-    const data = localStorage.getItem(STANDARDS_STORAGE_KEY);
+    const data = memStore.getItem(STANDARDS_STORAGE_KEY);
     if (!data) {
       fetch('/api/db/service_standards').then(r => r.json()).then(res => {
         const arrData = Array.isArray(res) ? res : (res && Array.isArray(res.docs) ? res.docs : (res && res.success && Array.isArray(res.data) ? res.data : null)); if (arrData) {
-          localStorage.setItem(STANDARDS_STORAGE_KEY, JSON.stringify(arrData));
+          memStore.setItem(STANDARDS_STORAGE_KEY, JSON.stringify(arrData));
         }
       }).catch(() => {});
       return [];
@@ -157,7 +158,7 @@ function getStoredStandards(): ServiceStandardEntity[] {
 
 function saveStoredStandards(items: ServiceStandardEntity[]) {
   try {
-    localStorage.setItem(STANDARDS_STORAGE_KEY, JSON.stringify(items));
+    memStore.setItem(STANDARDS_STORAGE_KEY, JSON.stringify(items));
     saveSingleDocument('service_engine', 'standards', items, STANDARDS_STORAGE_KEY).catch(() => {});
     fetch('/api/db/service_standards', {
       method: 'POST',
@@ -171,11 +172,11 @@ function saveStoredStandards(items: ServiceStandardEntity[]) {
 
 function getStoredServices(): ServiceEntity[] {
   try {
-    const data = localStorage.getItem(SERVICES_STORAGE_KEY);
+    const data = memStore.getItem(SERVICES_STORAGE_KEY);
     if (!data) {
       fetch('/api/db/services').then(r => r.json()).then(res => {
         const arrData = Array.isArray(res) ? res : (res && Array.isArray(res.docs) ? res.docs : (res && res.success && Array.isArray(res.data) ? res.data : null)); if (arrData) {
-          localStorage.setItem(SERVICES_STORAGE_KEY, JSON.stringify(arrData));
+          memStore.setItem(SERVICES_STORAGE_KEY, JSON.stringify(arrData));
         }
       }).catch(() => {});
       return [];
@@ -188,7 +189,7 @@ function getStoredServices(): ServiceEntity[] {
 
 function saveStoredServices(services: ServiceEntity[]) {
   try {
-    localStorage.setItem(SERVICES_STORAGE_KEY, JSON.stringify(services));
+    memStore.setItem(SERVICES_STORAGE_KEY, JSON.stringify(services));
     saveSingleDocument('service_engine', 'services', services, SERVICES_STORAGE_KEY).catch(() => {});
     fetch('/api/db/services', {
       method: 'POST',
@@ -202,11 +203,11 @@ function saveStoredServices(services: ServiceEntity[]) {
 
 function getStoredCategories(): ServiceCategoryEntity[] {
   try {
-    const data = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    const data = memStore.getItem(CATEGORIES_STORAGE_KEY);
     if (!data) {
       fetch('/api/db/service_categories').then(r => r.json()).then(res => {
         const arrData = Array.isArray(res) ? res : (res && Array.isArray(res.docs) ? res.docs : (res && res.success && Array.isArray(res.data) ? res.data : null)); if (arrData) {
-          localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(arrData));
+          memStore.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(arrData));
         }
       }).catch(() => {});
       return [];
@@ -219,7 +220,7 @@ function getStoredCategories(): ServiceCategoryEntity[] {
 
 function saveStoredCategories(categories: ServiceCategoryEntity[]) {
   try {
-    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
+    memStore.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
     saveSingleDocument('service_engine', 'categories', categories, CATEGORIES_STORAGE_KEY).catch(() => {});
     fetch('/api/db/service_categories', {
       method: 'POST',
@@ -233,11 +234,11 @@ function saveStoredCategories(categories: ServiceCategoryEntity[]) {
 
 function getStoredClusters(): ServiceClusterEntity[] {
   try {
-    const data = localStorage.getItem(CLUSTERS_STORAGE_KEY);
+    const data = memStore.getItem(CLUSTERS_STORAGE_KEY);
     if (!data) {
       fetch('/api/db/service_clusters').then(r => r.json()).then(res => {
         const arrData = Array.isArray(res) ? res : (res && Array.isArray(res.docs) ? res.docs : (res && res.success && Array.isArray(res.data) ? res.data : null)); if (arrData) {
-          localStorage.setItem(CLUSTERS_STORAGE_KEY, JSON.stringify(arrData));
+          memStore.setItem(CLUSTERS_STORAGE_KEY, JSON.stringify(arrData));
         }
       }).catch(() => {});
       return [];
@@ -250,7 +251,7 @@ function getStoredClusters(): ServiceClusterEntity[] {
 
 function saveStoredClusters(clusters: ServiceClusterEntity[]) {
   try {
-    localStorage.setItem(CLUSTERS_STORAGE_KEY, JSON.stringify(clusters));
+    memStore.setItem(CLUSTERS_STORAGE_KEY, JSON.stringify(clusters));
     saveSingleDocument('service_engine', 'clusters', clusters, CLUSTERS_STORAGE_KEY).catch(() => {});
     fetch('/api/db/service_clusters', {
       method: 'POST',
@@ -264,11 +265,11 @@ function saveStoredClusters(clusters: ServiceClusterEntity[]) {
 
 function getStoredUnits(): ServiceUnitEntity[] {
   try {
-    const data = localStorage.getItem(UNITS_STORAGE_KEY);
+    const data = memStore.getItem(UNITS_STORAGE_KEY);
     if (!data) {
       fetch('/api/db/service_units').then(r => r.json()).then(res => {
         const arrData = Array.isArray(res) ? res : (res && Array.isArray(res.docs) ? res.docs : (res && res.success && Array.isArray(res.data) ? res.data : null)); if (arrData) {
-          localStorage.setItem(UNITS_STORAGE_KEY, JSON.stringify(arrData));
+          memStore.setItem(UNITS_STORAGE_KEY, JSON.stringify(arrData));
         }
       }).catch(() => {});
       return [];
@@ -281,7 +282,7 @@ function getStoredUnits(): ServiceUnitEntity[] {
 
 function saveStoredUnits(units: ServiceUnitEntity[]) {
   try {
-    localStorage.setItem(UNITS_STORAGE_KEY, JSON.stringify(units));
+    memStore.setItem(UNITS_STORAGE_KEY, JSON.stringify(units));
     saveSingleDocument('service_engine', 'units', units, UNITS_STORAGE_KEY).catch(() => {});
     fetch('/api/db/service_units', {
       method: 'POST',
@@ -295,11 +296,11 @@ function saveStoredUnits(units: ServiceUnitEntity[]) {
 
 function getStoredLocations(): ServiceLocationEntity[] {
   try {
-    const data = localStorage.getItem(LOCATIONS_STORAGE_KEY);
+    const data = memStore.getItem(LOCATIONS_STORAGE_KEY);
     if (!data) {
       fetch('/api/db/service_locations').then(r => r.json()).then(res => {
         const arrData = Array.isArray(res) ? res : (res && Array.isArray(res.docs) ? res.docs : (res && res.success && Array.isArray(res.data) ? res.data : null)); if (arrData) {
-          localStorage.setItem(LOCATIONS_STORAGE_KEY, JSON.stringify(arrData));
+          memStore.setItem(LOCATIONS_STORAGE_KEY, JSON.stringify(arrData));
         }
       }).catch(() => {});
       return [];
@@ -312,7 +313,7 @@ function getStoredLocations(): ServiceLocationEntity[] {
 
 function saveStoredLocations(locations: ServiceLocationEntity[]) {
   try {
-    localStorage.setItem(LOCATIONS_STORAGE_KEY, JSON.stringify(locations));
+    memStore.setItem(LOCATIONS_STORAGE_KEY, JSON.stringify(locations));
     saveSingleDocument('service_engine', 'locations', locations, LOCATIONS_STORAGE_KEY).catch(() => {});
     fetch('/api/db/service_locations', {
       method: 'POST',

@@ -3,6 +3,7 @@
   drawer mobile, bottom nav dock, dan footer.
 -->
 <script lang="ts">
+import { memStore } from '../lib/memStore';
   import type { Snippet } from 'svelte';
   import {
     HeartPulse, Menu, X, Phone, Mail, Clock, MapPin, Lock,
@@ -60,17 +61,17 @@
   let expandedMobileMenus = $state<Record<string, boolean>>({ profil: true });
   let flags = $state<SiteFeatureFlags>(featureFlagsService.getFlags());
 
-  // Nilai awal dari localStorage (sebelum service selesai)
+  // Nilai awal dari memori (sebelum service selesai)
   try {
-    const s = localStorage.getItem('puskesmas_site_settings');
+    const s = memStore.getItem('puskesmas_site_settings');
     if (s) settings = JSON.parse(s);
   } catch { /* abaikan */ }
   try {
-    const m = localStorage.getItem('puskesmas_menu_tree');
+    const m = memStore.getItem('puskesmas_menu_tree');
     if (m) menuTree = JSON.parse(m);
   } catch { /* abaikan */ }
   try {
-    const a = localStorage.getItem('puskesmas_announcements');
+    const a = memStore.getItem('puskesmas_announcements');
     if (a) announcements = JSON.parse(a);
   } catch { /* abaikan */ }
 

@@ -2,6 +2,7 @@ import type { OrganizationNode, StaffProfile, StaffAssignmentHistory } from '../
 import { auditService } from './auditService';
 import { sanitizeHtml, sanitizeText } from '../utils/sanitize';
 import { getCollectionData, saveDocumentData, deleteDocumentData } from '../lib/firebase';
+import { memStore } from '../lib/memStore';
 
 const ORG_STORAGE_KEY = 'puskesmas_org_nodes';
 const STAFF_STORAGE_KEY = 'puskesmas_staff_profiles';
@@ -204,9 +205,9 @@ const INITIAL_HISTORY: StaffAssignmentHistory[] = [
 
 function getStoredOrgNodes(): OrganizationNode[] {
   try {
-    const data = localStorage.getItem(ORG_STORAGE_KEY);
+    const data = memStore.getItem(ORG_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(ORG_STORAGE_KEY, JSON.stringify(INITIAL_ORG_NODES));
+      memStore.setItem(ORG_STORAGE_KEY, JSON.stringify(INITIAL_ORG_NODES));
       return INITIAL_ORG_NODES;
     }
     return JSON.parse(data);
@@ -217,7 +218,7 @@ function getStoredOrgNodes(): OrganizationNode[] {
 
 function saveStoredOrgNodes(nodes: OrganizationNode[]) {
   try {
-    localStorage.setItem(ORG_STORAGE_KEY, JSON.stringify(nodes));
+    memStore.setItem(ORG_STORAGE_KEY, JSON.stringify(nodes));
   } catch (e) {
     console.error('Failed org nodes:', e);
   }
@@ -225,9 +226,9 @@ function saveStoredOrgNodes(nodes: OrganizationNode[]) {
 
 function getStoredStaffProfiles(): StaffProfile[] {
   try {
-    const data = localStorage.getItem(STAFF_STORAGE_KEY);
+    const data = memStore.getItem(STAFF_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(INITIAL_STAFF_PROFILES));
+      memStore.setItem(STAFF_STORAGE_KEY, JSON.stringify(INITIAL_STAFF_PROFILES));
       return INITIAL_STAFF_PROFILES;
     }
     return JSON.parse(data);
@@ -238,7 +239,7 @@ function getStoredStaffProfiles(): StaffProfile[] {
 
 function saveStoredStaffProfiles(profiles: StaffProfile[]) {
   try {
-    localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(profiles));
+    memStore.setItem(STAFF_STORAGE_KEY, JSON.stringify(profiles));
   } catch (e) {
     console.error('Failed staff profiles:', e);
   }
@@ -246,9 +247,9 @@ function saveStoredStaffProfiles(profiles: StaffProfile[]) {
 
 function getStoredHistory(): StaffAssignmentHistory[] {
   try {
-    const data = localStorage.getItem(HISTORY_STORAGE_KEY);
+    const data = memStore.getItem(HISTORY_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(INITIAL_HISTORY));
+      memStore.setItem(HISTORY_STORAGE_KEY, JSON.stringify(INITIAL_HISTORY));
       return INITIAL_HISTORY;
     }
     return JSON.parse(data);
@@ -259,7 +260,7 @@ function getStoredHistory(): StaffAssignmentHistory[] {
 
 function saveStoredHistory(hist: StaffAssignmentHistory[]) {
   try {
-    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(hist));
+    memStore.setItem(HISTORY_STORAGE_KEY, JSON.stringify(hist));
   } catch (e) {
     console.error('Failed history:', e);
   }

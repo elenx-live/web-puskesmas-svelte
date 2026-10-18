@@ -1,6 +1,7 @@
 import type { FacilityEntity } from '../types/index.js';
 import { auditService } from './auditService';
 import { getCollectionData, saveDocumentData, deleteDocumentData, saveSingleDocument, getSingleDocument } from '../lib/firebase';
+import { memStore } from '../lib/memStore';
 
 const FACILITY_STORAGE_KEY = 'puskesmas_facilities_data';
 const FACILITY_CATEGORIES_KEY = 'puskesmas_facility_categories';
@@ -230,9 +231,9 @@ const INITIAL_FACILITIES: FacilityEntity[] = [
 
 function getStoredFacilities(): FacilityEntity[] {
   try {
-    const data = localStorage.getItem(FACILITY_STORAGE_KEY);
+    const data = memStore.getItem(FACILITY_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(FACILITY_STORAGE_KEY, JSON.stringify(INITIAL_FACILITIES));
+      memStore.setItem(FACILITY_STORAGE_KEY, JSON.stringify(INITIAL_FACILITIES));
       return INITIAL_FACILITIES;
     }
     const parsed: FacilityEntity[] = JSON.parse(data);
@@ -244,7 +245,7 @@ function getStoredFacilities(): FacilityEntity[] {
       }
     }
     if (changed) {
-      localStorage.setItem(FACILITY_STORAGE_KEY, JSON.stringify(parsed));
+      memStore.setItem(FACILITY_STORAGE_KEY, JSON.stringify(parsed));
     }
     return parsed;
   } catch {
@@ -254,7 +255,7 @@ function getStoredFacilities(): FacilityEntity[] {
 
 function saveStoredFacilities(list: FacilityEntity[]) {
   try {
-    localStorage.setItem(FACILITY_STORAGE_KEY, JSON.stringify(list));
+    memStore.setItem(FACILITY_STORAGE_KEY, JSON.stringify(list));
   } catch (err) {
     console.error('Failed to save facilities:', err);
   }
@@ -426,9 +427,9 @@ export const facilityService = {
 
   async getCategories(): Promise<string[]> {
     try {
-      const data = localStorage.getItem(FACILITY_CATEGORIES_KEY);
+      const data = memStore.getItem(FACILITY_CATEGORIES_KEY);
       if (!data) {
-        localStorage.setItem(FACILITY_CATEGORIES_KEY, JSON.stringify(DEFAULT_CATEGORIES));
+        memStore.setItem(FACILITY_CATEGORIES_KEY, JSON.stringify(DEFAULT_CATEGORIES));
         return DEFAULT_CATEGORIES;
       }
       return JSON.parse(data);
@@ -438,7 +439,7 @@ export const facilityService = {
   },
 
   async saveCategories(categories: string[], actor: { id: string; email: string; name: string }): Promise<void> {
-    localStorage.setItem(FACILITY_CATEGORIES_KEY, JSON.stringify(categories));
+    memStore.setItem(FACILITY_CATEGORIES_KEY, JSON.stringify(categories));
     await auditService.recordLog({
       userId: actor.id,
       userEmail: actor.email,
@@ -453,9 +454,9 @@ export const facilityService = {
 
   async getLocations(): Promise<string[]> {
     try {
-      const data = localStorage.getItem(FACILITY_LOCATIONS_KEY);
+      const data = memStore.getItem(FACILITY_LOCATIONS_KEY);
       if (!data) {
-        localStorage.setItem(FACILITY_LOCATIONS_KEY, JSON.stringify(DEFAULT_LOCATIONS));
+        memStore.setItem(FACILITY_LOCATIONS_KEY, JSON.stringify(DEFAULT_LOCATIONS));
         return DEFAULT_LOCATIONS;
       }
       return JSON.parse(data);
@@ -465,7 +466,7 @@ export const facilityService = {
   },
 
   async saveLocations(locations: string[], actor: { id: string; email: string; name: string }): Promise<void> {
-    localStorage.setItem(FACILITY_LOCATIONS_KEY, JSON.stringify(locations));
+    memStore.setItem(FACILITY_LOCATIONS_KEY, JSON.stringify(locations));
     await auditService.recordLog({
       userId: actor.id,
       userEmail: actor.email,

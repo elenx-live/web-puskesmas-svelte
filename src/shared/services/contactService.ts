@@ -2,6 +2,7 @@ import type { PuskesmasContactSettings, ContactChannelEntity, OperatingDayEntity
 import { auditService } from './auditService';
 import { getSingleDocument, saveSingleDocument } from '../lib/firebase';
 import { apiFetch } from '../lib/api.js';
+import { memStore } from '../lib/memStore';
 
 const CONTACT_SETTINGS_KEY = 'puskesmas_contact_settings_v1';
 const FIRESTORE_COLLECTION = 'site_settings';
@@ -117,7 +118,7 @@ const DEFAULT_CONTACT_SETTINGS: PuskesmasContactSettings = {
 export const contactService = {
   getCachedSettings(): PuskesmasContactSettings {
     try {
-      const stored = localStorage.getItem(CONTACT_SETTINGS_KEY);
+      const stored = memStore.getItem(CONTACT_SETTINGS_KEY);
       if (stored) {
         return { ...DEFAULT_CONTACT_SETTINGS, ...JSON.parse(stored) };
       }
@@ -133,7 +134,7 @@ export const contactService = {
         const json = await res.json();
         if (json.success && json.contactSettings && typeof json.contactSettings === 'object') {
           const merged = { ...DEFAULT_CONTACT_SETTINGS, ...json.contactSettings };
-          localStorage.setItem(CONTACT_SETTINGS_KEY, JSON.stringify(merged));
+          memStore.setItem(CONTACT_SETTINGS_KEY, JSON.stringify(merged));
           saveSingleDocument(FIRESTORE_COLLECTION, FIRESTORE_DOC_ID, merged, CONTACT_SETTINGS_KEY).catch(() => {});
           return merged;
         }
@@ -167,7 +168,7 @@ export const contactService = {
     };
 
     // 1. Immediate local save
-    localStorage.setItem(CONTACT_SETTINGS_KEY, JSON.stringify(updated));
+    memStore.setItem(CONTACT_SETTINGS_KEY, JSON.stringify(updated));
 
     // 2. Server API save for cross-device & cross-browser synchronization
     try {
@@ -187,7 +188,7 @@ export const contactService = {
 
     // 4. Bi-directional synchronization to site_settings (puskesmas_site_settings)
     try {
-      const storedSite = localStorage.getItem('puskesmas_site_settings');
+      const storedSite = memStore.getItem('puskesmas_site_settings');
       if (storedSite) {
         const siteObj = JSON.parse(storedSite);
         if (settings.name) siteObj.siteName = settings.name;
@@ -209,7 +210,7 @@ export const contactService = {
         const emailCh = settings.channels?.find(c => c.type === 'Email');
         if (emailCh) siteObj.email = emailCh.value;
 
-        localStorage.setItem('puskesmas_site_settings', JSON.stringify(siteObj));
+        memStore.setItem('puskesmas_site_settings', JSON.stringify(siteObj));
         saveSingleDocument('site_settings', 'global_settings', siteObj, 'puskesmas_site_settings').catch(() => {});
         try {
           apiFetch('/api/site-settings', {

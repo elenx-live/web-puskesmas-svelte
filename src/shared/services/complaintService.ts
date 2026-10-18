@@ -5,6 +5,7 @@ import { auditService } from './auditService';
 import { notificationService } from './notificationService';
 import { getCollectionData, saveDocumentData, deleteDocumentData } from '../lib/firebase';
 import { logger } from '../lib/logger';
+import { memStore } from '../lib/memStore';
 
 const COMPLAINTS_STORAGE_KEY = 'puskesmas_complaints';
 const RATE_LIMIT_STORAGE_KEY = 'puskesmas_complaint_rate_limit';
@@ -12,11 +13,11 @@ const COMPLAINTS_COLLECTION = 'complaints';
 
 function getStoredComplaints(): ComplaintEntity[] {
   try {
-    const data = localStorage.getItem(COMPLAINTS_STORAGE_KEY);
+    const data = memStore.getItem(COMPLAINTS_STORAGE_KEY);
     let items: any[] = [];
     if (!data) {
       items = INITIAL_COMPLAINTS;
-      localStorage.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(items));
+      memStore.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(items));
     } else {
       items = JSON.parse(data);
     }
@@ -67,7 +68,7 @@ function getStoredComplaints(): ComplaintEntity[] {
 
 function saveStoredComplaints(items: ComplaintEntity[]) {
   try {
-    localStorage.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(items));
+    memStore.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(items));
     fetch('/api/data/complaints', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -97,7 +98,7 @@ function checkRateLimit(): boolean {
     const windowMs = 10 * 60 * 1000; // 10 minutes
     const maxSubmissions = 3;
 
-    const raw = localStorage.getItem(RATE_LIMIT_STORAGE_KEY);
+    const raw = memStore.getItem(RATE_LIMIT_STORAGE_KEY);
     let timestamps: number[] = raw ? JSON.parse(raw) : [];
 
     // Clean old timestamps outside the window
@@ -108,7 +109,7 @@ function checkRateLimit(): boolean {
     }
 
     timestamps.push(now);
-    localStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify(timestamps));
+    memStore.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify(timestamps));
     return true;
   } catch {
     return true;
@@ -192,9 +193,9 @@ export interface ComplaintFilterOptions {
 export const complaintService = {
   getCategories(): string[] {
     try {
-      const stored = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+      const stored = memStore.getItem(CATEGORIES_STORAGE_KEY);
       if (!stored) {
-        localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(DEFAULT_CATEGORIES));
+        memStore.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(DEFAULT_CATEGORIES));
         return DEFAULT_CATEGORIES;
       }
       return JSON.parse(stored);
@@ -205,7 +206,7 @@ export const complaintService = {
 
   saveCategories(cats: string[]): void {
     try {
-      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(cats));
+      memStore.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(cats));
     } catch (err) {
       console.error('Failed to save categories:', err);
     }
@@ -213,9 +214,9 @@ export const complaintService = {
 
   getSLASettings(): { responseDays: number; resolutionDays: number } {
     try {
-      const stored = localStorage.getItem(SLA_STORAGE_KEY);
+      const stored = memStore.getItem(SLA_STORAGE_KEY);
       if (!stored) {
-        localStorage.setItem(SLA_STORAGE_KEY, JSON.stringify(DEFAULT_SLA));
+        memStore.setItem(SLA_STORAGE_KEY, JSON.stringify(DEFAULT_SLA));
         return DEFAULT_SLA;
       }
       return JSON.parse(stored);
@@ -226,7 +227,7 @@ export const complaintService = {
 
   saveSLASettings(sla: { responseDays: number; resolutionDays: number }): void {
     try {
-      localStorage.setItem(SLA_STORAGE_KEY, JSON.stringify(sla));
+      memStore.setItem(SLA_STORAGE_KEY, JSON.stringify(sla));
     } catch (err) {
       console.error('Failed to save SLA settings:', err);
     }
@@ -234,9 +235,9 @@ export const complaintService = {
 
   getEnabledTypes(): ComplaintType[] {
     try {
-      const stored = localStorage.getItem(ENABLED_TYPES_STORAGE_KEY);
+      const stored = memStore.getItem(ENABLED_TYPES_STORAGE_KEY);
       if (!stored) {
-        localStorage.setItem(ENABLED_TYPES_STORAGE_KEY, JSON.stringify(DEFAULT_ENABLED_TYPES));
+        memStore.setItem(ENABLED_TYPES_STORAGE_KEY, JSON.stringify(DEFAULT_ENABLED_TYPES));
         return DEFAULT_ENABLED_TYPES;
       }
       return JSON.parse(stored);
@@ -247,7 +248,7 @@ export const complaintService = {
 
   saveEnabledTypes(types: ComplaintType[]): void {
     try {
-      localStorage.setItem(ENABLED_TYPES_STORAGE_KEY, JSON.stringify(types));
+      memStore.setItem(ENABLED_TYPES_STORAGE_KEY, JSON.stringify(types));
     } catch (err) {
       console.error('Failed to save enabled types:', err);
     }
@@ -508,7 +509,7 @@ export const complaintService = {
       );
 
       // Simulated WhatsApp Message
-      const waSettingsStr = localStorage.getItem('puskesmas_whatsapp_settings');
+      const waSettingsStr = memStore.getItem('puskesmas_whatsapp_settings');
       if (waSettingsStr && cleanPhone) {
         const waSettings = JSON.parse(waSettingsStr);
         if (waSettings.isEnabled) {
@@ -589,7 +590,7 @@ export const complaintService = {
 
       // Simulated WhatsApp Message
       if (updated.senderPhone) {
-        const waSettingsStr = localStorage.getItem('puskesmas_whatsapp_settings');
+        const waSettingsStr = memStore.getItem('puskesmas_whatsapp_settings');
         if (waSettingsStr) {
           const waSettings = JSON.parse(waSettingsStr);
           if (waSettings.isEnabled) {

@@ -1,6 +1,7 @@
 import type { CategoryEntity } from '../types/index.js';
 import { auditService } from './auditService';
 import { getCollectionData, saveDocumentData, deleteDocumentData } from '../lib/firebase';
+import { memStore } from '../lib/memStore';
 
 const CATEGORIES_STORAGE_KEY = 'puskesmas_cms_categories';
 const FIRESTORE_COLLECTION = 'categories';
@@ -150,14 +151,14 @@ const INITIAL_CATEGORIES: CategoryEntity[] = [
 
 function getStoredCategories(): CategoryEntity[] {
   try {
-    const data = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    const data = memStore.getItem(CATEGORIES_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(INITIAL_CATEGORIES));
+      memStore.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(INITIAL_CATEGORIES));
       return INITIAL_CATEGORIES;
     }
     const parsed: CategoryEntity[] = JSON.parse(data);
     if (!Array.isArray(parsed)) {
-      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(INITIAL_CATEGORIES));
+      memStore.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(INITIAL_CATEGORIES));
       return INITIAL_CATEGORIES;
     }
     return parsed;
@@ -168,7 +169,7 @@ function getStoredCategories(): CategoryEntity[] {
 
 function saveStoredCategories(categories: CategoryEntity[]) {
   try {
-    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
+    memStore.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
   } catch (err) {
     console.error('Failed to save categories:', err);
   }

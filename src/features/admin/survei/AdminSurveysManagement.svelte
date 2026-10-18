@@ -1,5 +1,6 @@
 <!-- @component Kelola kuesioner Survei Kepuasan Masyarakat (SKM): daftar survei, hasil & analisis, serta moderasi masukan. -->
 <script lang="ts">
+import { memStore } from '../../../shared/lib/memStore';
   import {
     ClipboardList, Plus, Edit2, Trash2, Copy, BarChart3, MessageSquare,
     CheckCircle2, AlertTriangle, EyeOff, Calendar,
@@ -83,7 +84,7 @@
       }
 
       // Load clinic/services names for filters
-      const regsStr = localStorage.getItem('puskesmas_online_registrations') || '[]';
+      const regsStr = memStore.getItem('puskesmas_online_registrations') || '[]';
       const regs = JSON.parse(regsStr);
       const uniques: string[] = Array.from(new Set(regs.map((r: { serviceName?: string }) => r.serviceName).filter((sn: unknown): sn is string => typeof sn === 'string' && sn.length > 0)));
       services = uniques;

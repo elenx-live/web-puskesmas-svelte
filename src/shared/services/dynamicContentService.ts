@@ -2,6 +2,7 @@ import type { DynamicContentEntity, ContentCategoryEntity, ContentTagEntity, Con
 import { auditService } from './auditService';
 import { notificationService } from './notificationService';
 import { sanitizeHtml, sanitizeText } from '../utils/sanitize';
+import { memStore } from '../lib/memStore';
 
 const CONTENTS_STORAGE_KEY = 'puskesmas_dynamic_contents';
 const CATEGORIES_STORAGE_KEY = 'puskesmas_content_categories';
@@ -166,9 +167,9 @@ const INITIAL_CONTENTS: DynamicContentEntity[] = [
 
 function getStoredContents(): DynamicContentEntity[] {
   try {
-    const data = localStorage.getItem(CONTENTS_STORAGE_KEY);
+    const data = memStore.getItem(CONTENTS_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(CONTENTS_STORAGE_KEY, JSON.stringify(INITIAL_CONTENTS));
+      memStore.setItem(CONTENTS_STORAGE_KEY, JSON.stringify(INITIAL_CONTENTS));
       return INITIAL_CONTENTS;
     }
     const list: DynamicContentEntity[] = JSON.parse(data);
@@ -195,7 +196,7 @@ function getStoredContents(): DynamicContentEntity[] {
     });
 
     if (updated) {
-      localStorage.setItem(CONTENTS_STORAGE_KEY, JSON.stringify(processed));
+      memStore.setItem(CONTENTS_STORAGE_KEY, JSON.stringify(processed));
     }
     return processed;
   } catch {
@@ -205,7 +206,7 @@ function getStoredContents(): DynamicContentEntity[] {
 
 function saveStoredContents(items: DynamicContentEntity[]) {
   try {
-    localStorage.setItem(CONTENTS_STORAGE_KEY, JSON.stringify(items));
+    memStore.setItem(CONTENTS_STORAGE_KEY, JSON.stringify(items));
   } catch (e) {
     console.error('Failed to save contents:', e);
   }
@@ -213,9 +214,9 @@ function saveStoredContents(items: DynamicContentEntity[]) {
 
 export function getStoredCategories(): ContentCategoryEntity[] {
   try {
-    const data = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    const data = memStore.getItem(CATEGORIES_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(INITIAL_CATEGORIES));
+      memStore.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(INITIAL_CATEGORIES));
       return INITIAL_CATEGORIES;
     }
     return JSON.parse(data);
@@ -226,7 +227,7 @@ export function getStoredCategories(): ContentCategoryEntity[] {
 
 function saveStoredCategories(cats: ContentCategoryEntity[]) {
   try {
-    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(cats));
+    memStore.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(cats));
   } catch (e) {
     console.error('Failed categories:', e);
   }
@@ -234,9 +235,9 @@ function saveStoredCategories(cats: ContentCategoryEntity[]) {
 
 export function getStoredTags(): ContentTagEntity[] {
   try {
-    const data = localStorage.getItem(TAGS_STORAGE_KEY);
+    const data = memStore.getItem(TAGS_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(TAGS_STORAGE_KEY, JSON.stringify(INITIAL_TAGS));
+      memStore.setItem(TAGS_STORAGE_KEY, JSON.stringify(INITIAL_TAGS));
       return INITIAL_TAGS;
     }
     return JSON.parse(data);
@@ -247,7 +248,7 @@ export function getStoredTags(): ContentTagEntity[] {
 
 function saveStoredTags(tags: ContentTagEntity[]) {
   try {
-    localStorage.setItem(TAGS_STORAGE_KEY, JSON.stringify(tags));
+    memStore.setItem(TAGS_STORAGE_KEY, JSON.stringify(tags));
   } catch (e) {
     console.error('Failed tags:', e);
   }

@@ -1,5 +1,6 @@
 <!-- @component Dashboard & Monitoring Layanan — ketersediaan layanan, kelengkapan data SPP (7 aspek), antrean real-time, dan eskalasi pengaduan. (Ekspor default ini setara dengan ServiceDashboardContent pada source React.) -->
 <script lang="ts">
+import { memStore } from '../../../shared/lib/memStore';
   import Card from '../../../shared/ui/Card.svelte';
   import Badge from '../../../shared/ui/Badge.svelte';
   import Button from '../../../shared/ui/Button.svelte';
@@ -88,19 +89,19 @@
 
       // Single-pass direct batch reading from local stores for related entities
       try {
-        const rawReqs = localStorage.getItem('puskesmas_service_requirements');
+        const rawReqs = memStore.getItem('puskesmas_service_requirements');
         requirements = rawReqs ? JSON.parse(rawReqs) : [];
 
-        const rawProcs = localStorage.getItem('puskesmas_service_procedures');
+        const rawProcs = memStore.getItem('puskesmas_service_procedures');
         procedures = rawProcs ? JSON.parse(rawProcs) : [];
 
-        const rawSchedules = localStorage.getItem('puskesmas_service_schedules');
+        const rawSchedules = memStore.getItem('puskesmas_service_schedules');
         schedules = rawSchedules ? JSON.parse(rawSchedules) : [];
 
-        const rawPricing = localStorage.getItem('puskesmas_service_pricing');
+        const rawPricing = memStore.getItem('puskesmas_service_pricing');
         pricings = rawPricing ? JSON.parse(rawPricing) : [];
 
-        const rawRegs = localStorage.getItem('puskesmas_service_registrations');
+        const rawRegs = memStore.getItem('puskesmas_service_registrations');
         registrations = rawRegs ? JSON.parse(rawRegs) : [];
       } catch (e) {
         console.error('Failed to read supplementary service details from local store:', e);

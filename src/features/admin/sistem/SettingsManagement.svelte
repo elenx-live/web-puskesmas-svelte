@@ -1,5 +1,6 @@
 <!-- @component Pusat Pengaturan & Konfigurasi Terpadu — kelola parameter sistem, integrasi API, kebijakan operasional, dan tampilan portal. -->
 <script lang="ts">
+import { memStore } from '../../../shared/lib/memStore';
   import {
     Building2, Globe, Users, Phone, Layers, Calendar, Sparkles, Palette,
     Share2, Bell, MessageSquare, Mail, Search, ShieldCheck,
@@ -279,7 +280,7 @@
   $effect(() => {
     void siteSettingsService.getSettings().then(res => {
       try {
-        const storedContact = localStorage.getItem('puskesmas_contact_settings_v1');
+        const storedContact = memStore.getItem('puskesmas_contact_settings_v1');
         if (storedContact) {
           const contactObj = JSON.parse(storedContact);
           if (contactObj.address) res.address = contactObj.address;

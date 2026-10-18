@@ -1,5 +1,6 @@
 import type { SiteSettings } from '../types/index.js';
 import { apiFetch } from '../lib/api.js';
+import { memStore } from '../lib/memStore';
 
 interface SyncMetadataPayload {
   settings?: Partial<SiteSettings>;
@@ -30,7 +31,7 @@ export async function syncMetadataToServer(customSettings?: Partial<SiteSettings
   try {
     let settings = customSettings;
     if (!settings) {
-      const localSettings = localStorage.getItem('puskesmas_site_settings');
+      const localSettings = memStore.getItem('puskesmas_site_settings');
       if (localSettings) {
         settings = JSON.parse(localSettings);
       }
@@ -43,7 +44,7 @@ export async function syncMetadataToServer(customSettings?: Partial<SiteSettings
 
     // Collect published microsites
     try {
-      const localMicrosites = localStorage.getItem('puskesmas_microsites_collection_v2');
+      const localMicrosites = memStore.getItem('puskesmas_microsites_collection_v2');
       if (localMicrosites) {
         const parsed = JSON.parse(localMicrosites);
         if (Array.isArray(parsed)) {
@@ -63,7 +64,7 @@ export async function syncMetadataToServer(customSettings?: Partial<SiteSettings
 
     // Collect published posts / news articles for Open Graph and WhatsApp Preview
     try {
-      const localPosts = localStorage.getItem('puskesmas_cms_posts');
+      const localPosts = memStore.getItem('puskesmas_cms_posts');
       if (localPosts) {
         const parsed = JSON.parse(localPosts);
         if (Array.isArray(parsed)) {

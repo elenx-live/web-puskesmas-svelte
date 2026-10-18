@@ -1,5 +1,6 @@
 import type { TagEntity } from '../types/index.js';
 import { getCollectionData, saveDocumentData, deleteDocumentData } from '../lib/firebase';
+import { memStore } from '../lib/memStore';
 
 const TAGS_STORAGE_KEY = 'puskesmas_cms_tags';
 const FIRESTORE_COLLECTION = 'cms_tags';
@@ -14,9 +15,9 @@ const INITIAL_TAGS: TagEntity[] = [
 
 function getStoredTags(): TagEntity[] {
   try {
-    const data = localStorage.getItem(TAGS_STORAGE_KEY);
+    const data = memStore.getItem(TAGS_STORAGE_KEY);
     if (!data) {
-      localStorage.setItem(TAGS_STORAGE_KEY, JSON.stringify(INITIAL_TAGS));
+      memStore.setItem(TAGS_STORAGE_KEY, JSON.stringify(INITIAL_TAGS));
       return INITIAL_TAGS;
     }
     return JSON.parse(data);
@@ -27,7 +28,7 @@ function getStoredTags(): TagEntity[] {
 
 function saveStoredTags(tags: TagEntity[]) {
   try {
-    localStorage.setItem(TAGS_STORAGE_KEY, JSON.stringify(tags));
+    memStore.setItem(TAGS_STORAGE_KEY, JSON.stringify(tags));
   } catch (err) {
     console.error('Failed to save tags:', err);
   }

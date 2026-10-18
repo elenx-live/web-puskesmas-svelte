@@ -1,6 +1,7 @@
 import type { SiteFeatureFlags, MenuItem, MenuTreeItem } from '../types/index.js';
 import { auditService } from './auditService';
 import { siteSettingsService } from './siteSettingsService';
+import { memStore } from '../lib/memStore';
 
 const FEATURE_FLAGS_STORAGE_KEY = 'puskesmas_feature_flags';
 
@@ -205,14 +206,14 @@ class FeatureFlagsService {
 
     try {
       // 1. Check direct local storage
-      const stored = localStorage.getItem(FEATURE_FLAGS_STORAGE_KEY);
+      const stored = memStore.getItem(FEATURE_FLAGS_STORAGE_KEY);
       if (stored) {
         this.memoryFlags = { ...DEFAULT_FEATURE_FLAGS, ...JSON.parse(stored) };
         return this.memoryFlags!;
       }
 
       // 2. Check site settings
-      const siteSettings = localStorage.getItem('puskesmas_site_settings');
+      const siteSettings = memStore.getItem('puskesmas_site_settings');
       if (siteSettings) {
         const parsed = JSON.parse(siteSettings);
         if (parsed.featureFlags) {
@@ -246,7 +247,7 @@ class FeatureFlagsService {
     this.memoryFlags = updated;
 
     try {
-      localStorage.setItem(FEATURE_FLAGS_STORAGE_KEY, JSON.stringify(updated));
+      memStore.setItem(FEATURE_FLAGS_STORAGE_KEY, JSON.stringify(updated));
 
       // Sync with SiteSettings
       const siteSettings = siteSettingsService.getCachedSettings();

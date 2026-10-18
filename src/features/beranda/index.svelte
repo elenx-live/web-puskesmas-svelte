@@ -1,5 +1,6 @@
 <!-- @component Halaman beranda publik — memuat template artistik / section modular. -->
 <script lang="ts">
+import { memStore } from '../../shared/lib/memStore';
   import type {
     HomepageSection,
     ServiceEntity,
@@ -26,7 +27,7 @@
 
   function readJson<T>(key: string, fallback: T): T {
     try {
-      const c = localStorage.getItem(key);
+      const c = memStore.getItem(key);
       return c ? (JSON.parse(c) as T) : fallback;
     } catch {
       return fallback;
@@ -57,7 +58,7 @@
   let loading = $state<boolean>(() => {
     try {
       return (
-        !localStorage.getItem('puskesmas_site_settings') && !localStorage.getItem('puskesmas_services')
+        !memStore.getItem('puskesmas_site_settings') && !memStore.getItem('puskesmas_services')
       );
     } catch {
       return true;

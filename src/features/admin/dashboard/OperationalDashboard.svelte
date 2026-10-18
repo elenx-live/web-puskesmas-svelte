@@ -1,5 +1,6 @@
 <!-- @component Dashboard Operasional — monitoring kondisi pelayanan & alur antrean real-time dengan auto-polling, threshold alert, dan retry notifikasi WhatsApp. -->
 <script lang="ts">
+import { memStore } from '../../../shared/lib/memStore';
   import Card from '../../../shared/ui/Card.svelte';
   import Button from '../../../shared/ui/Button.svelte';
   import Modal from '../../../shared/ui/Modal.svelte';
@@ -64,10 +65,10 @@
   // Focus Unit (My Work) Helper
   let myFocusUnitId = $state<string>('all');
 
-  // Operational Threshold Settings (persisted in localStorage)
+  // Operational Threshold Settings (in-memory)
   function loadOpSettings(): OperationalSettings {
     try {
-      const stored = localStorage.getItem('puskesmas_operational_settings');
+      const stored = memStore.getItem('puskesmas_operational_settings');
       return stored ? JSON.parse(stored) : { ...DEFAULT_SETTINGS };
     } catch {
       return { ...DEFAULT_SETTINGS };
@@ -152,7 +153,7 @@
     };
 
     try {
-      localStorage.setItem('puskesmas_operational_settings', JSON.stringify(updated));
+      memStore.setItem('puskesmas_operational_settings', JSON.stringify(updated));
       opSettings = updated;
       countdown = updated.pollingInterval;
       showSettingsModal = false;
