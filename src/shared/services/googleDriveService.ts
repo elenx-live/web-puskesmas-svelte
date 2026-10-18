@@ -84,8 +84,7 @@ export const googleDriveService = {
 
   disconnect() {
     _gdriveToken = null;
-
-};
+  },
 
   /**
    * Connect to Google Drive via Google OAuth popup
