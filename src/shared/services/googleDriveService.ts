@@ -26,9 +26,12 @@ declare global {
   }
 }
 
-const GDRIVE_TOKEN_KEY = 'puskesmas_gdrive_access_token';
-const GDRIVE_USER_KEY = 'puskesmas_gdrive_user_info';
-const DRIVE_AUTO_SYNC_KEY = 'puskesmas_gdrive_auto_sync';
+// In-memory saja — TIDAK disimpan di browser (aturan: jangan simpan data di browser).
+// Token & info Drive hilang saat refresh; user perlu re-auth OAuth jika diperlukan.
+interface StoredToken { token: string; expiresAt: number }
+let _gdriveToken: StoredToken | null = null;
+let _gdriveUser: DriveUserInfo | null = null;
+let _gdriveAutoSync = false;
 
 export interface DriveFileInfo {
   id: string;
@@ -48,53 +51,41 @@ export interface DriveUserInfo {
 
 export const googleDriveService = {
   getAccessToken(): string | null {
-    const tokenData = localStorage.getItem(GDRIVE_TOKEN_KEY);
-    if (!tokenData) return null;
-    try {
-      const parsed = JSON.parse(tokenData);
-      if (parsed.expiresAt && Date.now() > parsed.expiresAt) {
-        localStorage.removeItem(GDRIVE_TOKEN_KEY);
-        return null;
-      }
-      return parsed.token;
-    } catch {
-      return tokenData;
+    if (!_gdriveToken) return null;
+    if (_gdriveToken.expiresAt && Date.now() > _gdriveToken.expiresAt) {
+      _gdriveToken = null;
+      return null;
     }
+    return _gdriveToken.token;
   },
 
   setAccessToken(token: string, expiresInSeconds = 3600) {
-    const data = {
+    _gdriveToken = {
       token,
       expiresAt: Date.now() + expiresInSeconds * 1000 - 60000 // 1 min buffer
     };
-    localStorage.setItem(GDRIVE_TOKEN_KEY, JSON.stringify(data));
   },
 
   getDriveUser(): DriveUserInfo | null {
-    try {
-      const data = localStorage.getItem(GDRIVE_USER_KEY);
-      return data ? JSON.parse(data) : null;
-    } catch {
-      return null;
-    }
+    return _gdriveUser;
   },
 
   setDriveUser(user: DriveUserInfo) {
-    localStorage.setItem(GDRIVE_USER_KEY, JSON.stringify(user));
+    _gdriveUser = user;
   },
 
   isAutoSyncEnabled(): boolean {
-    return localStorage.getItem(DRIVE_AUTO_SYNC_KEY) === 'true';
+    return _gdriveAutoSync;
   },
 
   setAutoSyncEnabled(enabled: boolean) {
-    localStorage.setItem(DRIVE_AUTO_SYNC_KEY, String(enabled));
+    _gdriveAutoSync = enabled;
   },
 
   disconnect() {
-    localStorage.removeItem(GDRIVE_TOKEN_KEY);
-    localStorage.removeItem(GDRIVE_USER_KEY);
-  },
+    _gdriveToken = null;
+
+};
 
   /**
    * Connect to Google Drive via Google OAuth popup
