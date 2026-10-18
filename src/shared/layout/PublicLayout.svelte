@@ -574,6 +574,7 @@
                     <a
                       href={m.url || '#'}
                       target={m.openInNewTab ? '_blank' : '_self'}
+                      onclick={() => (mobileDrawerOpen = false)}
                       class="flex-1 px-3 py-2 text-xs font-medium text-[var(--color-text)] hover:text-[var(--color-primary)] flex items-center justify-between"
                     >
                       <span>{m.label}</span>
@@ -603,6 +604,7 @@
                             <a
                               href={child.url || '#'}
                               target={child.openInNewTab ? '_blank' : '_self'}
+                              onclick={() => (mobileDrawerOpen = false)}
                               class="flex-1 px-2.5 py-1.5 text-xs text-[var(--color-text)] hover:text-[var(--color-primary)] flex items-center justify-between"
                             >
                               <span>{child.label}</span>
@@ -628,6 +630,7 @@
                                 <a
                                   href={subChild.url || '#'}
                                   target={subChild.openInNewTab ? '_blank' : '_self'}
+                                  onclick={() => (mobileDrawerOpen = false)}
                                   class="block px-2.5 py-1.5 text-[11px] text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)] hover:bg-[var(--color-bg)] rounded-lg transition"
                                 >
                                   {subChild.label}
