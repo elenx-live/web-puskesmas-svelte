@@ -8,6 +8,7 @@ import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { apiAuthGuard, rateLimit } from "./server/middleware/auth.js";
 import { publicDir, uploadsDir } from "./server/lib/config.js";
+import { renderHtmlWithMeta } from "./server/lib/storage.js";
 import healthRouter from "./server/routes/health.js";
 import whatsappRouter from "./server/routes/whatsapp.js";
 import aiRouter from "./server/routes/ai.js";
@@ -150,7 +151,8 @@ async function startViteMiddleware() {
         rawHtml = await viteDevServer.transformIndexHtml(req.originalUrl, rawHtml);
       }
 
-      return res.status(200).set({ "Content-Type": "text/html; charset=utf-8" }).send(rawHtml);
+      const html = renderHtmlWithMeta(req, rawHtml);
+      return res.status(200).set({ "Content-Type": "text/html; charset=utf-8" }).send(html);
     } catch (err) {
       console.error("HTML Meta Handler Error:", err);
       if (viteDevServer) return viteDevServer.middlewares(req, res, next);

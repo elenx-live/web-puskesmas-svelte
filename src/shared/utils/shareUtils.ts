@@ -43,53 +43,9 @@ export function generateSmartShareUrl(options: ShareLinkOptions): string {
   const origin = getPublicCanonicalOrigin();
   const targetPath = options.targetPath || (typeof window !== 'undefined' ? window.location.pathname : '/');
   
-  const params = new URLSearchParams();
-  
-  if (options.title) {
-    params.set('t', options.title.trim());
-  }
-  if (options.description) {
-    params.set('d', options.description.trim());
-  }
-  
-  let resolvedImg = options.imageUrl?.trim() || '';
-  const postMatch = targetPath.match(/^\/berita\/([^\/]+)/);
-  const msMatch = targetPath.match(/^\/m\/([^\/]+)/);
-
-  if (resolvedImg) {
-    // Convert base64 data URLs to dedicated binary image endpoints so WhatsApp scrapers can fetch them
-    if (resolvedImg.startsWith('data:image/')) {
-      if (postMatch) {
-        resolvedImg = `${origin}/api/post-image/${encodeURIComponent(postMatch[1])}.png`;
-      } else if (msMatch) {
-        resolvedImg = `${origin}/api/og-image/${encodeURIComponent(msMatch[1])}.png`;
-      } else {
-        resolvedImg = `${origin}/og-image.png`;
-      }
-    } else if (resolvedImg.startsWith('/')) {
-      resolvedImg = `${origin}${resolvedImg}`;
-    }
-    params.set('img', resolvedImg);
-  } else {
-    // If no explicit image provided, link directly to the dynamic post image endpoint
-    if (postMatch) {
-      params.set('img', `${origin}/api/post-image/${encodeURIComponent(postMatch[1])}.png`);
-    } else if (msMatch) {
-      params.set('img', `${origin}/api/og-image/${encodeURIComponent(msMatch[1])}.png`);
-    }
-  }
-
-  if (options.siteName) {
-    params.set('site', options.siteName.trim());
-  }
-  
-  // Menambahkan path tujuan agar pengunjung langsung dialihkan ke halaman yang benar
-  params.set('to', targetPath);
-  
-  // Menambahkan timestamp singkat jika perlu cache buster
-  params.set('v', Date.now().toString(36));
-
-  return `${origin}/share?${params.toString()}`;
+  // URL pendek langsung ke artikel — OG meta tags di-inject server untuk crawler WhatsApp.
+  // Tidak perlu lagi /share?t=...&d=... yang panjang.
+  return `${origin}${targetPath}`;
 }
 
 /**
