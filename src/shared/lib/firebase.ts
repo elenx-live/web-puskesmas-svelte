@@ -84,6 +84,10 @@ export async function getCollectionData<T extends { id?: string; uid?: string }>
       const res = await apiFetch(`/api/db/${collectionName}?t=${Date.now()}`);
       if (res.ok) {
         const json = await res.json();
+        // API format: { success: true, data: [...] } atau { docs: [...] } (legacy)
+        if (json.data && Array.isArray(json.data)) {
+          return json.data as T[];
+        }
         if (json.docs && Array.isArray(json.docs)) {
           return json.docs as T[];
         }
