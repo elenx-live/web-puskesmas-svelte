@@ -96,6 +96,34 @@ export const galleryService = {
     return newAlbum;
   },
 
+  async updateAlbum(id: string, data: Partial<GalleryAlbum>, actor: { id: string; email: string; name: string }): Promise<GalleryAlbum> {
+    const albums = await this.getAlbums();
+    const idx = albums.findIndex((a) => a.id === id);
+    if (idx === -1) throw new Error('Album tidak ditemukan');
+
+    const updated: GalleryAlbum = {
+      ...albums[idx],
+      ...data,
+      id,
+      updatedAt: new Date().toISOString()
+    };
+
+    await saveDocumentData(FIRESTORE_COLLECTION, id, updated, GALLERY_STORAGE_KEY);
+
+    await auditService.recordLog({
+      userId: actor.id,
+      userEmail: actor.email,
+      userName: actor.name,
+      action: 'UPDATE',
+      module: 'PAGES',
+      targetId: id,
+      targetName: updated.title,
+      description: `Memperbarui album galeri: "${updated.title}"`
+    });
+
+    return updated;
+  },
+
   async deleteAlbum(id: string, actor: { id: string; email: string; name: string }): Promise<void> {
     const albums = await this.getAlbums();
     const target = albums.find(a => a.id === id);

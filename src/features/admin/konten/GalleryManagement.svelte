@@ -65,6 +65,12 @@
     isModalOpen = true;
   }
 
+  function handleOpenEdit(album: GalleryAlbum) {
+    editingAlbum = JSON.parse(JSON.stringify(album));
+    modalKey += 1;
+    isModalOpen = true;
+  }
+
   /** Resize gambar via canvas (maks 1920px) agar upload cepat. */
   async function processImageFile(file: File): Promise<string> {
     const rawBase64: string = await new Promise((resolve, reject) => {
@@ -217,12 +223,18 @@
 
     saving = true;
     try {
-      await galleryService.createAlbum(editingAlbum, {
+      const actor = {
         id: user.uid,
         email: user.email,
         name: user.displayName
-      });
-      toastStore.showToast(`Album galeri "${editingAlbum.title}" berhasil dibuat.`);
+      };
+      if (editingAlbum.id) {
+        await galleryService.updateAlbum(editingAlbum.id, editingAlbum, actor);
+        toastStore.showToast(`Album galeri "${editingAlbum.title}" berhasil diperbarui.`);
+      } else {
+        await galleryService.createAlbum(editingAlbum, actor);
+        toastStore.showToast(`Album galeri "${editingAlbum.title}" berhasil dibuat.`);
+      }
       isModalOpen = false;
       editingAlbum = null;
       loadData();
@@ -314,6 +326,14 @@
             </button>
 
             <button
+              onclick={() => handleOpenEdit(album)}
+              class="p-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400"
+              title="Edit Album"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            </button>
+
+            <button
               onclick={() => {
                 albumToDelete = album;
                 deleteModalOpen = true;
@@ -334,7 +354,7 @@
 <Modal
   isOpen={isModalOpen}
   onClose={() => (isModalOpen = false)}
-  title="Buat Album Galeri Baru"
+  title={editingAlbum?.id ? "Edit Album Galeri" : "Buat Album Galeri Baru"}
 >
   {#snippet footer()}
     <Button variant="secondary" onclick={() => (isModalOpen = false)}>Batal</Button>
@@ -460,7 +480,7 @@
                 <button
                   type="button"
                   onclick={() => handleDeletePhoto(img.id)}
-                  class="absolute top-1.5 right-1.5 p-1.5 rounded-xl bg-black/70 text-red-300 opacity-0 group-hover:opacity-100 transition"
+                  class="absolute top-1.5 right-1.5 p-1.5 rounded-xl bg-black/70 text-red-300 transition"
                   title="Hapus foto"
                 >
                   <X class="w-3.5 h-3.5" />
