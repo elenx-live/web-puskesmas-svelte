@@ -1696,17 +1696,19 @@ function renderHtmlWithMeta(req: express.Request, rawHtml: string): string {
       if (post && post.title) {
         title = `${post.title} - ${siteName}`;
         description = post.excerpt || description;
+        // Cache-buster: URL gambar berubah setiap artikel diupdate agar Cloudflare tidak sajikan cache basi.
+        const ver = post.updatedAt ? `?v=${encodeURIComponent(String(post.updatedAt)).replace(/[^a-zA-Z0-9]/g, '').slice(0, 14)}` : '';
         if (post.featuredImage && !query.screenshot) {
           let img = post.featuredImage;
           if (img.startsWith('data:image/')) {
-            image = `${proto}://${host}/api/post-image/${encodeURIComponent(targetSlug)}.png`;
+            image = `${proto}://${host}/api/post-image/${encodeURIComponent(targetSlug)}.png${ver}`;
           } else if (img.startsWith('/')) {
             image = `${proto}://${host}${img}`;
           } else {
             image = img;
           }
         } else {
-          image = `${proto}://${host}/api/post-image/${encodeURIComponent(targetSlug)}.png`;
+          image = `${proto}://${host}/api/post-image/${encodeURIComponent(targetSlug)}.png${ver}`;
         }
         type = "article";
       } else {
