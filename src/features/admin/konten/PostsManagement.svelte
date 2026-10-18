@@ -747,7 +747,7 @@
       <Input
         label="Judul Berita Utama *"
         placeholder="Contoh: Pelaksanaan PIN Polio Serentak di Puskesmas"
-        value={editingPost.title || ''}
+        defaultValue={editingPost.title || ''}
         oninput={(e) => patchEditingPost({ title: e.currentTarget.value })}
         required
       />
@@ -755,7 +755,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Select
           label="Kategori Berita *"
-          value={editingPost.categoryId || ''}
+          defaultValue={editingPost.categoryId || ''}
           onchange={(e) => {
             const categoryId = e.currentTarget.value;
             const found = categories.find((c) => c.id === categoryId);
@@ -819,7 +819,7 @@
         <!-- URL Input Fallback -->
         <Input
           placeholder="Atau tempel URL gambar langsung (https://...)"
-          value={editingPost.featuredImage || ''}
+          defaultValue={editingPost.featuredImage || ''}
           oninput={(e) => patchEditingPost({ featuredImage: e.currentTarget.value })}
           class="text-xs"
         />
@@ -864,7 +864,7 @@
       <Input
         label="Ringkasan Singkat (Excerpt)"
         placeholder="Ringkasan 1-2 kalimat untuk kartu berita..."
-        value={editingPost.excerpt || ''}
+        defaultValue={editingPost.excerpt || ''}
         oninput={(e) => patchEditingPost({ excerpt: e.currentTarget.value })}
       />
 

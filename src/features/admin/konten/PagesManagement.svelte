@@ -451,12 +451,13 @@
   {/snippet}
 
   {#if editingPage}
+  {#key editingPage.id || 'new'}
     <form onsubmit={handleSavePage} class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           label="Judul Halaman *"
           placeholder="Contoh: Sejarah & Perkembangan Puskesmas"
-          value={editingPage.title || ''}
+          defaultValue={editingPage.title || ''}
           oninput={(e) => handleTitleInput(e.currentTarget.value)}
           required
         />
@@ -469,7 +470,7 @@
             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)] text-xs font-mono">/</span>
             <input
               type="text"
-              value={editingPage.slug || ''}
+              defaultValue={editingPage.slug || ''}
               oninput={(e) => patchEditingPage({ slug: e.currentTarget.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl pl-7 pr-4 py-2 text-xs text-[var(--color-primary)] font-mono"
               placeholder="sejarah-puskesmas"
@@ -504,7 +505,7 @@
         <Input
           label="Gambar Utama (Featured Image)"
           placeholder="https://images.unsplash.com/..."
-          value={editingPage.featuredImage || ''}
+          defaultValue={editingPage.featuredImage || ''}
           oninput={(e) => patchEditingPage({ featuredImage: e.currentTarget.value })}
         />
       </div>
@@ -513,7 +514,7 @@
       <Input
         label="Ringkasan Halaman (Excerpt)"
         placeholder="Ringkasan singkat 1-2 kalimat untuk pratinjau halaman..."
-        value={editingPage.excerpt || ''}
+        defaultValue={editingPage.excerpt || ''}
         oninput={(e) => patchEditingPage({ excerpt: e.currentTarget.value })}
       />
 
@@ -667,12 +668,11 @@
             <textarea
               bind:this={textareaEl}
               rows={9}
-              value={editingPage.content || ''}
               oninput={(e) => patchEditingPage({ content: e.currentTarget.value })}
               placeholder="Gunakan tag HTML atau klik tombol format di atas (<h2>, <p>, <ul>, <li>, <strong>, <table>)..."
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl p-4 text-xs text-[var(--color-text)] placeholder-zinc-500 font-mono leading-relaxed"
               required
-            ></textarea>
+            >{editingPage.content || ''}</textarea>
             <div class="flex items-center justify-between text-[11px] text-[var(--color-muted-foreground)]">
               <span>Sanitasi XSS aktif otomatis. Tag formatting aman: &lt;h1-h6&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;ol&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;blockquote&gt;, &lt;table&gt;.</span>
               <span class="font-mono">{(editingPage.content || '').length} karakter</span>
@@ -704,19 +704,20 @@
           <Input
             label="Judul SEO (SEO Title)"
             placeholder="KOSONG = Menggunakan Judul Halaman Utama"
-            value={editingPage.seoTitle || ''}
+            defaultValue={editingPage.seoTitle || ''}
             oninput={(e) => patchEditingPage({ seoTitle: e.currentTarget.value })}
           />
 
           <Input
             label="Deskripsi Meta (SEO Meta Description)"
             placeholder="Deskripsi untuk hasil pencarian Google..."
-            value={editingPage.seoDescription || ''}
+            defaultValue={editingPage.seoDescription || ''}
             oninput={(e) => patchEditingPage({ seoDescription: e.currentTarget.value })}
           />
         </div>
       </div>
     </form>
+  {/key}
   {/if}
 </Modal>
 

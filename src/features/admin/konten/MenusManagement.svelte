@@ -403,11 +403,12 @@
   {/snippet}
 
   {#if editingItem}
+  {#key editingItem.id || 'new'}
     <form onsubmit={handleSave} class="space-y-4">
       <Input
         label="Label Menu *"
         placeholder="Contoh: Sejarah & Perkembangan"
-        value={editingItem.label || ''}
+        defaultValue={editingItem.label || ''}
         oninput={(e) => patchEditingItem({ label: e.currentTarget.value })}
         required
       />
@@ -461,7 +462,7 @@
         <Input
           label="Tautan / Path URL *"
           placeholder="/profil atau https://..."
-          value={editingItem.url || ''}
+          defaultValue={editingItem.url || ''}
           oninput={(e) => patchEditingItem({ url: e.currentTarget.value })}
           required
         />
@@ -489,6 +490,7 @@
         </label>
       </div>
     </form>
+  {/key}
   {/if}
 </Modal>
 
