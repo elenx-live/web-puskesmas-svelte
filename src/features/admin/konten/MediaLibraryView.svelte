@@ -9,6 +9,7 @@
   import ConfirmModal from '../../../shared/components/ConfirmModal.svelte';
   import { authStore } from '../../../shared/stores/auth.svelte.js';
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
+  import { apiFetch } from '../../../shared/lib/api.js';
   import { mediaService } from '../../../shared/services/mediaService.js';
   import type { MediaItem } from '../../../shared/types/index.js';
 
@@ -49,7 +50,7 @@
           fileName = file.name;
           fileUrl = rawBase64;
 
-          const res = await fetch('/api/upload-image', {
+          const res = await apiFetch('/api/upload-image', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

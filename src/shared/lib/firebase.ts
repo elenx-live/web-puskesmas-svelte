@@ -163,14 +163,15 @@ export async function saveDocumentData<T extends { id?: string; uid?: string; sl
   }
 
   // 2. Persist ke VPS SQLite Database via /api/db/* (satu-satunya)
-  try {
-    apiFetch(`/api/db/${collectionName}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).catch(err => console.warn(`[VPS-DB] Save to /api/db/${collectionName} error:`, err));
-  } catch (error) {
-    console.warn(`[Persistence] Save document sync error for ${collectionName}/${entityId}:`, error);
+  // Diawait agar kegagalan terlihat oleh pemanggil (jangan telan error).
+  const res = await apiFetch(`/api/db/${collectionName}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Gagal menyimpan ke server (${res.status}): ${errText.slice(0, 200) || res.statusText}`);
   }
 }
 

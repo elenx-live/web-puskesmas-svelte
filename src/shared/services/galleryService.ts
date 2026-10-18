@@ -127,7 +127,7 @@ export const galleryService = {
   async deleteAlbum(id: string, actor: { id: string; email: string; name: string }): Promise<void> {
     const albums = await this.getAlbums();
     const target = albums.find(a => a.id === id);
-    if (!target) return;
+    if (!target) throw new Error('Album tidak ditemukan di server. Muat ulang daftar galeri lalu coba lagi.');
 
     await deleteDocumentData(FIRESTORE_COLLECTION, id, GALLERY_STORAGE_KEY);
 

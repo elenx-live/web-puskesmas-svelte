@@ -12,6 +12,7 @@
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
   import { errorMessage } from '../../../shared/lib/logger.js';
   import { debounce } from '../../../shared/utils/debounce.js';
+  import { apiFetch } from '../../../shared/lib/api.js';
   import { postService } from '../../../shared/services/postService.js';
   import { categoryService } from '../../../shared/services/categoryService.js';
   import { tagService } from '../../../shared/services/tagService.js';
@@ -336,7 +337,7 @@
           patchEditingPost({ featuredImage: processedBase64 });
 
           // Upload to server
-          const res = await fetch('/api/upload-image', {
+          const res = await apiFetch('/api/upload-image', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

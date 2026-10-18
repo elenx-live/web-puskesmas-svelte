@@ -10,6 +10,7 @@
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
   import { galleryService } from '../../../shared/services/galleryService.js';
   import { errorMessage } from '../../../shared/lib/logger.js';
+  import { apiFetch } from '../../../shared/lib/api.js';
   import type { GalleryAlbum } from '../../../shared/types/index.js';
 
   let albums = $state<GalleryAlbum[]>([]);
@@ -116,7 +117,7 @@
 
   /** Upload satu gambar ke server, kembalikan URL. */
   async function uploadToServer(imageBase64: string, fileName: string): Promise<string> {
-    const res = await fetch('/api/upload-image', {
+    const res = await apiFetch('/api/upload-image', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64, fileName: fileName.replace(/\.[^/.]+$/, '') })
@@ -148,6 +149,7 @@
     }
 
     uploadingCover = true;
+    const prevCover = editingAlbum.coverImage;
     try {
       const base64 = await processImageFile(file);
       // Pratinjau lokal langsung
@@ -156,7 +158,9 @@
       editingAlbum.coverImage = url;
       toastStore.showToast('Foto sampul berhasil diunggah ke server!', 'success');
     } catch (err: unknown) {
-      toastStore.showToast('Foto sampul dimuat lokal: ' + errorMessage(err), 'info');
+      // Kembalikan ke nilai sebelumnya — jangan biarkan base64 gagal masuk ke data simpan
+      editingAlbum.coverImage = prevCover;
+      toastStore.showToast('Upload foto sampul gagal: ' + errorMessage(err), 'error');
     } finally {
       uploadingCover = false;
       if (coverInputEl) coverInputEl.value = '';
@@ -179,9 +183,9 @@
     let okCount = 0;
     try {
       for (const file of validFiles) {
+        const tempId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         try {
           const base64 = await processImageFile(file);
-          const tempId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
           // Pratinjau lokal langsung
           editingAlbum.images = [...(editingAlbum.images || []), { id: tempId, url: base64, caption: '' }];
           const url = await uploadToServer(base64, file.name);
@@ -191,6 +195,8 @@
           );
           okCount += 1;
         } catch (err: unknown) {
+          // Hapus entri yang gagal — jangan biarkan base64 gagal masuk ke data simpan
+          editingAlbum.images = (editingAlbum.images || []).filter((img) => img.id !== tempId);
           toastStore.showToast(`"${file.name}": ` + errorMessage(err), 'error');
         } finally {
           uploadProgress = { done: uploadProgress.done + 1, total: validFiles.length };
@@ -218,6 +224,20 @@
 
     if (!editingAlbum.title?.trim()) {
       toastStore.showToast('Judul Album Galeri wajib diisi!', 'error');
+      return;
+    }
+
+    // Jangan simpan saat upload masih berjalan (hindari URL base64 sementara tersimpan)
+    if (uploadingCover || uploadingPhotos) {
+      toastStore.showToast('Tunggu hingga semua foto selesai diunggah.', 'warning');
+      return;
+    }
+
+    // Tolak payload yang masih mengandung base64 (upload gagal yang lolos)
+    const hasBase64Cover = (editingAlbum.coverImage || '').startsWith('data:image/');
+    const hasBase64Photo = (editingAlbum.images || []).some((img) => (img.url || '').startsWith('data:image/'));
+    if (hasBase64Cover || hasBase64Photo) {
+      toastStore.showToast('Ada foto yang gagal diunggah. Hapus foto tersebut lalu coba lagi.', 'error');
       return;
     }
 
@@ -358,7 +378,7 @@
 >
   {#snippet footer()}
     <Button variant="secondary" onclick={() => (isModalOpen = false)}>Batal</Button>
-    <Button variant="primary" onclick={handleSave} isLoading={saving}>Simpan Album</Button>
+    <Button variant="primary" onclick={handleSave} isLoading={saving} disabled={saving || uploadingCover || uploadingPhotos}>Simpan Album</Button>
   {/snippet}
   {#if editingAlbum}
   {#key modalKey}

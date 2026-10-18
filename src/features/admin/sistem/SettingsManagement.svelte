@@ -11,6 +11,7 @@ import { memStore } from '../../../shared/lib/memStore';
   } from 'lucide-svelte';
   import Card from '../../../shared/ui/Card.svelte';
   import Button from '../../../shared/ui/Button.svelte';
+  import { apiFetch } from '../../../shared/lib/api.js';
   import Input from '../../../shared/ui/Input.svelte';
   import Badge from '../../../shared/ui/Badge.svelte';
   import ConfirmModal from '../../../shared/components/ConfirmModal.svelte';
@@ -209,7 +210,7 @@ import { memStore } from '../../../shared/lib/memStore';
             let finalUrl = processedBase64;
             try {
               const apiEndpoint = type === 'logo' ? '/api/upload-logo' : '/api/upload-favicon';
-              const response = await fetch(apiEndpoint, {
+              const response = await apiFetch(apiEndpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ imageBase64: processedBase64 })
