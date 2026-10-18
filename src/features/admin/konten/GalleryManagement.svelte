@@ -269,16 +269,18 @@
     const user = authStore.user;
     if (!user || !albumToDelete) return;
     saving = true;
+    const deletedId = albumToDelete.id;
     try {
-      await galleryService.deleteAlbum(albumToDelete.id, {
+      await galleryService.deleteAlbum(deletedId, {
         id: user.uid,
         email: user.email,
         name: user.displayName
       });
       toastStore.showToast(`Album "${albumToDelete.title}" dihapus.`);
+      // Update UI langsung tanpa perlu reload dari server
+      albums = albums.filter((a) => a.id !== deletedId);
       deleteModalOpen = false;
       albumToDelete = null;
-      loadData();
     } catch (err: any) {
       toastStore.showToast(err.message || 'Gagal menghapus album', 'error');
     } finally {
