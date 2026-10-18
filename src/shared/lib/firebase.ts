@@ -202,12 +202,12 @@ export async function deleteDocumentData(
   }
 
   // 2. Delete dari VPS SQLite Database via /api/db/* (satu-satunya)
-  try {
-    apiFetch(`/api/db/${collectionName}/${encodeURIComponent(docId)}`, {
-      method: 'DELETE'
-    }).catch(err => console.warn(`[VPS-DB] Delete /api/db/${collectionName}/${docId} error:`, err));
-  } catch (error) {
-    console.warn(`[Persistence] Delete document sync error for ${collectionName}/${docId}:`, error);
+  const res = await apiFetch(`/api/db/${collectionName}/${encodeURIComponent(docId)}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Gagal menghapus di server (${res.status}): ${errText.slice(0, 100)}`);
   }
 }
 
