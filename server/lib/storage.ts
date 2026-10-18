@@ -440,8 +440,9 @@ async function executeAICompletion(params: ExecuteAIParams): Promise<{ text: str
     headers["Authorization"] = `Bearer ${key}`;
   } else if (params.apiKey === "••••••••") {
     const savedConfig = getAIProviderConfig();
-    if (savedConfig.apiKey) {
-      headers["Authorization"] = `Bearer ${savedConfig.apiKey}`;
+    const savedKey = savedConfig.text?.apiKey || savedConfig.apiKey;
+    if (savedKey) {
+      headers["Authorization"] = `Bearer ${savedKey}`;
     }
   }
 
