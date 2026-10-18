@@ -90,6 +90,7 @@ function isPublicApiRequest(req: Request): boolean {
     "/theme/published",
     "/homepage/published",
     "/data/",
+    "/db/",
     "/posts",
     "/microsites",
     "/site-settings",
