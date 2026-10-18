@@ -453,6 +453,7 @@
               {#if flags.onlineQueue !== false}
                 <a
                   href="#/pendaftaran"
+                  onclick={() => (mobileDrawerOpen = false)}
                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--color-text)] hover:bg-[var(--color-bg)] transition"
                 >
                   <Activity class="w-4 h-4 text-emerald-500 shrink-0" />
@@ -460,6 +461,7 @@
                 </a>
                 <a
                   href="#/antrian/display"
+                  onclick={() => (mobileDrawerOpen = false)}
                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--color-text)] hover:bg-[var(--color-bg)] transition"
                 >
                   <Clock class="w-4 h-4 text-sky-500 shrink-0" />
@@ -468,6 +470,7 @@
               {/if}
               <a
                 href="#/layanan"
+                  onclick={() => (mobileDrawerOpen = false)}
                 class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--color-text)] hover:bg-[var(--color-bg)] transition"
               >
                 <HeartPulse class="w-4 h-4 text-amber-500 shrink-0" />
@@ -482,6 +485,7 @@
               {#if flags.documents !== false}
                 <a
                   href="#/dokumen"
+                  onclick={() => (mobileDrawerOpen = false)}
                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--color-text)] hover:bg-[var(--color-bg)] transition font-medium"
                 >
                   <FileText class="w-4 h-4 text-purple-500 shrink-0" />
@@ -491,6 +495,7 @@
               {#if flags.news !== false}
                 <a
                   href="#/berita"
+                  onclick={() => (mobileDrawerOpen = false)}
                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--color-text)] hover:bg-[var(--color-bg)] transition"
                 >
                   <Sparkles class="w-4 h-4 text-blue-500 shrink-0" />
@@ -500,6 +505,7 @@
               {#if flags.gallery !== false}
                 <a
                   href="#/galeri"
+                  onclick={() => (mobileDrawerOpen = false)}
                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--color-text)] hover:bg-[var(--color-bg)] transition"
                 >
                   <ImageIcon class="w-4 h-4 text-pink-500 shrink-0" />
@@ -508,6 +514,7 @@
               {/if}
               <a
                 href="#/maklumat-pelayanan"
+                  onclick={() => (mobileDrawerOpen = false)}
                 class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--color-text)] hover:bg-[var(--color-bg)] transition"
               >
                 <ShieldCheck class="w-4 h-4 text-teal-500 shrink-0" />
@@ -516,6 +523,7 @@
               {#if flags.microsite !== false}
                 <a
                   href="#/microsites"
+                  onclick={() => (mobileDrawerOpen = false)}
                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--color-text)] hover:bg-[var(--color-bg)] transition font-medium"
                 >
                   <Globe class="w-4 h-4 text-emerald-500 shrink-0" />
@@ -531,6 +539,7 @@
               {#if flags.skm !== false}
                 <a
                   href="#/survei"
+                  onclick={() => (mobileDrawerOpen = false)}
                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--color-text)] hover:bg-[var(--color-bg)] transition"
                 >
                   <BarChart2 class="w-4 h-4 text-emerald-500 shrink-0" />
@@ -540,6 +549,7 @@
               {#if flags.complaints !== false}
                 <a
                   href="#/kritik-saran"
+                  onclick={() => (mobileDrawerOpen = false)}
                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--color-text)] hover:bg-[var(--color-bg)] transition"
                 >
                   <MessageSquare class="w-4 h-4 text-amber-500 shrink-0" />
@@ -548,6 +558,7 @@
               {/if}
               <a
                 href="#/faq"
+                  onclick={() => (mobileDrawerOpen = false)}
                 class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--color-text)] hover:bg-[var(--color-bg)] transition"
               >
                 <HelpCircle class="w-4 h-4 text-cyan-500 shrink-0" />
@@ -555,6 +566,7 @@
               </a>
               <a
                 href="#/kontak"
+                  onclick={() => (mobileDrawerOpen = false)}
                 class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--color-text)] hover:bg-[var(--color-bg)] transition"
               >
                 <Phone class="w-4 h-4 text-indigo-500 shrink-0" />
