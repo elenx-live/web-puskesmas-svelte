@@ -45,8 +45,8 @@ app.use((req, res, next) => {
 
 import cookieParser from "cookie-parser";
 
-app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ extended: true, limit: "2mb" }));
+app.use(express.json({ limit: "15mb" }));
+app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 app.use(cookieParser());
 
 // Guard auth untuk semua /api/* — dipasang SEBELUM semua registrasi route /api/*
