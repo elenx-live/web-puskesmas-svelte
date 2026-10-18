@@ -93,6 +93,7 @@
     <span>Memuat komponen Standar Pelayanan Publik...</span>
   </div>
 {:else}
+  {#key serviceId}
   <form onsubmit={handleSave} class="space-y-4 text-xs">
     <!-- Top Banner Info -->
     <div class="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-2xl p-4 flex items-start justify-between gap-4">
@@ -147,7 +148,7 @@
         <p class="text-[11px] text-[var(--color-muted-foreground)]">Estimasi durasi waktu pelayanan per pasien/kunjungan.</p>
         <input
           type="text"
-          value={standard.serviceTime || ''}
+          defaultValue={standard.serviceTime || ''}
           oninput={(e) => updateStandard({ serviceTime: e.currentTarget.value })}
           placeholder="Contoh: 15 - 30 Menit per Pasien"
           class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
@@ -160,11 +161,10 @@
         <p class="text-[11px] text-[var(--color-muted-foreground)]">Rangkuman persyaratan umum yang wajib dipatuhi publik.</p>
         <textarea
           rows={2}
-          value={standard.requirementsSummary || ''}
           oninput={(e) => updateStandard({ requirementsSummary: e.currentTarget.value })}
           placeholder="Contoh: KTP/KK/KIA asli/fotokopi dan Kartu BPJS Kesehatan aktif."
           class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
-        ></textarea>
+        >{standard.requirementsSummary || ''}</textarea>
       </div>
 
       <!-- 3. Ringkasan Prosedur -->
@@ -173,11 +173,10 @@
         <p class="text-[11px] text-[var(--color-muted-foreground)]">Ringkasan langkah pelayanan secara singkat.</p>
         <textarea
           rows={2}
-          value={standard.procedureSummary || ''}
           oninput={(e) => updateStandard({ procedureSummary: e.currentTarget.value })}
           placeholder="Contoh: Pendaftaran -> Skrining Tanda Vital -> Pemeriksaan Dokter -> Apotek/Rujukan."
           class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
-        ></textarea>
+        >{standard.procedureSummary || ''}</textarea>
       </div>
 
       <!-- 4. Ringkasan Produk Output -->
@@ -186,11 +185,10 @@
         <p class="text-[11px] text-[var(--color-muted-foreground)]">Hasil akhir yang diterima masyarakat.</p>
         <textarea
           rows={2}
-          value={standard.serviceProductSummary || ''}
           oninput={(e) => updateStandard({ serviceProductSummary: e.currentTarget.value })}
           placeholder="Contoh: Resep Obat Dasar, Catatan Rekam Medis, Surat Keterangan / Rujukan."
           class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
-        ></textarea>
+        >{standard.serviceProductSummary || ''}</textarea>
       </div>
 
       <!-- 5. Sarana, Prasarana & Fasilitas -->
@@ -199,11 +197,10 @@
         <p class="text-[11px] text-[var(--color-muted-foreground)]">Peralatan medis dan fasilitas penunjang yang tersedia.</p>
         <textarea
           rows={2}
-          value={standard.facilities || ''}
           oninput={(e) => updateStandard({ facilities: e.currentTarget.value })}
           placeholder="Contoh: Stetoskop, Tensimeter Digital, Bed Pemeriksaan, Ruang Tunggu Ber-AC, Oksimeter."
           class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
-        ></textarea>
+        >{standard.facilities || ''}</textarea>
       </div>
 
       <!-- 6. Kompetensi Pelaksana -->
@@ -212,11 +209,10 @@
         <p class="text-[11px] text-[var(--color-muted-foreground)]">Kualifikasi dan perizinan tenaga medis pelaksana.</p>
         <textarea
           rows={2}
-          value={standard.executorCompetency || ''}
           oninput={(e) => updateStandard({ executorCompetency: e.currentTarget.value })}
           placeholder="Contoh: Dokter Umum SIP Aktif, Perawat D3/S1 Keperawatan STR Aktif."
           class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
-        ></textarea>
+        >{standard.executorCompetency || ''}</textarea>
       </div>
 
       <!-- 7. Pengawasan Internal -->
@@ -225,11 +221,10 @@
         <p class="text-[11px] text-[var(--color-muted-foreground)]">Mekanisme supervisi dan audit mutu layanan.</p>
         <textarea
           rows={2}
-          value={standard.supervision || ''}
           oninput={(e) => updateStandard({ supervision: e.currentTarget.value })}
           placeholder="Contoh: Audit klinis berkala Tim Mutu Internal & Audit Dinas Kesehatan Kabupaten/Kota."
           class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
-        ></textarea>
+        >{standard.supervision || ''}</textarea>
       </div>
 
       <!-- 8. Kanal Pengaduan -->
@@ -238,11 +233,10 @@
         <p class="text-[11px] text-[var(--color-muted-foreground)]">Sarana resmi masyarakat menyampaikan masukan/pengaduan.</p>
         <textarea
           rows={2}
-          value={standard.complaintChannelSummary || ''}
           oninput={(e) => updateStandard({ complaintChannelSummary: e.currentTarget.value })}
           placeholder="Contoh: Kotak Saran di lokasi, WhatsApp Pengaduan Resmi, atau Portal Pengaduan Online."
           class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
-        ></textarea>
+        >{standard.complaintChannelSummary || ''}</textarea>
       </div>
 
       <!-- 9. Evaluasi Kinerja -->
@@ -251,11 +245,10 @@
         <p class="text-[11px] text-[var(--color-muted-foreground)]">Metode pengukuran kepuasan masyarakat.</p>
         <textarea
           rows={2}
-          value={standard.evaluation || ''}
           oninput={(e) => updateStandard({ evaluation: e.currentTarget.value })}
           placeholder="Contoh: Survei Kepuasan Masyarakat (SKM) berkala per triwulan."
           class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
-        ></textarea>
+        >{standard.evaluation || ''}</textarea>
       </div>
 
       <!-- 10. Informasi Tambahan & Dasar Hukum -->
@@ -264,11 +257,10 @@
         <p class="text-[11px] text-[var(--color-muted-foreground)]">Landasan hukum / acuan peraturan.</p>
         <textarea
           rows={2}
-          value={standard.additionalInformation || ''}
           oninput={(e) => updateStandard({ additionalInformation: e.currentTarget.value })}
           placeholder="Contoh: Permenkes No. 19 Tahun 2024 tentang Integrasi Layanan Primer (ILP)."
           class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
-        ></textarea>
+        >{standard.additionalInformation || ''}</textarea>
       </div>
     </div>
 
@@ -283,4 +275,5 @@
       </Button>
     </div>
   </form>
+  {/key}
 {/if}

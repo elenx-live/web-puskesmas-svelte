@@ -421,14 +421,16 @@
     </div>
   {/if}
 
-  <form id="location-form" onsubmit={handleSave} class="space-y-4 text-xs">
-    <div class="space-y-1">
-      <label class="block font-semibold text-[var(--color-text)]">
-        Nama Lokasi <span class="text-[var(--color-primary)]">*</span>
-      </label>
+  {#key editingLocation?.id || 'new'}
+    <form id="location-form" onsubmit={handleSave} class="space-y-4 text-xs">
+      <div class="space-y-1">
+        <label class="block font-semibold text-[var(--color-text)]">
+          Nama Lokasi <span class="text-[var(--color-primary)]">*</span>
+        </label>
       <Input
         placeholder="Contoh: Poli Umum R101"
-        bind:value={formData.name}
+        defaultValue={formData.name}
+        oninput={(e) => (formData.name = e.currentTarget.value)}
         class="bg-[var(--color-bg)] border-[var(--color-border)]"
         required
       />
@@ -437,17 +439,17 @@
     <div class="grid grid-cols-3 gap-3">
       <div class="space-y-1">
         <label class="block font-semibold text-[var(--color-text)]">Gedung</label>
-        <Input placeholder="Gedung Utama" bind:value={formData.building} class="bg-[var(--color-bg)] border-[var(--color-border)]" />
+        <Input placeholder="Gedung Utama" defaultValue={formData.building} oninput={(e) => (formData.building = e.currentTarget.value)} class="bg-[var(--color-bg)] border-[var(--color-border)]" />
       </div>
 
       <div class="space-y-1">
         <label class="block font-semibold text-[var(--color-text)]">Lantai</label>
-        <Input placeholder="Lantai 1" bind:value={formData.floor} class="bg-[var(--color-bg)] border-[var(--color-border)]" />
+        <Input placeholder="Lantai 1" defaultValue={formData.floor} oninput={(e) => (formData.floor = e.currentTarget.value)} class="bg-[var(--color-bg)] border-[var(--color-border)]" />
       </div>
 
       <div class="space-y-1">
         <label class="block font-semibold text-[var(--color-text)]">Ruangan</label>
-        <Input placeholder="Ruang 101" bind:value={formData.room} class="bg-[var(--color-bg)] border-[var(--color-border)]" />
+        <Input placeholder="Ruang 101" defaultValue={formData.room} oninput={(e) => (formData.room = e.currentTarget.value)} class="bg-[var(--color-bg)] border-[var(--color-border)]" />
       </div>
     </div>
 
@@ -455,10 +457,10 @@
       <label class="block font-semibold text-[var(--color-text)]">Petunjuk / Keterangan Lokasi</label>
       <textarea
         rows={2}
-        bind:value={formData.description}
+        oninput={(e) => (formData.description = e.currentTarget.value)}
         placeholder="Petunjuk navigasi bagi pengunjung/pasien..."
         class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3.5 py-2.5 text-[var(--color-text)] placeholder-zinc-600 focus:outline-none focus:border-[var(--color-primary)]/50 resize-none"
-      ></textarea>
+      >{formData.description}</textarea>
     </div>
 
     <div class="grid grid-cols-2 gap-4">
@@ -480,12 +482,14 @@
         <Input
           type="number"
           min={1}
-          bind:value={formData.displayOrder}
+          defaultValue={formData.displayOrder}
+          oninput={(e) => (formData.displayOrder = parseInt(e.currentTarget.value) || 1)}
           class="bg-[var(--color-bg)] border-[var(--color-border)]"
         />
       </div>
     </div>
   </form>
+  {/key}
 
   {#snippet footer()}
     <button

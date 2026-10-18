@@ -52,6 +52,10 @@
   // Modal State for Create / Edit
   let isModalOpen = $state(false);
   let editingContent = $state<Partial<DynamicContentEntity> | null>(null);
+  // Counter remount untuk field yang diupdate programatik (bukan dari ketikan):
+  // slug (auto dari judul), featuredImage (dari media picker), content (toolbar HTML).
+  // Field-field ini uncontrolled, jadi perlu remount agar perubahan programatik tampil.
+  let progRev = $state(0);
 
   // Preview Modal
   let previewContent = $state<DynamicContentEntity | null>(null);
@@ -219,16 +223,19 @@
     if (!editingContent) return;
     const slug = title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
     updateEditing({ title, slug, seoTitle: title });
+    progRev++;
   }
 
   function appendContentTag(html: string) {
     if (!editingContent) return;
     updateEditing({ content: (editingContent.content || '') + html });
+    progRev++;
   }
 
   function handlePickMedia(m: MediaItem) {
     updateEditing({ featuredImage: m.fileUrl });
     isMediaPickerOpen = false;
+    progRev++;
   }
 
   function setAgendaField(
@@ -577,6 +584,7 @@
           </button>
         </div>
 
+        {#key editingContent.id || 'new'}
         <form onsubmit={handleSaveContent} class="space-y-4 text-xs">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="space-y-1.5">
@@ -635,7 +643,7 @@
               type="text"
               required
               placeholder="Contoh: Penyuluhan Imunisasi Campak & Rubella"
-              value={editingContent.title || ''}
+              defaultValue={editingContent.title || ''}
               oninput={(e) => handleTitleChange(e.currentTarget.value)}
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2.5 text-[var(--color-text)]"
             />
@@ -644,12 +652,14 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="space-y-1.5">
               <label class="text-[var(--color-muted-foreground)] font-semibold">Slug URL</label>
+              {#key progRev}
               <input
                 type="text"
-                value={editingContent.slug || ''}
+                defaultValue={editingContent.slug || ''}
                 oninput={(e) => updateEditing({ slug: e.currentTarget.value })}
                 class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2 text-[var(--color-text)] font-mono text-[11px]"
               />
+              {/key}
             </div>
             <div class="space-y-1.5">
               <label class="text-[var(--color-muted-foreground)] font-semibold"
@@ -658,7 +668,7 @@
               <input
                 type="text"
                 placeholder="Posyandu, Imunisasi, Lansia"
-                value={Array.isArray(editingContent.tags) ? editingContent.tags.join(', ') : ''}
+                defaultValue={Array.isArray(editingContent.tags) ? editingContent.tags.join(', ') : ''}
                 oninput={(e) =>
                   updateEditing({
                     tags: e.currentTarget.value.split(',').map((t) => t.trim()).filter(Boolean),
@@ -673,11 +683,10 @@
             <textarea
               rows={2}
               placeholder="Ringkasan singkat untuk kartu pratinjau..."
-              value={editingContent.excerpt || ''}
               oninput={(e) =>
                 updateEditing({ excerpt: e.currentTarget.value, seoDescription: e.currentTarget.value })}
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2.5 text-[var(--color-text)]"
-            ></textarea>
+            >{editingContent.excerpt || ''}</textarea>
           </div>
 
           <!-- Featured Image Picker -->
@@ -686,13 +695,15 @@
               >Featured Image URL / Media Library</label
             >
             <div class="flex gap-2">
+              {#key progRev}
               <input
                 type="text"
                 placeholder="https://images.unsplash.com/..."
-                value={editingContent.featuredImage || ''}
+                defaultValue={editingContent.featuredImage || ''}
                 oninput={(e) => updateEditing({ featuredImage: e.currentTarget.value })}
                 class="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2 text-[var(--color-text)]"
               />
+              {/key}
               <button
                 type="button"
                 onclick={() => (isMediaPickerOpen = true)}
@@ -741,13 +752,14 @@
                   >Quote</button
                 >
               </div>
+              {#key progRev}
               <textarea
                 rows={8}
                 placeholder="Tulis isi konten lengkap di sini (mendukung tag HTML)..."
-                value={editingContent.content || ''}
                 oninput={(e) => updateEditing({ content: e.currentTarget.value })}
                 class="w-full bg-transparent focus:outline-none text-[var(--color-text)] font-mono text-xs p-2"
-              ></textarea>
+              >{editingContent.content || ''}</textarea>
+              {/key}
             </div>
           </div>
 
@@ -797,7 +809,7 @@
                   <input
                     type="text"
                     placeholder="Lokasi kegiatan..."
-                    value={editingContent.agendaDetails?.location || ''}
+                    defaultValue={editingContent.agendaDetails?.location || ''}
                     oninput={(e) =>
                       setAgendaField('location', e.currentTarget.value)}
                     class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text)]"
@@ -808,7 +820,7 @@
                   <input
                     type="text"
                     placeholder="Tim / Unit..."
-                    value={editingContent.agendaDetails?.organizer || ''}
+                    defaultValue={editingContent.agendaDetails?.organizer || ''}
                     oninput={(e) =>
                       setAgendaField('organizer', e.currentTarget.value)}
                     class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text)]"
@@ -933,6 +945,7 @@
             </button>
           </div>
         </form>
+        {/key}
       </div>
     </div>
   {/if}

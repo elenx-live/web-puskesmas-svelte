@@ -4,6 +4,7 @@
   import { authStore } from '../../../shared/stores/auth.svelte.js';
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
   import { serviceEngineService } from '../../../shared/services/serviceEngineService.js';
+  import { debounce } from '../../../shared/utils/debounce.js';
   import type { ServiceClusterEntity, ActiveStatus } from '../../../shared/types/index.js';
   import ConfirmModal from '../../../shared/components/ConfirmModal.svelte';
   import {
@@ -40,6 +41,15 @@
   let formError = $state('');
   let saving = $state(false);
 
+  // Auto-slug: remount slug input tiap nama berubah (mode create) agar slug auto-generate terlihat.
+  let slugKey = $state(0);
+
+  // Search di-debounce 300ms: cegah request jaringan per keystroke.
+  let searchDebounced = $state('');
+  const applySearchDebounced = debounce((v: string) => {
+    searchDebounced = v;
+  }, 300);
+
   // Delete State
   let deleteModalOpen = $state(false);
   let clusterToDelete = $state<ServiceClusterEntity | null>(null);
@@ -49,7 +59,7 @@
     loading = true;
     try {
       const cls = await serviceEngineService.getClusters({
-        search: searchQuery,
+        search: searchDebounced,
         status: statusFilter === 'all' ? undefined : statusFilter,
       });
       clusters = cls;
@@ -71,6 +81,7 @@
       displayOrder: clusters.length + 1,
     };
     formError = '';
+    slugKey = 0;
     modalOpen = true;
   }
 
@@ -84,6 +95,7 @@
       displayOrder: cls.displayOrder,
     };
     formError = '';
+    slugKey = 0;
     modalOpen = true;
   }
 
@@ -95,6 +107,7 @@
         .trim()
         .replace(/\s+/g, '-');
       formData = { ...formData, name, slug: generated };
+      slugKey += 1;
     } else {
       formData = { ...formData, name };
     }
@@ -195,7 +208,12 @@
   });
 
   $effect(() => {
-    const s = searchQuery;
+    applySearchDebounced(searchQuery);
+    return () => applySearchDebounced.cancel();
+  });
+
+  $effect(() => {
+    const s = searchDebounced;
     const st = statusFilter;
     void s; void st;
     loadData();
@@ -431,14 +449,15 @@
         </div>
       {/if}
 
-      <form onsubmit={handleSave} class="space-y-4 text-xs">
-        <div>
-          <label class="block text-[var(--color-muted-foreground)] font-semibold mb-1.5">
-            Nama Klaster <span class="text-[var(--color-primary)]">*</span>
-          </label>
+      {#key editingCluster?.id || 'new'}
+        <form onsubmit={handleSave} class="space-y-4 text-xs">
+          <div>
+            <label class="block text-[var(--color-muted-foreground)] font-semibold mb-1.5">
+              Nama Klaster <span class="text-[var(--color-primary)]">*</span>
+            </label>
           <input
             type="text"
-            value={formData.name}
+            defaultValue={formData.name}
             oninput={(e) => handleNameChange(e.currentTarget.value)}
             placeholder="Contoh: Klaster 2 — Ibu dan Anak"
             required
@@ -450,25 +469,26 @@
           <label class="block text-[var(--color-muted-foreground)] font-semibold mb-1.5">
             URL Slug <span class="text-[var(--color-primary)]">*</span>
           </label>
-          <input
-            type="text"
-            value={formData.slug}
-            oninput={(e) => (formData = { ...formData, slug: e.currentTarget.value })}
-            placeholder="klaster-2-ibu-dan-anak"
-            required
-            class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3.5 py-2.5 text-[var(--color-primary)] font-mono placeholder-zinc-600 focus:outline-none focus:border-[var(--color-primary)]/50"
-          />
+          {#key slugKey}
+            <input
+              type="text"
+              defaultValue={formData.slug}
+              oninput={(e) => (formData = { ...formData, slug: e.currentTarget.value })}
+              placeholder="klaster-2-ibu-dan-anak"
+              required
+              class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3.5 py-2.5 text-[var(--color-primary)] font-mono placeholder-zinc-600 focus:outline-none focus:border-[var(--color-primary)]/50"
+            />
+          {/key}
         </div>
 
         <div>
           <label class="block text-[var(--color-muted-foreground)] font-semibold mb-1.5">Deskripsi Klaster</label>
           <textarea
             rows={3}
-            value={formData.description}
             oninput={(e) => (formData = { ...formData, description: e.currentTarget.value })}
             placeholder="Deskripsi peran dan ruang lingkup pelayanan klaster..."
             class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3.5 py-2.5 text-[var(--color-text)] placeholder-zinc-600 focus:outline-none focus:border-[var(--color-primary)]/50 resize-none"
-          ></textarea>
+          >{formData.description}</textarea>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -490,7 +510,7 @@
             <input
               type="number"
               min={1}
-              value={formData.displayOrder}
+              defaultValue={formData.displayOrder}
               oninput={(e) => (formData = { ...formData, displayOrder: parseInt(e.currentTarget.value) || 1 })}
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]/50"
             />
@@ -517,6 +537,7 @@
           </button>
         </div>
       </form>
+      {/key}
     </div>
   </div>
 {/if}

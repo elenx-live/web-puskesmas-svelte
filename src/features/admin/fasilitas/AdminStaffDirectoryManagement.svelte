@@ -8,6 +8,7 @@
   import type { StaffProfile, OrganizationNode, ServiceEntity, StaffAssignmentHistory } from '../../../shared/types/index.js';
   import { authStore } from '../../../shared/stores/auth.svelte.js';
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
+  import { debounce } from '../../../shared/utils/debounce.js';
 
   let staffList = $state<StaffProfile[]>([]);
   let orgNodes = $state<OrganizationNode[]>([]);
@@ -15,7 +16,15 @@
   let historyList = $state<StaffAssignmentHistory[]>([]);
   let loading = $state(true);
   let searchQuery = $state('');
+  let searchDebounced = $state('');
   let filterUnit = $state('');
+
+  // Debounce search lokal 300ms — filter $derived hanya membaca searchDebounced
+  const applySearchDebounced = debounce((v: string) => { searchDebounced = v; }, 300);
+  $effect(() => {
+    applySearchDebounced(searchQuery);
+    return () => applySearchDebounced.cancel();
+  });
 
   let isModalOpen = $state(false);
   let editingStaff = $state<Partial<StaffProfile> | null>(null);
@@ -32,8 +41,8 @@
   const filteredStaff = $derived(
     staffList.filter((s) => {
       const matchesSearch =
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.positionTitle.toLowerCase().includes(searchQuery.toLowerCase());
+        s.name.toLowerCase().includes(searchDebounced.toLowerCase()) ||
+        s.positionTitle.toLowerCase().includes(searchDebounced.toLowerCase());
       const matchesUnit = filterUnit ? s.unitId === filterUnit : true;
       return matchesSearch && matchesUnit;
     })
@@ -303,6 +312,7 @@
   {/snippet}
 
   {#if editingStaff}
+    {#key editingStaff.id || 'new'}
     <form id="staff-form" onsubmit={handleSave} class="space-y-4 text-xs">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="space-y-1.5">
@@ -311,7 +321,7 @@
             type="text"
             required
             placeholder="Contoh: dr. Andi Pratama, Sp.A"
-            value={editingStaff.name ?? ''}
+            defaultValue={editingStaff.name ?? ''}
             oninput={(e) => updateStaff({ name: e.currentTarget.value })}
             class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2.5 text-[var(--color-text)]"
           />
@@ -323,7 +333,7 @@
             type="text"
             required
             placeholder="Contoh: Dokter Spesialis Anak"
-            value={editingStaff.positionTitle ?? ''}
+            defaultValue={editingStaff.positionTitle ?? ''}
             oninput={(e) => updateStaff({ positionTitle: e.currentTarget.value })}
             class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2.5 text-[var(--color-text)]"
           />
@@ -348,7 +358,7 @@
           <label class="text-[var(--color-muted-foreground)] font-semibold">URL Foto Profil (Media Library / Unsplash)</label>
           <input
             type="text"
-            value={editingStaff.photoUrl ?? ''}
+            defaultValue={editingStaff.photoUrl ?? ''}
             oninput={(e) => updateStaff({ photoUrl: e.currentTarget.value })}
             class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2.5 text-[var(--color-text)] font-mono"
           />
@@ -377,7 +387,7 @@
         <input
           type="text"
           placeholder="Contoh: S1 Kedokteran & Profesi Dokter FK UI"
-          value={editingStaff.education ?? ''}
+          defaultValue={editingStaff.education ?? ''}
           oninput={(e) => updateStaff({ education: e.currentTarget.value })}
           class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2 text-[var(--color-text)]"
         />
@@ -388,10 +398,9 @@
         <textarea
           rows={3}
           placeholder="Keterangan profesional atau latar belakang pelayanan..."
-          value={editingStaff.bio ?? ''}
           oninput={(e) => updateStaff({ bio: e.currentTarget.value })}
           class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2 text-[var(--color-text)]"
-        ></textarea>
+        >{editingStaff.bio ?? ''}</textarea>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -400,7 +409,7 @@
           <input
             type="text"
             placeholder="Senin - Jumat (08:00 - 14:00)"
-            value={editingStaff.scheduleSummary ?? ''}
+            defaultValue={editingStaff.scheduleSummary ?? ''}
             oninput={(e) => updateStaff({ scheduleSummary: e.currentTarget.value })}
             class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2 text-[var(--color-text)]"
           />
@@ -432,6 +441,7 @@
         </div>
       </div>
     </form>
+    {/key}
   {/if}
 </Modal>
 

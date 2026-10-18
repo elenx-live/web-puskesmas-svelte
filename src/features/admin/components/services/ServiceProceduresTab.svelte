@@ -293,10 +293,11 @@
     size="md"
   >
     {#if editingProc}
+      {#key editingProc?.id || 'new'}
       <form onsubmit={handleSave} class="space-y-4 text-xs">
         <Input
           label="Nama Langkah Prosedur *"
-          value={editingProc.title || ''}
+          defaultValue={editingProc.title || ''}
           oninput={(e) => updateEditingProc({ title: e.currentTarget.value })}
           placeholder="Contoh: Skrining Tanda Vital oleh Perawat"
           required
@@ -306,11 +307,10 @@
           <label class="font-semibold text-[var(--color-text)]">Instruksi / Rincian Penjelasan Langkah</label>
           <textarea
             rows={4}
-            value={editingProc.description || ''}
             oninput={(e) => updateEditingProc({ description: e.currentTarget.value })}
             placeholder="Contoh: Petugas melakukan pengukuran tensi darah, suhu, dan pencatatan keluhan awal pasien..."
             class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
-          ></textarea>
+          >{editingProc.description || ''}</textarea>
         </div>
 
         <div class="space-y-1">
@@ -335,6 +335,7 @@
           </Button>
         </div>
       </form>
+      {/key}
     {/if}
   </Modal>
 </div>

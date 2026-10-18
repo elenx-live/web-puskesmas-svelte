@@ -352,6 +352,7 @@
     onClose={() => (isModalOpen = false)}
     title={editingPricing ? 'Edit Informasi Tarif' : 'Tambah Informasi Tarif Layanan'}
   >
+    {#key editingPricing?.id || 'new'}
     <form onsubmit={handleSavePricing} class="space-y-4">
       {#if modalError}
         <div class="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
@@ -396,7 +397,7 @@
               min="0"
               required
               placeholder="Contoh: 15000"
-              value={formData.amount}
+              defaultValue={formData.amount}
               oninput={(e) => handleFormChange('amount', e.currentTarget.value)}
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-xs text-[var(--color-text)] font-mono focus:outline-none focus:border-[var(--color-primary)]"
             />
@@ -407,7 +408,7 @@
             <input
               type="text"
               readonly
-              value={formData.currency}
+              defaultValue={formData.currency}
               class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-xs text-[var(--color-muted-foreground)] font-mono"
             />
           </div>
@@ -422,7 +423,7 @@
           type="text"
           required
           placeholder="Contoh: per pelayanan, per tindakan, per pemeriksaan"
-          value={formData.unit}
+          defaultValue={formData.unit}
           oninput={(e) => handleFormChange('unit', e.currentTarget.value)}
           class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-xs text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
         />
@@ -463,10 +464,9 @@
         <textarea
           rows={2}
           placeholder="Contoh: Gratis untuk peserta BPJS Kesehatan aktif. Tarif pasien umum sesuai Perwali No. 12 Tahun 2024."
-          value={formData.description}
           oninput={(e) => handleFormChange('description', e.currentTarget.value)}
           class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-xs text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
-        ></textarea>
+        >{formData.description}</textarea>
       </div>
 
       <div class="space-y-1">
@@ -498,6 +498,7 @@
         </Button>
       </div>
     </form>
+    {/key}
   </Modal>
 
   <!-- CONFIRMATION DIALOG -->

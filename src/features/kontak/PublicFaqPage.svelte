@@ -1,6 +1,7 @@
 <!-- @component Halaman publik Pusat Bantuan: FAQ + Panduan & Prosedur (dari PublicFaqPage). -->
 <script lang="ts">
   import { faqService } from '../../shared/services/faqService.js';
+  import { debounce } from '../../shared/utils/debounce.js';
   import type { FaqEntity, GuideEntity, FaqCategory, GuideCategory } from '../../shared/types/index.js';
   import {
     HelpCircle, Search, ChevronDown, ThumbsUp, ThumbsDown, BookOpen,
@@ -18,6 +19,14 @@
   let selectedCategory = $state('ALL');
   let activeTab = $state<'faq' | 'guides'>('faq');
 
+  // Search di-debounce 300ms: filter lokal hanya jalan setelah pengguna berhenti mengetik.
+  let searchDebounced = $state('');
+  const applySearchDebounced = debounce((v: string) => { searchDebounced = v; }, 300);
+  $effect(() => {
+    applySearchDebounced(searchQuery);
+    return () => applySearchDebounced.cancel();
+  });
+
   // Expanded FAQ IDs
   let expandedFaqId = $state<string | null>(null);
 
@@ -26,7 +35,7 @@
   let voteMsg = $state('');
 
   const filteredFaqs = $derived(faqs.filter(faq => {
-    const query = searchQuery.toLowerCase();
+    const query = searchDebounced.toLowerCase();
     const matchesSearch =
       faq.question.toLowerCase().includes(query) ||
       faq.answer.toLowerCase().includes(query) ||
@@ -36,7 +45,7 @@
   }));
 
   const filteredGuides = $derived(guides.filter(guide => {
-    const query = searchQuery.toLowerCase();
+    const query = searchDebounced.toLowerCase();
     const matchesSearch =
       guide.title.toLowerCase().includes(query) ||
       guide.summary.toLowerCase().includes(query);

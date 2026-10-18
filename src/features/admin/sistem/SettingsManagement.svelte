@@ -526,6 +526,7 @@ import { memStore } from '../../../shared/lib/memStore';
 
   <!-- Main Form Panel -->
   <div class="w-full space-y-6">
+    {#key settings}
     <form onsubmit={handleSave} class="space-y-6">
 
       <!-- ========================================================================= -->
@@ -562,13 +563,14 @@ import { memStore } from '../../../shared/lib/memStore';
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="Nama Resmi Puskesmas *"
-                  bind:value={s.siteName}
+                  defaultValue={s.siteName}
+                  oninput={(e) => (s.siteName = e.currentTarget.value)}
                   required
                   placeholder="Puskesmas Manding"
                 />
                 <Input
                   label="Nama Singkat / Brand"
-                  value={s.shortName || ''}
+                  defaultValue={s.shortName || ''}
                   oninput={(e) => { s.shortName = e.currentTarget.value; }}
                   placeholder="Puskesmas Mandiri"
                 />
@@ -577,13 +579,13 @@ import { memStore } from '../../../shared/lib/memStore';
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="Kode Standar Puskesmas (Kemenkes)"
-                  value={s.puskesmasCode || ''}
+                  defaultValue={s.puskesmasCode || ''}
                   oninput={(e) => { s.puskesmasCode = e.currentTarget.value; }}
                   placeholder="Contoh: P3529010101"
                 />
                 <Input
                   label="Status Akreditasi Terkini"
-                  value={s.accreditationStatus || ''}
+                  defaultValue={s.accreditationStatus || ''}
                   oninput={(e) => { s.accreditationStatus = e.currentTarget.value; }}
                   placeholder="Contoh: Paripurna (Kemenkes RI)"
                 />
@@ -591,7 +593,8 @@ import { memStore } from '../../../shared/lib/memStore';
 
               <Input
                 label="Slogan / Tagline Pelayanan *"
-                bind:value={s.tagline}
+                defaultValue={s.tagline}
+                  oninput={(e) => (s.tagline = e.currentTarget.value)}
                 required
                 placeholder="Melayani dengan Sepenuh Hati, Sehat untuk Semua"
               />
@@ -602,10 +605,10 @@ import { memStore } from '../../../shared/lib/memStore';
                 </label>
                 <textarea
                   rows={3}
-                  bind:value={s.siteDescription}
+                  oninput={(e) => { s.siteDescription = e.currentTarget.value; }}
                   placeholder="Penjelasan singkat visi dan layanan primer terpadu..."
                   class="bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl p-3 text-xs text-[var(--color-text)] placeholder-zinc-500 resize-none"
-                ></textarea>
+                >{s.siteDescription}</textarea>
               </div>
 
               <!-- Upload Logo Puskesmas Sendiri & Pratinjau -->
@@ -809,7 +812,7 @@ import { memStore } from '../../../shared/lib/memStore';
                   <div class="p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] animate-in fade-in space-y-2">
                     <Input
                       label="Tautan URL Langsung Logo Puskesmas (CDN / File Luar)"
-                      value={s.logoUrl || ''}
+                      defaultValue={s.logoUrl || ''}
                       oninput={(e) => { s.logoUrl = e.currentTarget.value; }}
                       placeholder="https://.../logo.png atau /logo.png"
                     />
@@ -891,7 +894,7 @@ import { memStore } from '../../../shared/lib/memStore';
                       <div class="mt-2">
                         <Input
                           label="URL Manual Favicon"
-                          value={s.faviconUrl || ''}
+                          defaultValue={s.faviconUrl || ''}
                           oninput={(e) => { s.faviconUrl = e.currentTarget.value; }}
                           placeholder="/favicon.ico atau https://.../favicon.png"
                         />
@@ -935,11 +938,10 @@ import { memStore } from '../../../shared/lib/memStore';
                 </label>
                 <textarea
                   rows={3}
-                  value={s.vision || ''}
                   oninput={(e) => { s.vision = e.currentTarget.value; }}
                   placeholder="Terwujudnya masyarakat yang sehat, mandiri, dan berkeadilan melalui pelayanan primer terintegrasi..."
                   class="bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl p-3 text-xs text-[var(--color-text)] placeholder-zinc-500 resize-none leading-relaxed"
-                ></textarea>
+                >{s.vision || ''}</textarea>
               </div>
 
               <div class="flex flex-col gap-1.5">
@@ -949,23 +951,22 @@ import { memStore } from '../../../shared/lib/memStore';
                 </label>
                 <textarea
                   rows={4}
-                  value={s.mission || ''}
                   oninput={(e) => { s.mission = e.currentTarget.value; }}
                   placeholder="1. Memberikan pelayanan kesehatan primer komprehensif dan bermutu.&#10;2. Mendorong kemandirian masyarakat hidup sehat.&#10;3. Meningkatkan tata kelola pelayanan terstandarisasi."
                   class="bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl p-3 text-xs text-[var(--color-text)] placeholder-zinc-500 resize-none leading-relaxed font-mono"
-                ></textarea>
+                >{s.mission || ''}</textarea>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="Motto Pelayanan"
-                  value={s.motto || ''}
+                  defaultValue={s.motto || ''}
                   oninput={(e) => { s.motto = e.currentTarget.value; }}
                   placeholder="Contoh: Kesehatan Anda, Prioritas Pengabdian Kami"
                 />
                 <Input
                   label="Nama Pimpinan / Kepala Puskesmas"
-                  value={s.headOfPuskesmas || ''}
+                  defaultValue={s.headOfPuskesmas || ''}
                   oninput={(e) => { s.headOfPuskesmas = e.currentTarget.value; }}
                   placeholder="Contoh: dr. H. Rahmat Hidayat, M.Kes"
                 />
@@ -977,11 +978,10 @@ import { memStore } from '../../../shared/lib/memStore';
                 </label>
                 <textarea
                   rows={2}
-                  value={s.servicePromise || ''}
                   oninput={(e) => { s.servicePromise = e.currentTarget.value; }}
                   placeholder="Kami berkomitmen memberikan pelayanan kesehatan dengan cepat, tepat, ramah, dan tanpa diskriminasi..."
                   class="bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl p-3 text-xs text-[var(--color-text)] placeholder-zinc-500 resize-none"
-                ></textarea>
+                >{s.servicePromise || ''}</textarea>
               </div>
 
               <div class="flex flex-col gap-1.5">
@@ -990,11 +990,10 @@ import { memStore } from '../../../shared/lib/memStore';
                 </label>
                 <textarea
                   rows={3}
-                  value={s.history || ''}
                   oninput={(e) => { s.history = e.currentTarget.value; }}
                   placeholder="Latar belakang berdirinya Puskesmas dan perkembangannya melayani masyarakat..."
                   class="bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl p-3 text-xs text-[var(--color-text)] placeholder-zinc-500 resize-none leading-relaxed"
-                ></textarea>
+                >{s.history || ''}</textarea>
               </div>
             </Card>
           {/if}
@@ -1014,14 +1013,14 @@ import { memStore } from '../../../shared/lib/memStore';
 
               <Input
                 label="Nama Instansi / Dinas Kesehatan Induk"
-                value={s.orgName || ''}
+                defaultValue={s.orgName || ''}
                 oninput={(e) => { s.orgName = e.currentTarget.value; }}
                 placeholder="Dinas Kesehatan Kabupaten Sejahtera"
               />
 
               <Input
                 label="Wilayah Kerja / Kecamatan Pembina"
-                value={s.orgRegion || ''}
+                defaultValue={s.orgRegion || ''}
                 oninput={(e) => { s.orgRegion = e.currentTarget.value; }}
                 placeholder="Kecamatan Mandiri"
               />
@@ -1058,13 +1057,15 @@ import { memStore } from '../../../shared/lib/memStore';
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="Nomor Telepon Kantor *"
-                  bind:value={s.phone}
+                  defaultValue={s.phone}
+                  oninput={(e) => (s.phone = e.currentTarget.value)}
                   required
                   placeholder="+62 21 5550192"
                 />
                 <Input
                   label="Nomor WhatsApp Pelayanan *"
-                  bind:value={s.whatsapp}
+                  defaultValue={s.whatsapp}
+                  oninput={(e) => (s.whatsapp = e.currentTarget.value)}
                   required
                   placeholder="+62 812 3456 7890"
                 />
@@ -1073,7 +1074,8 @@ import { memStore } from '../../../shared/lib/memStore';
               <Input
                 label="Alamat Email Resmi *"
                 type="email"
-                bind:value={s.email}
+                defaultValue={s.email}
+                  oninput={(e) => (s.email = e.currentTarget.value)}
                 required
                 placeholder="layanan@puskesmas.go.id"
               />
@@ -1084,28 +1086,28 @@ import { memStore } from '../../../shared/lib/memStore';
                 </label>
                 <textarea
                   rows={2}
-                  bind:value={s.address}
+                  oninput={(e) => { s.address = e.currentTarget.value; }}
                   placeholder="Jl. Kesehatan Raya No. 12..."
                   class="bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl p-3 text-xs text-[var(--color-text)] placeholder-zinc-500 resize-none"
-                ></textarea>
+                >{s.address}</textarea>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Input
                   label="Kelurahan / Desa"
-                  value={s.village || ''}
+                  defaultValue={s.village || ''}
                   oninput={(e) => { s.village = e.currentTarget.value; }}
                   placeholder="Contoh: Mandiri Sejahtera"
                 />
                 <Input
                   label="Kecamatan"
-                  value={s.district || ''}
+                  defaultValue={s.district || ''}
                   oninput={(e) => { s.district = e.currentTarget.value; }}
                   placeholder="Contoh: Kecamatan Mandiri"
                 />
                 <Input
                   label="Kabupaten / Kota"
-                  value={s.regency || ''}
+                  defaultValue={s.regency || ''}
                   oninput={(e) => { s.regency = e.currentTarget.value; }}
                   placeholder="Contoh: Kabupaten Sejahtera"
                 />
@@ -1114,13 +1116,13 @@ import { memStore } from '../../../shared/lib/memStore';
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="Provinsi"
-                  value={s.province || ''}
+                  defaultValue={s.province || ''}
                   oninput={(e) => { s.province = e.currentTarget.value; }}
                   placeholder="Contoh: Jawa Timur"
                 />
                 <Input
                   label="Kode Pos"
-                  value={s.postalCode || ''}
+                  defaultValue={s.postalCode || ''}
                   oninput={(e) => { s.postalCode = e.currentTarget.value; }}
                   placeholder="Contoh: 69400"
                 />
@@ -1131,7 +1133,7 @@ import { memStore } from '../../../shared/lib/memStore';
                   label="Titik Latitude (GPS)"
                   type="number"
                   step="any"
-                  value={s.latitude !== undefined ? s.latitude : ''}
+                  defaultValue={s.latitude !== undefined ? s.latitude : ''}
                   onchange={(e) => { s.latitude = parseFloat(e.currentTarget.value) || 0; }}
                   placeholder="-7.0000"
                 />
@@ -1139,7 +1141,7 @@ import { memStore } from '../../../shared/lib/memStore';
                   label="Titik Longitude (GPS)"
                   type="number"
                   step="any"
-                  value={s.longitude !== undefined ? s.longitude : ''}
+                  defaultValue={s.longitude !== undefined ? s.longitude : ''}
                   onchange={(e) => { s.longitude = parseFloat(e.currentTarget.value) || 0; }}
                   placeholder="113.8000"
                 />
@@ -1147,7 +1149,8 @@ import { memStore } from '../../../shared/lib/memStore';
 
               <Input
                 label="Keterangan Jam Pelayanan Reguler *"
-                bind:value={s.operatingHours}
+                defaultValue={s.operatingHours}
+                  oninput={(e) => (s.operatingHours = e.currentTarget.value)}
                 required
                 placeholder="Senin - Sabtu: 07.30 - 14.00 WIB (UGD 24 Jam)"
               />
@@ -1170,25 +1173,25 @@ import { memStore } from '../../../shared/lib/memStore';
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="Halaman Facebook"
-                  value={s.facebookUrl || ''}
+                  defaultValue={s.facebookUrl || ''}
                   oninput={(e) => { s.facebookUrl = e.currentTarget.value; }}
                   placeholder="https://facebook.com/puskesmas"
                 />
                 <Input
                   label="Akun Instagram"
-                  value={s.instagramUrl || ''}
+                  defaultValue={s.instagramUrl || ''}
                   oninput={(e) => { s.instagramUrl = e.currentTarget.value; }}
                   placeholder="https://instagram.com/puskesmas"
                 />
                 <Input
                   label="Kanal YouTube"
-                  value={s.youtubeUrl || ''}
+                  defaultValue={s.youtubeUrl || ''}
                   oninput={(e) => { s.youtubeUrl = e.currentTarget.value; }}
                   placeholder="https://youtube.com/@puskesmas"
                 />
                 <Input
                   label="Akun TikTok Edukasi"
-                  value={s.tiktokUrl || ''}
+                  defaultValue={s.tiktokUrl || ''}
                   oninput={(e) => { s.tiktokUrl = e.currentTarget.value; }}
                   placeholder="https://tiktok.com/@puskesmas"
                 />
@@ -1219,7 +1222,7 @@ import { memStore } from '../../../shared/lib/memStore';
 
             <Input
               label="Judul Web Portal (Browser Title Tag)"
-              value={s.siteTitle || ''}
+              defaultValue={s.siteTitle || ''}
               oninput={(e) => { s.siteTitle = e.currentTarget.value; }}
               placeholder="Pusat Kesehatan Masyarakat Mandiri Sejahtera"
             />
@@ -1405,7 +1408,7 @@ import { memStore } from '../../../shared/lib/memStore';
 
               <Input
                 label="Pesan Pemberitahuan Saat Tutup / Di Luar Jam Pelayanan"
-                value={s.closedMessage || ''}
+                defaultValue={s.closedMessage || ''}
                 oninput={(e) => { s.closedMessage = e.currentTarget.value; }}
                 placeholder="Hari libur / di luar jam operasional. Hubungi UGD 24 Jam di 119."
               />
@@ -1533,13 +1536,13 @@ import { memStore } from '../../../shared/lib/memStore';
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="Nama Pengirim (Sender Display Name)"
-                  value={s.emailSenderName || ''}
+                  defaultValue={s.emailSenderName || ''}
                   oninput={(e) => { s.emailSenderName = e.currentTarget.value; }}
                   placeholder="Notifikasi Puskesmas Mandiri"
                 />
                 <Input
                   label="Email Pengirim (From Address)"
-                  value={s.emailSenderEmail || ''}
+                  defaultValue={s.emailSenderEmail || ''}
                   oninput={(e) => { s.emailSenderEmail = e.currentTarget.value; }}
                   placeholder="noreply@puskesmas-mandiri.go.id"
                 />
@@ -1576,7 +1579,7 @@ import { memStore } from '../../../shared/lib/memStore';
                 <Input
                   label="Masa Retensi Riwayat Log (Hari)"
                   type="number"
-                  value={s.notificationRetentionDays || 30}
+                  defaultValue={s.notificationRetentionDays || 30}
                   onchange={(e) => { s.notificationRetentionDays = parseInt(e.currentTarget.value) || 30; }}
                 />
 
@@ -1631,7 +1634,7 @@ import { memStore } from '../../../shared/lib/memStore';
                 <Input
                   label="Batas Timeout Sesi Tidak Aktif (Menit)"
                   type="number"
-                  value={s.sessionTimeoutMinutes || 60}
+                  defaultValue={s.sessionTimeoutMinutes || 60}
                   onchange={(e) => { s.sessionTimeoutMinutes = parseInt(e.currentTarget.value) || 60; }}
                 />
 
@@ -1678,14 +1681,14 @@ import { memStore } from '../../../shared/lib/memStore';
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="Jadwal Cron Backup Otomatis"
-                  value={s.backupScheduleCron || '0 2 * * *'}
+                  defaultValue={s.backupScheduleCron || '0 2 * * *'}
                   oninput={(e) => { s.backupScheduleCron = e.currentTarget.value; }}
                   placeholder="0 2 * * * (Setiap jam 02.00 pagi)"
                 />
                 <Input
                   label="Masa Retensi Arsip Backup (Hari)"
                   type="number"
-                  value={s.backupRetentionDays || 7}
+                  defaultValue={s.backupRetentionDays || 7}
                   onchange={(e) => { s.backupRetentionDays = parseInt(e.currentTarget.value) || 7; }}
                 />
               </div>
@@ -1798,17 +1801,16 @@ import { memStore } from '../../../shared/lib/memStore';
                   </label>
                   <textarea
                     rows={2}
-                    value={s.maintenanceMessage || ''}
                     oninput={(e) => { s.maintenanceMessage = e.currentTarget.value; }}
                     placeholder="Mohon maaf, sistem sedang dalam pemeliharaan berkala..."
                     class="bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-2xl p-3 text-xs text-[var(--color-text)] placeholder-zinc-500 resize-none"
-                  ></textarea>
+                  >{s.maintenanceMessage || ''}</textarea>
                 </div>
 
                 <Input
                   label="Estimasi Waktu Selesai"
                   placeholder="Contoh: 2 Jam / Pukul 15:00 WIB"
-                  value={s.maintenanceEstimatedCompletion || ''}
+                  defaultValue={s.maintenanceEstimatedCompletion || ''}
                   oninput={(e) => { s.maintenanceEstimatedCompletion = e.currentTarget.value; }}
                 />
               </div>
@@ -1854,6 +1856,7 @@ import { memStore } from '../../../shared/lib/memStore';
       {/if}
 
     </form>
+    {/key}
   </div>
 
   <!-- RESET CONFIRMATION MODAL -->

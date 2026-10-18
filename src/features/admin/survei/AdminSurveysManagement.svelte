@@ -46,6 +46,7 @@ import { memStore } from '../../../shared/lib/memStore';
   let formLinkedReg = $state(false);
   let formQuestions = $state<SurveyQuestion[]>([]);
   let formError = $state<string | null>(null);
+  let slugKey = $state(0);
 
   // Stats Breakdown State
   let stats = $state<any>(null);
@@ -123,6 +124,7 @@ import { memStore } from '../../../shared/lib/memStore';
       { id: 'q-3', type: 'text', text: 'Tuliskan masukan atau pengalaman Anda selama di Puskesmas:', required: false }
     ];
     formError = null;
+    slugKey = 0;
     isModalOpen = true;
   }
 
@@ -136,6 +138,7 @@ import { memStore } from '../../../shared/lib/memStore';
     formLinkedReg = !!survey.isLinkedToRegistration;
     formQuestions = survey.questions;
     formError = null;
+    slugKey = 0;
     isModalOpen = true;
   }
 
@@ -938,6 +941,7 @@ import { memStore } from '../../../shared/lib/memStore';
         </div>
       {/if}
 
+      {#key editingSurvey?.id || 'new'}
       <form onsubmit={handleSaveSurvey} class="space-y-5">
 
         <!-- Basic Details -->
@@ -947,11 +951,13 @@ import { memStore } from '../../../shared/lib/memStore';
             <input
               type="text"
               required
-              bind:value={formTitle}
-              oninput={() => {
+              defaultValue={formTitle}
+              oninput={(e) => {
+                formTitle = e.currentTarget.value;
                 // Auto-slugify on type if creating new
                 if (!editingSurvey) {
                   formSlug = formTitle.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-');
+                  slugKey += 1;
                 }
               }}
               placeholder="Contoh: Survei Kepuasan Triwulan III - 2026"
@@ -962,22 +968,25 @@ import { memStore } from '../../../shared/lib/memStore';
           <div class="space-y-1 sm:col-span-2">
             <label class="text-[10px] font-bold text-[var(--color-muted-foreground)] uppercase">Deskripsi / Penjelasan Singkat</label>
             <textarea
-              bind:value={formDescription}
+              oninput={(e) => (formDescription = e.currentTarget.value)}
               placeholder="Contoh: Pengisian kuesioner resmi Puskesmas..."
               rows={2}
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] rounded-xl px-3 py-2 text-xs text-[var(--color-text)]"
-            ></textarea>
+            >{formDescription}</textarea>
           </div>
 
           <div class="space-y-1">
             <label class="text-[10px] font-bold text-[var(--color-muted-foreground)] uppercase">URL Slug (Unik) *</label>
+            {#key slugKey}
             <input
               type="text"
               required
-              bind:value={formSlug}
+              defaultValue={formSlug}
+              oninput={(e) => (formSlug = e.currentTarget.value)}
               placeholder="kepuasan-triwulan-3"
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] rounded-xl px-3 py-2 text-xs text-[var(--color-text)]"
             />
+            {/key}
           </div>
 
           <div class="space-y-1">
@@ -1068,7 +1077,7 @@ import { memStore } from '../../../shared/lib/memStore';
                   <input
                     type="text"
                     required
-                    value={q.text}
+                    defaultValue={q.text}
                     oninput={(e) => handleQuestionChange(q.id, 'text', e.currentTarget.value)}
                     placeholder="Pertanyaan penilaian kuesioner..."
                     class="w-full bg-[var(--color-card)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-xl px-3 py-1.5 text-xs text-[var(--color-text)]"
@@ -1081,7 +1090,7 @@ import { memStore } from '../../../shared/lib/memStore';
                     <input
                       type="text"
                       required
-                      value={q.options ? q.options.join(', ') : ''}
+                      defaultValue={q.options ? q.options.join(', ') : ''}
                       oninput={(e) => handleQuestionChange(q.id, 'options', e.currentTarget.value.split(',').map(s => s.trim()).filter(Boolean))}
                       placeholder="Sangat Puas, Cukup, Kurang"
                       class="w-full bg-[var(--color-card)] border border-[var(--color-border)] focus:border-[var(--color-primary)]/70 focus:outline-none rounded-xl px-3 py-1.5 text-xs text-[var(--color-text)] font-mono"
@@ -1112,6 +1121,7 @@ import { memStore } from '../../../shared/lib/memStore';
         </div>
 
       </form>
+      {/key}
 
     </Card>
   </div>

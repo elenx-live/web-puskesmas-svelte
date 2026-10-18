@@ -25,6 +25,8 @@
   let isEditingTemplate = $state(false);
   let titleTemplate = $state('');
   let messageTemplate = $state('');
+  // Counter untuk me-remount textarea saat variabel disisipkan via tombol (programmatic update).
+  let msgKey = $state(0);
   let templateActive = $state(true);
 
   // Logs state
@@ -493,7 +495,8 @@
       <div class="space-y-1.5">
         <label class="text-[11px] font-bold text-[var(--color-muted-foreground)] uppercase tracking-wider block">Judul Notifikasi (Title)</label>
         <Input
-          bind:value={titleTemplate}
+          defaultValue={titleTemplate}
+          oninput={(e) => (titleTemplate = e.currentTarget.value)}
           placeholder="Masukkan judul default notifikasi"
           required
           class="text-xs"
@@ -502,13 +505,15 @@
 
       <div class="space-y-1.5">
         <label class="text-[11px] font-bold text-[var(--color-muted-foreground)] uppercase tracking-wider block">Pesan Notifikasi (Body)</label>
-        <textarea
-          bind:value={messageTemplate}
-          placeholder="Masukkan template isi pesan notifikasi..."
-          required
-          rows={4}
-          class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-2xl p-3 text-xs text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]/50"
-        />
+        {#key msgKey}
+          <textarea
+            oninput={(e) => (messageTemplate = e.currentTarget.value)}
+            placeholder="Masukkan template isi pesan notifikasi..."
+            required
+            rows={4}
+            class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-2xl p-3 text-xs text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]/50"
+          >{messageTemplate}</textarea>
+        {/key}
       </div>
 
       <div class="space-y-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-2xl p-4">
@@ -517,7 +522,7 @@
           {#each selectedTemplate.variables as v}
             <button
               type="button"
-              onclick={() => (messageTemplate = messageTemplate + `{${v}}`)}
+              onclick={() => { messageTemplate = messageTemplate + `{${v}}`; msgKey += 1; }}
               class="bg-[var(--color-surface)] border border-[var(--color-border)]/50 hover:bg-zinc-700 hover:border-zinc-600 text-[var(--color-text)] font-mono text-[10px] px-2 py-0.5 rounded-md transition"
               title="Klik untuk menyisipkan ke kursor"
             >

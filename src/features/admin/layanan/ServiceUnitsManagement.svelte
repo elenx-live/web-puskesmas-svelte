@@ -4,6 +4,7 @@
   import { authStore } from '../../../shared/stores/auth.svelte.js';
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
   import { serviceEngineService } from '../../../shared/services/serviceEngineService.js';
+  import { debounce } from '../../../shared/utils/debounce.js';
   import type { ServiceUnitEntity, ActiveStatus } from '../../../shared/types/index.js';
   import ConfirmModal from '../../../shared/components/ConfirmModal.svelte';
   import {
@@ -39,6 +40,12 @@
   let formError = $state('');
   let saving = $state(false);
 
+  // Search di-debounce 300ms: cegah request jaringan per keystroke.
+  let searchDebounced = $state('');
+  const applySearchDebounced = debounce((v: string) => {
+    searchDebounced = v;
+  }, 300);
+
   // Delete State
   let deleteModalOpen = $state(false);
   let unitToDelete = $state<ServiceUnitEntity | null>(null);
@@ -48,7 +55,7 @@
     loading = true;
     try {
       const u = await serviceEngineService.getUnits({
-        search: searchQuery,
+        search: searchDebounced,
         status: statusFilter === 'all' ? undefined : statusFilter,
       });
       units = u;
@@ -181,7 +188,12 @@
   });
 
   $effect(() => {
-    const s = searchQuery;
+    applySearchDebounced(searchQuery);
+    return () => applySearchDebounced.cancel();
+  });
+
+  $effect(() => {
+    const s = searchDebounced;
     const st = statusFilter;
     void s; void st;
     loadData();
@@ -419,14 +431,15 @@
         </div>
       {/if}
 
-      <form onsubmit={handleSave} class="space-y-4 text-xs">
-        <div>
-          <label class="block text-[var(--color-muted-foreground)] font-semibold mb-1.5">
-            Nama Unit Pelayanan <span class="text-[var(--color-primary)]">*</span>
-          </label>
+      {#key editingUnit?.id || 'new'}
+        <form onsubmit={handleSave} class="space-y-4 text-xs">
+          <div>
+            <label class="block text-[var(--color-muted-foreground)] font-semibold mb-1.5">
+              Nama Unit Pelayanan <span class="text-[var(--color-primary)]">*</span>
+            </label>
           <input
             type="text"
-            value={formData.name}
+            defaultValue={formData.name}
             oninput={(e) => (formData = { ...formData, name: e.currentTarget.value })}
             placeholder="Contoh: Ruang Poli Umum"
             required
@@ -438,7 +451,7 @@
           <label class="block text-[var(--color-muted-foreground)] font-semibold mb-1.5">Kode Unit (Unik)</label>
           <input
             type="text"
-            value={formData.code}
+            defaultValue={formData.code}
             oninput={(e) => (formData = { ...formData, code: e.currentTarget.value })}
             placeholder="Contoh: POLI-UMUM"
             class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3.5 py-2.5 text-[var(--color-primary)] font-mono uppercase placeholder-zinc-600 focus:outline-none focus:border-[var(--color-primary)]/50"
@@ -449,11 +462,10 @@
           <label class="block text-[var(--color-muted-foreground)] font-semibold mb-1.5">Deskripsi Singkat</label>
           <textarea
             rows={3}
-            value={formData.description}
             oninput={(e) => (formData = { ...formData, description: e.currentTarget.value })}
             placeholder="Penjelasan fungsi operasional unit..."
             class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3.5 py-2.5 text-[var(--color-text)] placeholder-zinc-600 focus:outline-none focus:border-[var(--color-primary)]/50 resize-none"
-          ></textarea>
+          >{formData.description}</textarea>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -475,7 +487,7 @@
             <input
               type="number"
               min={1}
-              value={formData.displayOrder}
+              defaultValue={formData.displayOrder}
               oninput={(e) => (formData = { ...formData, displayOrder: parseInt(e.currentTarget.value) || 1 })}
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]/50"
             />
@@ -502,6 +514,7 @@
           </button>
         </div>
       </form>
+      {/key}
     </div>
   </div>
 {/if}

@@ -342,6 +342,7 @@
   {/snippet}
 
   {#if editingNode}
+    {#key editingNode.id || 'new'}
     <form id="org-node-form" onsubmit={handleSave} class="space-y-4 text-xs">
       <div class="space-y-1.5">
         <label class="text-[var(--color-muted-foreground)] font-semibold">Nama Unit / Bagian *</label>
@@ -349,7 +350,7 @@
           type="text"
           required
           placeholder="Contoh: Klaster 1: Manajemen, Ibu & Anak"
-          value={editingNode.name ?? ''}
+          defaultValue={editingNode.name ?? ''}
           oninput={(e) => updateNode({ name: e.currentTarget.value })}
           class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2.5 text-[var(--color-text)]"
         />
@@ -361,7 +362,7 @@
           type="text"
           required
           placeholder="Contoh: Penanggung Jawab Klaster 1"
-          value={editingNode.title ?? ''}
+          defaultValue={editingNode.title ?? ''}
           oninput={(e) => updateNode({ title: e.currentTarget.value })}
           class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2.5 text-[var(--color-text)]"
         />
@@ -386,7 +387,7 @@
           <label class="text-[var(--color-muted-foreground)] font-semibold">Urutan (Sort Order)</label>
           <input
             type="number"
-            value={editingNode.order ?? 1}
+            defaultValue={editingNode.order ?? 1}
             oninput={(e) => updateNode({ order: parseInt(e.currentTarget.value) || 1 })}
             class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2 text-[var(--color-text)] font-mono"
           />
@@ -398,10 +399,9 @@
         <textarea
           rows={3}
           placeholder="Uraian tugas singkat unit ini..."
-          value={editingNode.description ?? ''}
           oninput={(e) => updateNode({ description: e.currentTarget.value })}
           class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] focus:border-[var(--color-primary)] focus:outline-none rounded-2xl px-4 py-2 text-[var(--color-text)]"
-        ></textarea>
+        >{editingNode.description ?? ''}</textarea>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -430,6 +430,7 @@
         </div>
       </div>
     </form>
+    {/key}
   {/if}
 </Modal>
 

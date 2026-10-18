@@ -585,6 +585,7 @@
     onClose={() => (isModalOpen = false)}
     title={editingException ? 'Edit Jadwal Khusus' : 'Tambah Jadwal Khusus / Tanggal Libur'}
   >
+    {#key editingException?.id || 'new'}
     <form onsubmit={handleSaveException} class="space-y-4">
       {#if modalError}
         <div class="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
@@ -701,7 +702,7 @@
           type="text"
           required
           placeholder="Contoh: Hari Libur Nasional 17 Agustus, Pembersihan Sterilisasi Rutin"
-          value={formData.reason}
+          defaultValue={formData.reason}
           oninput={(e) => (formData = { ...formData, reason: e.currentTarget.value })}
           class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-xs text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
         />
@@ -724,6 +725,7 @@
         </Button>
       </div>
     </form>
+    {/key}
   </Modal>
 
   <!-- CONFIRMATION DIALOG FOR DELETE EXCEPTION -->

@@ -12,6 +12,7 @@
   import type { FacilityEntity, ServiceEntity } from '../../../shared/types/index.js';
   import { authStore } from '../../../shared/stores/auth.svelte.js';
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
+  import { debounce } from '../../../shared/utils/debounce.js';
 
   let facilities = $state<FacilityEntity[]>([]);
   let categories = $state<string[]>([]);
@@ -23,6 +24,7 @@
   let activeTab = $state<'facilities' | 'categories' | 'locations'>('facilities');
 
   let searchQuery = $state('');
+  let searchDebounced = $state('');
   let filterCategory = $state('');
   let filterStatus = $state('');
 
@@ -31,6 +33,8 @@
 
   let newCatInput = $state('');
   let newLocInput = $state('');
+  // Counter untuk me-remount input buffer agar ter-clear visual setelah tambah (uncontrolled).
+  let bufKey = $state(0);
 
   let confirmState = $state<{ title: string; message: string; action: () => Promise<void> } | null>(null);
 
@@ -47,7 +51,7 @@
         facilityService.getFacilities({
           category: filterCategory || undefined,
           status: filterStatus || undefined,
-          search: searchQuery || undefined
+          search: searchDebounced || undefined
         }),
         facilityService.getCategories(),
         facilityService.getLocations(),
@@ -68,11 +72,18 @@
   }
 
   // Muat ulang saat filter berubah (menggantikan useEffect [filterCategory, filterStatus, searchQuery])
+  // Search didebounce 300ms — searchQuery (input terkontrol) dijadwalkan ke searchDebounced
+  const applySearchDebounced = debounce((v: string) => { searchDebounced = v; }, 300);
+  $effect(() => {
+    applySearchDebounced(searchQuery);
+    return () => applySearchDebounced.cancel();
+  });
+
   $effect(() => {
     // baca state reaktif agar effect melacaknya
     void filterCategory;
     void filterStatus;
-    void searchQuery;
+    void searchDebounced;
     loadData();
   });
 
@@ -195,6 +206,7 @@
     await facilityService.saveCategories(updated, actor);
     categories = updated;
     newCatInput = '';
+    bufKey += 1;
     toastStore.showToast('Kategori berhasil ditambahkan', 'success');
   }
 
@@ -221,6 +233,7 @@
     await facilityService.saveLocations(updated, actor);
     locations = updated;
     newLocInput = '';
+    bufKey += 1;
     toastStore.showToast('Lokasi berhasil ditambahkan', 'success');
   }
 
@@ -492,13 +505,15 @@
       <p class="text-sm text-slate-600 mb-4">Tambahkan atau hapus kategori klasifikasi sarana dan prasarana puskesmas.</p>
 
       <div class="flex gap-2 mb-6">
-        <input
-          type="text"
-          placeholder="Nama kategori baru..."
-          value={newCatInput}
-          oninput={(e) => (newCatInput = e.currentTarget.value)}
-          class="flex-1 px-4 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-        />
+        {#key bufKey}
+          <input
+            type="text"
+            placeholder="Nama kategori baru..."
+            defaultValue={newCatInput}
+            oninput={(e) => (newCatInput = e.currentTarget.value)}
+            class="flex-1 px-4 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+          />
+        {/key}
         <button
           onclick={handleAddCategory}
           class="px-4 py-2 bg-teal-600 text-[var(--color-text)] rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors"
@@ -531,13 +546,15 @@
       <p class="text-sm text-slate-600 mb-4">Atur titik gedung, lantai, dan zona lokasi internal puskesmas.</p>
 
       <div class="flex gap-2 mb-6">
-        <input
-          type="text"
-          placeholder="Nama lokasi / gedung baru..."
-          value={newLocInput}
-          oninput={(e) => (newLocInput = e.currentTarget.value)}
-          class="flex-1 px-4 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-        />
+        {#key bufKey}
+          <input
+            type="text"
+            placeholder="Nama lokasi / gedung baru..."
+            defaultValue={newLocInput}
+            oninput={(e) => (newLocInput = e.currentTarget.value)}
+            class="flex-1 px-4 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+          />
+        {/key}
         <button
           onclick={handleAddLocation}
           class="px-4 py-2 bg-teal-600 text-[var(--color-text)] rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors"
@@ -589,13 +606,14 @@
   {/snippet}
 
   {#if editingFacility}
+    {#key editingFacility.id || 'new'}
     <form id="facility-form" onsubmit={handleSaveFacility} class="space-y-4">
       <div>
         <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Nama Fasilitas *</label>
         <input
           type="text"
           required
-          value={editingFacility.name ?? ''}
+          defaultValue={editingFacility.name ?? ''}
           oninput={(e) => updateFac({ name: e.currentTarget.value })}
           class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           placeholder="Contoh: Ruang Pemeriksaan Poli Gigi & Mulut"
@@ -648,7 +666,7 @@
           <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Lantai / Zona</label>
           <input
             type="text"
-            value={editingFacility.floor ?? ''}
+            defaultValue={editingFacility.floor ?? ''}
             oninput={(e) => updateFac({ floor: e.currentTarget.value })}
             class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
             placeholder="Contoh: Lantai 2"
@@ -660,7 +678,7 @@
         <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">URL Foto (Media Library)</label>
         <input
           type="url"
-          value={editingFacility.photos?.[0] ?? ''}
+          defaultValue={editingFacility.photos?.[0] ?? ''}
           oninput={(e) => updateFac({ photos: [e.currentTarget.value] })}
           class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           placeholder="https://images.unsplash.com/..."
@@ -671,11 +689,10 @@
         <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Deskripsi Fasilitas</label>
         <textarea
           rows={3}
-          value={editingFacility.description ?? ''}
           oninput={(e) => updateFac({ description: e.currentTarget.value })}
           class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           placeholder="Jelaskan fasilitas dan peralatan utama..."
-        ></textarea>
+        >{editingFacility.description ?? ''}</textarea>
       </div>
 
       <!-- Accessibility Attributes -->
@@ -744,7 +761,7 @@
         <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Link Peta Eksternal (Google Maps URL)</label>
         <input
           type="url"
-          value={editingFacility.externalMapUrl ?? ''}
+          defaultValue={editingFacility.externalMapUrl ?? ''}
           oninput={(e) => updateFac({ externalMapUrl: e.currentTarget.value })}
           class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           placeholder="https://maps.google.com/?q=..."
@@ -763,6 +780,7 @@
         </label>
       </div>
     </form>
+    {/key}
   {/if}
 </Modal>
 

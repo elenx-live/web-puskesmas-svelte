@@ -20,6 +20,8 @@ import { memStore } from '../../../shared/lib/memStore';
   let newChannelType = $state<ContactChannelEntity['type']>('Phone');
   let newChannelValue = $state('');
   let newChannelPrimary = $state(false);
+  // Counter untuk me-remount input buffer agar ter-clear visual setelah tambah (uncontrolled).
+  let bufKey = $state(0);
 
   let newSpecialDate = $state('');
   let newSpecialTitle = $state('');
@@ -114,6 +116,7 @@ import { memStore } from '../../../shared/lib/memStore';
     newChannelLabel = '';
     newChannelValue = '';
     newChannelPrimary = false;
+    bufKey += 1;
   }
 
   function removeChannel(id: string) {
@@ -160,6 +163,7 @@ import { memStore } from '../../../shared/lib/memStore';
     newSpecialDate = '';
     newSpecialTitle = '';
     newSpecialNotes = '';
+    bufKey += 1;
   }
 
   function removeSpecialHour(id: string) {
@@ -174,6 +178,7 @@ import { memStore } from '../../../shared/lib/memStore';
 {#if loading || !settings}
   <div class="py-20 text-center text-[var(--color-muted-foreground)]">Memuat konfigurasi kontak...</div>
 {:else}
+  {#key 'contact-settings'}
   <div class="space-y-6 max-w-6xl mx-auto pb-12">
     <!-- Header & Save Action -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--color-card)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
@@ -280,7 +285,7 @@ import { memStore } from '../../../shared/lib/memStore';
             <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1.5">Alamat Jalan</label>
             <input
               type="text"
-              value={settings.address}
+              defaultValue={settings.address}
               oninput={(e) => updateSettings({ address: e.currentTarget.value })}
               class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-[var(--color-text)] text-sm focus:outline-none focus:border-emerald-500"
               placeholder="Jl. Kesehatan Raya No. 12..."
@@ -291,7 +296,7 @@ import { memStore } from '../../../shared/lib/memStore';
             <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1.5">Kelurahan / Desa</label>
             <input
               type="text"
-              value={settings.village}
+              defaultValue={settings.village}
               oninput={(e) => updateSettings({ village: e.currentTarget.value })}
               class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-[var(--color-text)] text-sm focus:outline-none focus:border-emerald-500"
             />
@@ -301,7 +306,7 @@ import { memStore } from '../../../shared/lib/memStore';
             <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1.5">Kecamatan</label>
             <input
               type="text"
-              value={settings.district}
+              defaultValue={settings.district}
               oninput={(e) => updateSettings({ district: e.currentTarget.value })}
               class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-[var(--color-text)] text-sm focus:outline-none focus:border-emerald-500"
             />
@@ -311,7 +316,7 @@ import { memStore } from '../../../shared/lib/memStore';
             <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1.5">Kabupaten / Kota</label>
             <input
               type="text"
-              value={settings.regency}
+              defaultValue={settings.regency}
               oninput={(e) => updateSettings({ regency: e.currentTarget.value })}
               class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-[var(--color-text)] text-sm focus:outline-none focus:border-emerald-500"
             />
@@ -321,7 +326,7 @@ import { memStore } from '../../../shared/lib/memStore';
             <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1.5">Provinsi</label>
             <input
               type="text"
-              value={settings.province}
+              defaultValue={settings.province}
               oninput={(e) => updateSettings({ province: e.currentTarget.value })}
               class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-[var(--color-text)] text-sm focus:outline-none focus:border-emerald-500"
             />
@@ -331,7 +336,7 @@ import { memStore } from '../../../shared/lib/memStore';
             <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1.5">Kode Pos</label>
             <input
               type="text"
-              value={settings.postalCode}
+              defaultValue={settings.postalCode}
               oninput={(e) => updateSettings({ postalCode: e.currentTarget.value })}
               class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-[var(--color-text)] text-sm focus:outline-none focus:border-emerald-500"
             />
@@ -360,7 +365,7 @@ import { memStore } from '../../../shared/lib/memStore';
                 <input
                   type="number"
                   step="any"
-                  value={settings.latitude}
+                  defaultValue={settings.latitude}
                   oninput={(e) => updateSettings({ latitude: parseFloat(e.currentTarget.value) || 0 })}
                   class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-[var(--color-text)] text-sm focus:outline-none focus:border-emerald-500"
                 />
@@ -370,7 +375,7 @@ import { memStore } from '../../../shared/lib/memStore';
                 <input
                   type="number"
                   step="any"
-                  value={settings.longitude}
+                  defaultValue={settings.longitude}
                   oninput={(e) => updateSettings({ longitude: parseFloat(e.currentTarget.value) || 0 })}
                   class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-[var(--color-text)] text-sm focus:outline-none focus:border-emerald-500"
                 />
@@ -379,7 +384,7 @@ import { memStore } from '../../../shared/lib/memStore';
                 <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1.5">Google Maps Embed URL</label>
                 <input
                   type="text"
-                  value={settings.mapEmbedUrl}
+                  defaultValue={settings.mapEmbedUrl}
                   oninput={(e) => updateSettings({ mapEmbedUrl: e.currentTarget.value })}
                   class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-[var(--color-text)] text-sm focus:outline-none focus:border-emerald-500"
                 />
@@ -388,7 +393,7 @@ import { memStore } from '../../../shared/lib/memStore';
                 <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1.5">External Map Link (Petunjuk Arah)</label>
                 <input
                   type="text"
-                  value={settings.externalMapUrl}
+                  defaultValue={settings.externalMapUrl}
                   oninput={(e) => updateSettings({ externalMapUrl: e.currentTarget.value })}
                   class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-[var(--color-text)] text-sm focus:outline-none focus:border-emerald-500"
                 />
@@ -409,14 +414,16 @@ import { memStore } from '../../../shared/lib/memStore';
           <form onsubmit={addChannel} class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
             <div>
               <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1">Label Publik</label>
-              <input
-                type="text"
-                placeholder="Contoh: WhatsApp Pendaftaran"
-                value={newChannelLabel}
-                oninput={(e) => (newChannelLabel = e.currentTarget.value)}
-                required
-                class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text)] text-sm"
-              />
+              {#key bufKey}
+                <input
+                  type="text"
+                  placeholder="Contoh: WhatsApp Pendaftaran"
+                  defaultValue={newChannelLabel}
+                  oninput={(e) => (newChannelLabel = e.currentTarget.value)}
+                  required
+                  class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text)] text-sm"
+                />
+              {/key}
             </div>
             <div>
               <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1">Tipe Kanal</label>
@@ -435,14 +442,16 @@ import { memStore } from '../../../shared/lib/memStore';
             </div>
             <div>
               <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1">Nilai / Nomor / URL</label>
-              <input
-                type="text"
-                placeholder="+62... atau https://..."
-                value={newChannelValue}
-                oninput={(e) => (newChannelValue = e.currentTarget.value)}
-                required
-                class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text)] text-sm"
-              />
+              {#key bufKey}
+                <input
+                  type="text"
+                  placeholder="+62... atau https://..."
+                  defaultValue={newChannelValue}
+                  oninput={(e) => (newChannelValue = e.currentTarget.value)}
+                  required
+                  class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-text)] text-sm"
+                />
+              {/key}
             </div>
             <div class="flex items-end">
               <button
@@ -562,7 +571,7 @@ import { memStore } from '../../../shared/lib/memStore';
                     <input
                       type="text"
                       placeholder="Catatan (misal: Istirahat sholat jumat)"
-                      value={oh.notes || ''}
+                      defaultValue={oh.notes || ''}
                       oninput={(e) => updateOperatingDay(index, 'notes', e.currentTarget.value)}
                       class="flex-1 bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-[var(--color-text)] text-xs hidden md:block"
                     />
@@ -596,14 +605,16 @@ import { memStore } from '../../../shared/lib/memStore';
             </div>
             <div class="md:col-span-2">
               <label class="block text-xs font-semibold text-[var(--color-text)] mb-1">Keterangan / Nama Libur</label>
-              <input
-                type="text"
-                placeholder="Contoh: Libur Hari Kemerdekaan"
-                value={newSpecialTitle}
-                oninput={(e) => (newSpecialTitle = e.currentTarget.value)}
-                required
-                class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-[var(--color-text)] text-xs"
-              />
+              {#key bufKey}
+                <input
+                  type="text"
+                  placeholder="Contoh: Libur Hari Kemerdekaan"
+                  defaultValue={newSpecialTitle}
+                  oninput={(e) => (newSpecialTitle = e.currentTarget.value)}
+                  required
+                  class="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-3 py-1.5 text-[var(--color-text)] text-xs"
+                />
+              {/key}
             </div>
             <div>
               <label class="block text-xs font-semibold text-[var(--color-text)] mb-1">Status</label>
@@ -666,7 +677,7 @@ import { memStore } from '../../../shared/lib/memStore';
             <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1.5">Judul Informasi Darurat</label>
             <input
               type="text"
-              value={settings.emergencyInfo.title}
+              defaultValue={settings.emergencyInfo.title}
               oninput={(e) => updateSettings({ emergencyInfo: { ...settings!.emergencyInfo, title: e.currentTarget.value } })}
               class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-[var(--color-text)] text-sm focus:outline-none focus:border-emerald-500"
             />
@@ -676,17 +687,16 @@ import { memStore } from '../../../shared/lib/memStore';
             <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1.5">Deskripsi & Petunjuk</label>
             <textarea
               rows={3}
-              value={settings.emergencyInfo.description}
               oninput={(e) => updateSettings({ emergencyInfo: { ...settings!.emergencyInfo, description: e.currentTarget.value } })}
               class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-[var(--color-text)] text-sm focus:outline-none focus:border-emerald-500"
-            ></textarea>
+            >{settings.emergencyInfo.description}</textarea>
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-[var(--color-text)] uppercase mb-1.5">Catatan Lokasi IGD</label>
             <input
               type="text"
-              value={settings.emergencyInfo.locationNote}
+              defaultValue={settings.emergencyInfo.locationNote}
               oninput={(e) => updateSettings({ emergencyInfo: { ...settings!.emergencyInfo, locationNote: e.currentTarget.value } })}
               class="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-[var(--color-text)] text-sm focus:outline-none focus:border-emerald-500"
             />
@@ -727,4 +737,5 @@ import { memStore } from '../../../shared/lib/memStore';
       </div>
     {/if}
   </div>
+  {/key}
 {/if}

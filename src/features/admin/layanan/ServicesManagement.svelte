@@ -101,6 +101,7 @@
 
   let saving = $state(false);
   let autoSlug = $state(true);
+  let slugKey = $state(0);
   let editorTab = $state<EditorTab>('info');
 
   // Delete Confirm Modal State
@@ -262,6 +263,7 @@
       seoDescription: '',
     };
     autoSlug = true;
+    slugKey = 0;
     editorTab = 'info';
     initialEditingJson = JSON.stringify(editingService);
     isEditorOpen = true;
@@ -270,6 +272,7 @@
   function handleOpenEdit(service: ServiceEntity) {
     editingService = { ...service };
     autoSlug = false;
+    slugKey = 0;
     editorTab = 'info';
     initialEditingJson = JSON.stringify(editingService);
     isEditorOpen = true;
@@ -280,6 +283,7 @@
     const updated = { ...editingService, name };
     if (autoSlug) {
       updated.slug = generateSlug(name, editingService.id, services);
+      slugKey += 1;
     }
     editingService = updated;
   }
@@ -1058,6 +1062,7 @@
 
       <!-- TAB CONTENT: INFORMASI UTAMA -->
       {#if editorTab === 'info'}
+        {#key editingService?.id || 'new'}
         <form onsubmit={handleSave} class="space-y-4 text-xs">
           <!-- REJECTION NOTICE BANNER -->
           {#if editingService.rejectionReason}
@@ -1078,7 +1083,7 @@
             <div class="md:col-span-2 space-y-1">
               <label class="font-semibold text-[var(--color-text)]">Nama Layanan *</label>
               <Input
-                value={editingService.name || ''}
+                defaultValue={editingService.name || ''}
                 oninput={(e) => handleNameChange(e.currentTarget.value)}
                 placeholder="Contoh: Pelayanan Pemeriksaan Umum"
                 class="bg-[var(--color-bg)] border-[var(--color-border)]"
@@ -1090,7 +1095,7 @@
               <label class="font-semibold text-[var(--color-text)]">Urutan Tampilan</label>
               <Input
                 type="number"
-                value={editingService.displayOrder || 1}
+                defaultValue={editingService.displayOrder || 1}
                 oninput={(e) =>
                   updateEditing({ displayOrder: parseInt(e.currentTarget.value) || 1 })}
                 class="bg-[var(--color-bg)] border-[var(--color-border)]"
@@ -1109,6 +1114,7 @@
                     updateEditing({
                       slug: generateSlug(editingService.name, editingService.id, services),
                     });
+                    slugKey += 1;
                   }
                 }}
                 class="text-[10px] text-[var(--color-primary)] hover:underline"
@@ -1120,15 +1126,17 @@
               class="flex items-center gap-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-[var(--color-muted-foreground)]"
             >
               <span class="text-[var(--color-muted-foreground)] font-mono">/layanan/</span>
+              {#key slugKey}
               <input
                 type="text"
-                value={editingService.slug || ''}
+                defaultValue={editingService.slug || ''}
                 readonly={autoSlug}
                 oninput={(e) => updateEditing({ slug: e.currentTarget.value })}
                 placeholder="pelayanan-pemeriksaan-umum"
                 class="bg-transparent border-none focus:outline-none text-[var(--color-primary)] font-mono w-full text-xs"
                 required
               />
+              {/key}
             </div>
           </div>
 
@@ -1242,22 +1250,20 @@
             <label class="font-semibold text-[var(--color-text)]">Deskripsi Singkat (Ringkasan Publik)</label>
             <textarea
               rows={2}
-              value={editingService.shortDescription || ''}
               oninput={(e) => updateEditing({ shortDescription: e.currentTarget.value })}
               placeholder="Penjelasan ringkas jenis layanan kesehatan..."
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-3 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-            ></textarea>
+            >{editingService.shortDescription || ''}</textarea>
           </div>
 
           <div class="space-y-1">
             <label class="font-semibold text-[var(--color-text)]">Deskripsi Detail & Informasi Utama</label>
             <textarea
               rows={4}
-              value={editingService.description || ''}
               oninput={(e) => updateEditing({ description: e.currentTarget.value })}
               placeholder="Rincian komprehensif cakupan pelayanan medis..."
               class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-3 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)] font-mono text-[11px] transition-colors"
-            ></textarea>
+            >{editingService.description || ''}</textarea>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1337,7 +1343,7 @@
                     <input
                       type="text"
                       id="queue-prefix-input"
-                      value={editingService.queuePrefix || ''}
+                      defaultValue={editingService.queuePrefix || ''}
                       oninput={(e) =>
                         updateEditing({ queuePrefix: e.currentTarget.value.toUpperCase().trim() })}
                       placeholder="A"
@@ -1360,7 +1366,7 @@
               <div class="space-y-1">
                 <label class="text-[var(--color-muted-foreground)]">SEO Title</label>
                 <Input
-                  value={editingService.seoTitle || ''}
+                  defaultValue={editingService.seoTitle || ''}
                   oninput={(e) => updateEditing({ seoTitle: e.currentTarget.value })}
                   placeholder="Judul untuk Google Search..."
                   class="bg-[var(--color-bg)] border-[var(--color-border)]"
@@ -1369,7 +1375,7 @@
               <div class="space-y-1">
                 <label class="text-[var(--color-muted-foreground)]">SEO Description</label>
                 <Input
-                  value={editingService.seoDescription || ''}
+                  defaultValue={editingService.seoDescription || ''}
                   oninput={(e) => updateEditing({ seoDescription: e.currentTarget.value })}
                   placeholder="Meta deskripsi untuk Google Search..."
                   class="bg-[var(--color-bg)] border-[var(--color-border)]"
@@ -1415,6 +1421,7 @@
             </div>
           </div>
         </form>
+        {/key}
       {/if}
 
       <!-- TAB CONTENT: PERSYARATAN -->

@@ -289,10 +289,11 @@
     size="md"
   >
     {#if editingProd}
+      {#key editingProd?.id || 'new'}
       <form onsubmit={handleSave} class="space-y-4 text-xs">
         <Input
           label="Nama Produk / Hasil Output *"
-          value={editingProd.name || ''}
+          defaultValue={editingProd.name || ''}
           oninput={(e) => updateEditingProd({ name: e.currentTarget.value })}
           placeholder="Contoh: Resep Obat & Paket Terapi Obat Dasar"
           required
@@ -302,11 +303,10 @@
           <label class="font-semibold text-[var(--color-text)]">Deskripsi / Penjelasan Produk</label>
           <textarea
             rows={4}
-            value={editingProd.description || ''}
             oninput={(e) => updateEditingProd({ description: e.currentTarget.value })}
             placeholder="Contoh: Pemberian obat resep yang disesuaikan dengan hasil diagnosis dokter umum..."
             class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
-          ></textarea>
+          >{editingProd.description || ''}</textarea>
         </div>
 
         <div class="space-y-1">
@@ -331,6 +331,7 @@
           </Button>
         </div>
       </form>
+      {/key}
     {/if}
   </Modal>
 </div>

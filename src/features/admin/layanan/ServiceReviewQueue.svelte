@@ -774,10 +774,11 @@
 
 <!-- REJECTION REASON MODAL -->
 {#if rejectionModalOpen && rejectionTarget}
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-    <div
-      class="bg-[var(--color-card)] border border-rose-500/30 w-full max-w-md rounded-3xl p-6 space-y-4 shadow-2xl"
-    >
+  {#key rejectionTarget.id || 'new'}
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+      <div
+        class="bg-[var(--color-card)] border border-rose-500/30 w-full max-w-md rounded-3xl p-6 space-y-4 shadow-2xl"
+      >
       <div class="flex items-center gap-3">
         <div
           class="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400"
@@ -795,12 +796,11 @@
       </p>
 
       <textarea
-        value={rejectionReason}
         oninput={(e) => (rejectionReason = e.currentTarget.value)}
         placeholder="Contoh: Deskripsi persyaratan kurang detail dan rincian tarif belum disesuaikan dengan Perda terbaru."
         rows={4}
         class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-2xl p-3 text-xs text-[var(--color-text)] focus:outline-none focus:border-rose-500"
-      ></textarea>
+      >{rejectionReason}</textarea>
 
       <div class="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-border)]">
         <Button variant="ghost" size="sm" onclick={() => (rejectionModalOpen = false)} disabled={rejecting}>
@@ -822,6 +822,7 @@
       </div>
     </div>
   </div>
+  {/key}
 {/if}
 
 <!-- CONFIRMATION MODAL -->

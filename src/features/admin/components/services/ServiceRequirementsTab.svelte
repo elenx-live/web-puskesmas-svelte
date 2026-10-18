@@ -323,6 +323,7 @@
     size="md"
   >
     {#if editingReq}
+      {#key editingReq?.id || 'new'}
       <form onsubmit={handleSave} class="space-y-4 text-xs">
         {#if duplicateWarning}
           <div class="p-3 bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 rounded-xl text-[var(--color-primary)] flex items-start gap-2">
@@ -333,7 +334,7 @@
 
         <Input
           label="Judul Persyaratan *"
-          value={editingReq.title || ''}
+          defaultValue={editingReq.title || ''}
           oninput={(e) => handleTitleChange(e.currentTarget.value)}
           placeholder="Contoh: KTP / Kartu Keluarga / Kartu BPJS"
           required
@@ -343,11 +344,10 @@
           <label class="font-semibold text-[var(--color-text)]">Deskripsi / Penjelasan Tambahan</label>
           <textarea
             rows={3}
-            value={editingReq.description || ''}
             oninput={(e) => updateEditingReq({ description: e.currentTarget.value })}
             placeholder="Contoh: Dokumen asli atau salinan digital yang masih berlaku..."
             class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-2.5 text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]"
-          ></textarea>
+          >{editingReq.description || ''}</textarea>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -390,6 +390,7 @@
           </Button>
         </div>
       </form>
+      {/key}
     {/if}
   </Modal>
 </div>

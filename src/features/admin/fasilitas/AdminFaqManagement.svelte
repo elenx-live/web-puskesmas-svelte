@@ -11,6 +11,7 @@
   import { faqService } from '../../../shared/services/faqService.js';
   import type { FaqEntity, GuideEntity, FaqCategory, GuideCategory, ContentStatus, GuideStep } from '../../../shared/types/index.js';
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
+  import { debounce } from '../../../shared/utils/debounce.js';
 
   let activeTab = $state<'faqs' | 'guides' | 'categories' | 'analytics'>('faqs');
   let faqs = $state<FaqEntity[]>([]);
@@ -21,8 +22,16 @@
   let loading = $state(true);
 
   let searchQuery = $state('');
+  let searchDebounced = $state('');
   let selectedCategory = $state('ALL');
   let selectedStatus = $state('ALL');
+
+  // Debounce search lokal 300ms — filter $derived hanya membaca searchDebounced
+  const applySearchDebounced = debounce((v: string) => { searchDebounced = v; }, 300);
+  $effect(() => {
+    applySearchDebounced(searchQuery);
+    return () => applySearchDebounced.cancel();
+  });
 
   let isFaqModalOpen = $state(false);
   let editingFaq = $state<Partial<FaqEntity> | null>(null);
@@ -197,9 +206,9 @@
   const filteredFaqs = $derived(
     faqs.filter((faq) => {
       const matchesSearch =
-        faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        faq.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        faq.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+        faq.question.toLowerCase().includes(searchDebounced.toLowerCase()) ||
+        faq.answer.toLowerCase().includes(searchDebounced.toLowerCase()) ||
+        faq.tags.some((t) => t.toLowerCase().includes(searchDebounced.toLowerCase()));
       const matchesCat = selectedCategory === 'ALL' || faq.category === selectedCategory;
       const matchesStatus = selectedStatus === 'ALL' || faq.status === selectedStatus;
       return matchesSearch && matchesCat && matchesStatus;
@@ -626,13 +635,14 @@
   {/snippet}
 
   {#if editingFaq}
+    {#key editingFaq.id || 'new'}
     <form id="faq-form" onsubmit={handleSaveFaq} class="space-y-4">
       <div>
         <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Pertanyaan</label>
         <input
           type="text"
           required
-          value={editingFaq.question ?? ''}
+          defaultValue={editingFaq.question ?? ''}
           oninput={(e) => updateFaq({ question: e.currentTarget.value })}
           placeholder="Contoh: Bagaimana cara mendaftar poli?"
           class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-500"
@@ -644,11 +654,10 @@
         <textarea
           rows={4}
           required
-          value={editingFaq.answer ?? ''}
           oninput={(e) => updateFaq({ answer: e.currentTarget.value })}
           placeholder="Tuliskan jawaban singkat dan jelas..."
           class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-500"
-        ></textarea>
+        >{editingFaq.answer ?? ''}</textarea>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -683,7 +692,7 @@
         <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Tag (pisahkan dengan koma)</label>
         <input
           type="text"
-          value={editingFaq.tags ? editingFaq.tags.join(', ') : ''}
+          defaultValue={editingFaq.tags ? editingFaq.tags.join(', ') : ''}
           oninput={(e) => updateFaq({ tags: e.currentTarget.value.split(',').map((s) => s.trim()).filter(Boolean) })}
           placeholder="pendaftaran, bpjs, poli"
           class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-500"
@@ -702,6 +711,7 @@
         </label>
       </div>
     </form>
+    {/key}
   {/if}
 </Modal>
 
@@ -730,13 +740,14 @@
   {/snippet}
 
   {#if editingGuide}
+    {#key editingGuide.id || 'new'}
     <form id="guide-form" onsubmit={handleSaveGuide} class="space-y-4">
       <div>
         <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Judul Panduan</label>
         <input
           type="text"
           required
-          value={editingGuide.title ?? ''}
+          defaultValue={editingGuide.title ?? ''}
           oninput={(e) => updateGuide({ title: e.currentTarget.value })}
           placeholder="Contoh: Panduan Pendaftaran Antrean Online"
           class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-500"
@@ -748,11 +759,10 @@
         <textarea
           rows={2}
           required
-          value={editingGuide.summary ?? ''}
           oninput={(e) => updateGuide({ summary: e.currentTarget.value })}
           placeholder="Ringkasan singkat panduan..."
           class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-500"
-        ></textarea>
+        >{editingGuide.summary ?? ''}</textarea>
       </div>
 
       <div>
@@ -797,22 +807,22 @@
               <input
                 type="text"
                 placeholder="Judul Langkah (Contoh: Buka Menu Pendaftaran)"
-                value={step.title}
+                defaultValue={step.title}
                 oninput={(e) => updateGuideStep(idx, { title: e.currentTarget.value })}
                 class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs"
               />
               <textarea
                 rows={2}
                 placeholder="Deskripsi langkah..."
-                value={step.description}
                 oninput={(e) => updateGuideStep(idx, { description: e.currentTarget.value })}
                 class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs"
-              ></textarea>
+              >{step.description}</textarea>
             </div>
           {/each}
         </div>
       </div>
     </form>
+    {/key}
   {/if}
 </Modal>
 

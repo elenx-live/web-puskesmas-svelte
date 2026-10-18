@@ -205,7 +205,7 @@
                 Judul Utama SEO (Meta Title)
               </label>
               <Input
-                value={settings.defaultSeoTitle || ''}
+                defaultValue={settings.defaultSeoTitle || ''}
                 oninput={(e) => handleFieldChange('defaultSeoTitle', e.currentTarget.value)}
                 placeholder="Contoh: Puskesmas Manding — Layanan Kesehatan Prima & Terintegrasi"
                 class="text-sm font-medium"
@@ -221,12 +221,11 @@
                 Deskripsi Meta Ringkasan (Meta Description)
               </label>
               <textarea
-                value={settings.defaultSeoDescription || ''}
                 oninput={(e) => handleFieldChange('defaultSeoDescription', e.currentTarget.value)}
                 rows={3}
                 placeholder="Portal resmi Puskesmas Manding. Menyediakan pendaftaran online, informasi jadwal poli, UGD 24 jam, dan pengaduan masyarakat."
                 class="w-full text-sm rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-              ></textarea>
+              >{settings.defaultSeoDescription || ''}</textarea>
               <div class="flex items-center justify-between mt-1 text-[11px]">
                 <span class={isDescOptimal ? 'text-emerald-600 font-semibold' : 'text-amber-600'}>
                   {isDescOptimal
@@ -242,7 +241,7 @@
                 Kata Kunci Pencarian (Keywords / Tags)
               </label>
               <Input
-                value={settings.defaultKeywords || ''}
+                defaultValue={settings.defaultKeywords || ''}
                 oninput={(e) => handleFieldChange('defaultKeywords', e.currentTarget.value)}
                 placeholder="puskesmas, kesehatan primer, bpjs, pendaftaran online, poli umum, posyandu, ugd 24 jam"
                 class="text-sm"
@@ -323,7 +322,7 @@
                 URL Gambar Banner Open Graph (OG Image)
               </label>
               <Input
-                value={settings.ogImageUrl || ''}
+                defaultValue={settings.ogImageUrl || ''}
                 oninput={(e) => handleFieldChange('ogImageUrl', e.currentTarget.value)}
                 placeholder="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80"
                 class="text-sm"

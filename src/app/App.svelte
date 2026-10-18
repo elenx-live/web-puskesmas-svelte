@@ -24,7 +24,7 @@ import { memStore } from '../shared/lib/memStore';
   import MaintenanceScreen from '../shared/components/MaintenanceScreen.svelte';
   import NotFoundPage from '../features/errors/NotFoundPage.svelte';
 
-  let currentPath = $state('/');
+  let currentPath = $derived(routerState.path);
   let settings = $state<SiteSettings | null>(null);
 
   // Hasil pencocokan rute dari registry tunggal + komponen hasil lazy-load.
@@ -81,10 +81,6 @@ import { memStore } from '../shared/lib/memStore';
       }
     );
   }
-
-  $effect(() => {
-    currentPath = routerState.path;
-  });
 
   $effect(() => {
     resolveRoute(currentPath);
