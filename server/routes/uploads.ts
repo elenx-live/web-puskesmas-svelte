@@ -11,6 +11,8 @@ const router = Router();
 // Gambar diperkecil ke max 1280px sisi terpanjang, kualitas 80%.
 const MAX_IMAGE_DIMENSION = 1280;
 const IMAGE_QUALITY = 80;
+// Ukuran file maksimal setelah kompres: 1MB
+const MAX_OUTPUT_BYTES = 1024 * 1024;
 
 router.post("/api/upload-logo", (req, res) => {
   try {
@@ -115,25 +117,43 @@ router.post("/api/upload-image", async (req, res) => {
       return res.status(400).json({ error: "Ukuran berkas melebihi batas 5MB" });
     }
 
-    // Kecilkan resolusi: max 1280px sisi terpanjang, kualitas 80% (hemat storage & bandwidth)
+    // Kecilkan resolusi: max 1280px sisi terpanjang, lalu kompres hingga <= 1MB
     let processedBuffer: Buffer = buffer;
     try {
-      const image = sharp(buffer);
-      const metadata = await image.metadata();
+      const metadata = await sharp(buffer).metadata();
       const w = metadata.width || 0;
       const h = metadata.height || 0;
-      if (w > MAX_IMAGE_DIMENSION || h > MAX_IMAGE_DIMENSION) {
-        image.resize(MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION, { fit: 'inside', withoutEnlargement: true });
-      }
-      if (mimeType === 'image/jpeg') {
-        processedBuffer = await image.jpeg({ quality: IMAGE_QUALITY }).toBuffer();
-      } else if (mimeType === 'image/webp') {
-        processedBuffer = await image.webp({ quality: IMAGE_QUALITY }).toBuffer();
-      } else if (mimeType === 'image/png') {
-        processedBuffer = await image.png({ compressionLevel: 8 }).toBuffer();
+
+      // Iterasi: turunkan dimensi & kualitas hingga <= 1MB (maks 4x)
+      let dim = MAX_IMAGE_DIMENSION;
+      let quality = IMAGE_QUALITY;
+      for (let attempt = 0; attempt < 4; attempt++) {
+        let pipeline = sharp(buffer);
+        if (w > dim || h > dim) {
+          pipeline = pipeline.resize(dim, dim, { fit: 'inside', withoutEnlargement: true });
+        }
+        if (mimeType === 'image/jpeg') {
+          processedBuffer = await pipeline.jpeg({ quality }).toBuffer();
+        } else if (mimeType === 'image/webp') {
+          processedBuffer = await pipeline.webp({ quality }).toBuffer();
+        } else if (mimeType === 'image/png') {
+          // PNG: konversi ke JPEG bila besar (foto), kecuali ada transparansi
+          const hasAlpha = metadata.channels === 4;
+          if (!hasAlpha && processedBuffer.length > MAX_OUTPUT_BYTES) {
+            processedBuffer = await pipeline.jpeg({ quality }).toBuffer();
+          } else {
+            processedBuffer = await pipeline.png({ compressionLevel: 9 }).toBuffer();
+          }
+        } else {
+          processedBuffer = await pipeline.toBuffer();
+        }
+        if (processedBuffer.length <= MAX_OUTPUT_BYTES) break;
+        // Masih kebesaran: turunkan kualitas & dimensi untuk iterasi berikutnya
+        quality = Math.max(40, quality - 20);
+        dim = Math.floor(dim * 0.8);
       }
     } catch (e) {
-      console.warn("Gagal resize gambar, pakai original:", e);
+      console.warn("Gagal kompres gambar, pakai original:", e);
       processedBuffer = buffer;
     }
 
