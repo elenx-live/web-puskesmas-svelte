@@ -11,6 +11,7 @@
   import { authStore } from '../../../shared/stores/auth.svelte.js';
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
   import { errorMessage } from '../../../shared/lib/logger.js';
+  import { debounce } from '../../../shared/utils/debounce.js';
   import { postService } from '../../../shared/services/postService.js';
   import { categoryService } from '../../../shared/services/categoryService.js';
   import { tagService } from '../../../shared/services/tagService.js';
@@ -65,6 +66,21 @@
   let search = $state('');
   let selectedCat = $state('');
   let statusFilter = $state('');
+
+  // Search di-debounce 300ms: cegah request jaringan per keystroke.
+  // loadData membaca searchDebounced sehingga $effect hanya jalan setelah user berhenti mengetik.
+  let searchDebounced = $state('');
+  const applySearchDebounced = debounce((v: string) => {
+    searchDebounced = v;
+  }, 300);
+
+  // Memoize opsi select: hindari alokasi array/objek baru tiap render
+  // (keyed {#each} di Select tidak perlu diffing ulang).
+  const categoryOptions = $derived(categories.map((c) => ({ value: c.id, label: c.name })));
+  const statusOptions = [
+    { value: 'draft', label: 'Draft (Internal)' },
+    { value: 'published', label: 'Published (Tampil Publik)' }
+  ];
 
   // Modal Create/Edit
   let isEditorOpen = $state(false);
@@ -158,7 +174,7 @@
     loading = true;
     try {
       const [postList, catList, tagList] = await Promise.all([
-        postService.getPosts(selectedCat, undefined, search, statusFilter),
+        postService.getPosts(selectedCat, undefined, searchDebounced, statusFilter),
         categoryService.getCategories('post'),
         tagService.getTags()
       ]);
@@ -171,6 +187,11 @@
       loading = false;
     }
   }
+
+  $effect(() => {
+    applySearchDebounced(search);
+    return () => applySearchDebounced.cancel();
+  });
 
   $effect(() => {
     loadData();
@@ -739,17 +760,14 @@
             const found = categories.find((c) => c.id === categoryId);
             patchEditingPost({ categoryId, categoryName: found?.name });
           }}
-          options={categories.map((c) => ({ value: c.id, label: c.name }))}
+          options={categoryOptions}
         />
 
         <Select
           label="Status Publikasi *"
           value={editingPost.status || 'draft'}
           onchange={(e) => patchEditingPost({ status: e.currentTarget.value as ContentStatus })}
-          options={[
-            { value: 'draft', label: 'Draft (Internal)' },
-            { value: 'published', label: 'Published (Tampil Publik)' }
-          ]}
+          options={statusOptions}
         />
       </div>
 

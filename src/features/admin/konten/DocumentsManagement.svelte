@@ -16,6 +16,7 @@
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
   import { documentService } from '../../../shared/services/documentService.js';
   import { categoryService } from '../../../shared/services/categoryService.js';
+  import { debounce } from '../../../shared/utils/debounce.js';
   import { serviceEngineService } from '../../../shared/services/serviceEngineService.js';
   import type { DocumentEntity, CategoryEntity, ServiceEntity, ServiceUnitEntity } from '../../../shared/types/index.js';
 
@@ -32,6 +33,12 @@
   let selectedUnit = $state('');
   let statusFilter = $state('');
   let visibilityFilter = $state('');
+
+  // Search di-debounce 300ms: cegah request jaringan per keystroke.
+  let searchDebounced = $state('');
+  const applySearchDebounced = debounce((v: string) => {
+    searchDebounced = v;
+  }, 300);
 
   // Row state
   let expandedDocId = $state<string | null>(null);
@@ -56,7 +63,7 @@
     loading = true;
     try {
       const [docList, catList, serviceList, unitList] = await Promise.all([
-        documentService.getDocuments(selectedCat || undefined, search || undefined, statusFilter || undefined, selectedService || undefined, selectedUnit || undefined),
+        documentService.getDocuments(selectedCat || undefined, searchDebounced || undefined, statusFilter || undefined, selectedService || undefined, selectedUnit || undefined),
         categoryService.getCategories('document'),
         serviceEngineService.getServices(),
         serviceEngineService.getUnits()
@@ -72,6 +79,11 @@
       loading = false;
     }
   }
+
+  $effect(() => {
+    applySearchDebounced(search);
+    return () => applySearchDebounced.cancel();
+  });
 
   $effect(() => {
     loadData();

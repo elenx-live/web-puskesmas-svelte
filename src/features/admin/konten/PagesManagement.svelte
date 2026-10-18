@@ -11,6 +11,7 @@
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
   import { pageService } from '../../../shared/services/pageService.js';
   import { formatSafeHtml } from '../../../shared/utils/sanitize.js';
+  import { debounce } from '../../../shared/utils/debounce.js';
   import type { PageEntity, PageRevision, ContentStatus } from '../../../shared/types/index.js';
   import {
     Plus,
@@ -40,6 +41,12 @@
   let loading = $state(true);
   let search = $state('');
   let statusFilter = $state('');
+
+  // Search di-debounce 300ms: cegah request jaringan per keystroke.
+  let searchDebounced = $state('');
+  const applySearchDebounced = debounce((v: string) => {
+    searchDebounced = v;
+  }, 300);
 
   // Editor Modal State
   let isEditorOpen = $state(false);
@@ -136,13 +143,18 @@
   async function loadPages() {
     loading = true;
     try {
-      pages = await pageService.getPages(statusFilter, search);
+      pages = await pageService.getPages(statusFilter, searchDebounced);
     } catch {
       showToast('Gagal memuat daftar halaman', 'error');
     } finally {
       loading = false;
     }
   }
+
+  $effect(() => {
+    applySearchDebounced(search);
+    return () => applySearchDebounced.cancel();
+  });
 
   $effect(() => {
     loadPages();

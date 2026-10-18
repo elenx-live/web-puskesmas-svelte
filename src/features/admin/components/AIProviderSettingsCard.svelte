@@ -83,6 +83,12 @@
   const currentTextPreset = $derived(AI_PROVIDER_PRESETS.find((p) => p.id === textProvider));
   const currentImagePreset = $derived(IMAGE_AI_PROVIDER_PRESETS.find((p) => p.id === imageProvider));
 
+  // Memoize opsi model: hindari alokasi array baru tiap render.
+  const textModelOptions = $derived([
+    ...textAvailableModels.map((m) => ({ value: m, label: m })),
+    { value: '__manual__', label: '✏️ Ketik Manual Model Lainnya...' }
+  ]);
+
   async function loadConfig() {
     loading = true;
     try {
@@ -525,10 +531,7 @@
                     textModel = v;
                   }
                 }}
-                options={[
-                  ...textAvailableModels.map((m) => ({ value: m, label: m })),
-                  { value: '__manual__', label: '✏️ Ketik Manual Model Lainnya...' }
-                ]}
+                options={textModelOptions}
               />
             </div>
           {:else}
