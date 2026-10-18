@@ -7,6 +7,7 @@ import type {
   ImageAIProviderType, 
   TextAIConfig 
 } from '../types/index.js';
+import { apiFetch } from '../lib/api.js';
 
 export interface ImportArticleParams {
   url: string;
@@ -143,7 +144,7 @@ class AIProviderService {
    */
   async getConfig(): Promise<AIProviderConfig & { presets: AIProviderPreset[]; imagePresets: ImageAIProviderPreset[] }> {
     try {
-      const res = await fetch('/api/ai/provider-config');
+      const res = await apiFetch('/api/ai/provider-config');
       if (!res.ok) throw new Error('Gagal mengambil konfigurasi AI');
       const data = await res.json();
       return data;
@@ -189,7 +190,7 @@ class AIProviderService {
    * Save updated AI Provider configuration (Text, Image, or Both)
    */
   async saveConfig(config: Partial<AIProviderConfig> | { category?: 'text' | 'image'; [key: string]: any }): Promise<{ success: boolean; message: string; config?: AIProviderConfig }> {
-    const res = await fetch('/api/ai/provider-config', {
+    const res = await apiFetch('/api/ai/provider-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config)
@@ -211,7 +212,7 @@ class AIProviderService {
     apiKey?: string;
     model?: string;
   }): Promise<TestProviderResult> {
-    const res = await fetch('/api/ai/test-provider', {
+    const res = await apiFetch('/api/ai/test-provider', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params)
@@ -232,7 +233,7 @@ class AIProviderService {
     endpointUrl?: string;
     apiKey?: string;
   }): Promise<{ success: boolean; models: string[]; provider?: string; sourceUrl?: string }> {
-    const res = await fetch('/api/ai/fetch-models', {
+    const res = await apiFetch('/api/ai/fetch-models', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params)
@@ -248,7 +249,7 @@ class AIProviderService {
    * Import news/article from web or social media
    */
   async importArticle(params: ImportArticleParams): Promise<ImportArticleResult> {
-    const res = await fetch('/api/ai/import-article', {
+    const res = await apiFetch('/api/ai/import-article', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params)
@@ -280,7 +281,7 @@ class AIProviderService {
     };
   }> {
     try {
-      const res = await fetch('/api/ai/image-capability');
+      const res = await apiFetch('/api/ai/image-capability');
       if (!res.ok) throw new Error('Gagal memeriksa kapabilitas AI');
       return await res.json();
     } catch (err) {
@@ -320,7 +321,7 @@ class AIProviderService {
     style: string;
     needsConfiguration?: boolean;
   }> {
-    const res = await fetch('/api/ai/generate-image', {
+    const res = await apiFetch('/api/ai/generate-image', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params)
