@@ -162,24 +162,10 @@ router.post("/api/upload-image", async (req, res) => {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
-    // Also mirror to dist/uploads if dist exists
-    const distUploadsDir = path.join(process.cwd(), "dist", "uploads");
-    if (fs.existsSync(path.join(process.cwd(), "dist"))) {
-      if (!fs.existsSync(distUploadsDir)) {
-        fs.mkdirSync(distUploadsDir, { recursive: true });
-      }
-    }
-
     const fileName = safeUploadFileName(ext);
     const targetFilePath = path.join(uploadsDir, fileName);
 
     fs.writeFileSync(targetFilePath, processedBuffer);
-
-    if (fs.existsSync(distUploadsDir)) {
-      try {
-        fs.writeFileSync(path.join(distUploadsDir, fileName), processedBuffer);
-      } catch {}
-    }
 
     const publicUrl = `/uploads/${fileName}`;
     return res.json({
