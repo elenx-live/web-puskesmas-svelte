@@ -18,9 +18,13 @@ import micrositesRouter from "./server/routes/microsites.js";
 import uploadsRouter from "./server/routes/uploads.js";
 import miscRouter from "./server/routes/misc.js";
 import authRouter from "./server/routes/auth.js";
+import { migrateJsonToSqlite } from "./server/lib/migrate-json-to-sqlite.js";
 
 // Load environment variables
 dotenv.config();
+
+// Migrasi satu-kali: pindahkan data JSON lama ke SQLite (idempotent)
+migrateJsonToSqlite();
 
 // Global process error guards to prevent server exits on third-party SDK failures
 process.on("unhandledRejection", (reason, promise) => {

@@ -8,11 +8,12 @@ import {
   getServerSiteSettings, saveServerSiteSettings,
   getServerContactSettings, saveServerContactSettings,
   getServerMicrosites, saveServerMicrosites, getServerMicrositesMeta,
-  getDataStoreFilePath, renderHtmlWithMeta, generateShareHtml,
+  renderHtmlWithMeta, generateShareHtml,
   generatePageScreenshotSvg, renderScreenshotPng, handlePostImageRequest,
 } from "../lib/storage.js";
 import type { CmsItem } from "../lib/storage.js";
-import { SINGLE_DOCUMENT_COLLECTIONS, DATA_STORE_DIR } from "../lib/config.js";
+import { SINGLE_DOCUMENT_COLLECTIONS } from "../lib/config.js";
+import { kvGetJson, kvSetJson, itemsAll, itemsUpsert, itemsDelete, itemsReplaceAll } from "../lib/db.js";
 const router = Router();
 
 router.get("/api/meta-preview", (req, res) => {
@@ -118,12 +119,12 @@ router.get("/api/data/:collection", (req, res) => {
       return res.json({ success: true, data: getServerContactSettings() });
     }
 
-    const filePath = getDataStoreFilePath(collection);
-    if (fs.existsSync(filePath)) {
-      const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-      return res.json({ success: true, data });
+    if (SINGLE_DOCUMENT_COLLECTIONS.has(collection)) {
+      const data = kvGetJson(collection);
+      return res.json({ success: true, data: data ?? null });
     }
-    return res.json({ success: true, data: null });
+
+    return res.json({ success: true, data: itemsAll(collection) });
   } catch (err: unknown) {
     return res.status(500).json({ success: false, error: (err as { message?: string })?.message });
   }
@@ -133,12 +134,11 @@ router.post("/api/data/:collection", (req, res) => {
   try {
     const { collection } = req.params;
     const body = req.body;
-    const filePath = getDataStoreFilePath(collection);
     const isSingleDoc = SINGLE_DOCUMENT_COLLECTIONS.has(collection);
 
     if (Array.isArray(body)) {
       // Full collection replace
-      fs.writeFileSync(filePath, JSON.stringify(body, null, 2), "utf-8");
+      itemsReplaceAll(collection, body);
       if (collection === 'posts') {
         saveServerPostsList(body);
       } else if (collection === 'microsites') {
@@ -149,14 +149,9 @@ router.post("/api/data/:collection", (req, res) => {
 
     if (body && typeof body === 'object') {
       if (isSingleDoc) {
-        let existingData: Record<string, unknown> | null = null;
-        if (fs.existsSync(filePath)) {
-          try {
-            existingData = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-          } catch {}
-        }
+        const existingData = kvGetJson<Record<string, unknown>>(collection);
         const merged = { ...(existingData || {}), ...body, updatedAt: new Date().toISOString() };
-        fs.writeFileSync(filePath, JSON.stringify(merged, null, 2), "utf-8");
+        kvSetJson(collection, merged);
         if (collection === 'site_settings') {
           saveServerSiteSettings(merged);
         } else if (collection === 'contact_settings') {
@@ -171,11 +166,8 @@ router.post("/api/data/:collection", (req, res) => {
           existingData = getServerPostsList();
         } else if (collection === 'microsites') {
           existingData = getServerMicrosites();
-        } else if (fs.existsSync(filePath)) {
-          try {
-            const parsed = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-            if (Array.isArray(parsed)) existingData = parsed;
-          } catch {}
+        } else {
+          existingData = itemsAll(collection);
         }
 
         const payload = { ...body, id: docId || `item-${Date.now()}` };
@@ -190,7 +182,7 @@ router.post("/api/data/:collection", (req, res) => {
           existingData.unshift({ ...payload, createdAt: payload.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() });
         }
 
-        fs.writeFileSync(filePath, JSON.stringify(existingData, null, 2), "utf-8");
+        itemsReplaceAll(collection, existingData);
         if (collection === 'posts') {
           saveServerPostsList(existingData);
         } else if (collection === 'microsites') {
@@ -209,7 +201,6 @@ router.post("/api/data/:collection", (req, res) => {
 router.delete("/api/data/:collection/:id", (req, res) => {
   try {
     const { collection, id } = req.params;
-    const filePath = getDataStoreFilePath(collection);
 
     if (collection === 'posts') {
       const current = getServerPostsList();
@@ -225,15 +216,14 @@ router.delete("/api/data/:collection/:id", (req, res) => {
       return res.json({ success: true, data: filtered });
     }
 
-    if (fs.existsSync(filePath)) {
-      const existingData = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-      if (Array.isArray(existingData)) {
-        const filtered = existingData.filter((i: CmsItem) => i.id !== id && i.uid !== id && i.slug !== id);
-        fs.writeFileSync(filePath, JSON.stringify(filtered, null, 2), "utf-8");
-        return res.json({ success: true, data: filtered });
-      }
+    itemsDelete(collection, id);
+    const remaining = itemsAll(collection);
+    // Juga coba hapus berdasarkan uid/slug bila id tidak cocok
+    const stillThere = remaining.filter((i: CmsItem) => i.uid === id || i.slug === id);
+    for (const item of stillThere) {
+      itemsDelete(collection, String(item.id ?? item.uid ?? item.slug));
     }
-    return res.json({ success: true, message: "Item deleted" });
+    return res.json({ success: true, data: itemsAll(collection) });
   } catch (err: unknown) {
     return res.status(500).json({ success: false, error: (err as { message?: string })?.message });
   }
@@ -260,15 +250,10 @@ router.post("/api/sync-metadata", (req, res) => {
           };
         }
       }
-      fs.writeFileSync(MICROSITES_META_FILE, JSON.stringify(current, null, 2), "utf-8");
+      kvSetJson("microsites_meta", current);
     }
     if (Array.isArray(posts)) {
-      const currentPosts: Record<string, any> = {};
-      try {
-        if (fs.existsSync(POSTS_META_FILE)) {
-          Object.assign(currentPosts, JSON.parse(fs.readFileSync(POSTS_META_FILE, "utf-8")));
-        }
-      } catch {}
+      const currentPosts: Record<string, any> = kvGetJson("posts_meta") || {};
       for (const p of posts) {
         if (p.slug) {
           currentPosts[p.slug] = {
@@ -278,7 +263,7 @@ router.post("/api/sync-metadata", (req, res) => {
           };
         }
       }
-      fs.writeFileSync(POSTS_META_FILE, JSON.stringify(currentPosts, null, 2), "utf-8");
+      kvSetJson("posts_meta", currentPosts);
     }
     return res.json({ success: true, message: "Metadata synchronized successfully" });
   } catch (err: unknown) {
@@ -574,30 +559,27 @@ const handlePostImageRequest = (req: express.Request, res: express.Response) => 
     }
   }
 
-  // Also search directly in data_store/posts.json if not found
+  // Also search posts items if not found
   if (!post) {
     try {
-      const dataStorePostsPath = path.join(process.cwd(), "data_store", "posts.json");
-      if (fs.existsSync(dataStorePostsPath)) {
-        const parsed = JSON.parse(fs.readFileSync(dataStorePostsPath, "utf-8"));
-        if (Array.isArray(parsed)) {
-          const found = parsed.find((p: CmsItem) => 
-            (p.slug && p.slug.toLowerCase() === slugLower) || 
-            (p.id && p.id.toLowerCase() === slugLower) ||
-            (p.title && p.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-') === slugLower)
-          );
-          if (found) {
-            post = {
-              title: found.title || '',
-              excerpt: found.excerpt || found.summary || found.seoDescription || '',
-              featuredImage: found.featuredImage || found.imageUrl || found.coverImage || '',
-              category: found.category || found.categoryName || 'Berita & Informasi'
-            };
-          }
+      const list = getServerPostsList();
+      if (Array.isArray(list)) {
+        const found = list.find((p: CmsItem) => 
+          (p.slug && p.slug.toLowerCase() === slugLower) || 
+          (p.id && p.id.toLowerCase() === slugLower) ||
+          (p.title && p.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-') === slugLower)
+        );
+        if (found) {
+          post = {
+            title: found.title || '',
+            excerpt: found.excerpt || found.summary || found.seoDescription || '',
+            featuredImage: found.featuredImage || found.imageUrl || found.coverImage || '',
+            category: found.category || found.categoryName || 'Berita & Informasi'
+          };
         }
       }
     } catch (e) {
-      console.error("Error reading data_store/posts.json in handlePostImageRequest:", e);
+      console.error("Error reading posts in handlePostImageRequest:", e);
     }
   }
 

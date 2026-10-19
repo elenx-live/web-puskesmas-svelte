@@ -1,7 +1,5 @@
 // TAHAP 3 — hasil pemecahan server.ts (perilaku endpoint TIDAK berubah).
 import { Router } from "express";
-import fs from "fs";
-import path from "path";
 import { getServerMicrosites, saveServerMicrosites, getServerMicrositeCategories, saveServerMicrositeCategories, saveServerMicrositeMeta } from "../lib/storage.js";
 import type { CmsItem } from "../lib/storage.js";
 const router = Router();
@@ -44,11 +42,6 @@ router.delete("/api/microsites/:id", (req, res) => {
   const current = getServerMicrosites();
   const filtered = current.filter((m: CmsItem) => m.id !== id && m.slug !== id);
   saveServerMicrosites(filtered);
-  // Also delete from data_store/microsites.json
-  const dataStoreMicrositesPath = path.join(process.cwd(), "data_store", "microsites.json");
-  try {
-    fs.writeFileSync(dataStoreMicrositesPath, JSON.stringify(filtered, null, 2), "utf-8");
-  } catch {}
   res.json({ success: true, message: `Microsite ${id} deleted`, microsites: filtered });
 });
 

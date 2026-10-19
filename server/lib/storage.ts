@@ -7,12 +7,10 @@ import { GoogleGenAI } from "@google/genai";
 import { Resvg } from "@resvg/resvg-js";
 import {
   publicDir, uploadsDir,
-  CONFIG_FILE, LOGS_FILE, AI_CONFIG_FILE,
-  SITE_SETTINGS_FILE, MICROSITES_META_FILE, MICROSITES_DATA_FILE, MICROSITES_CATEGORIES_FILE,
-  THEME_PUBLISHED_FILE, THEME_DRAFT_FILE, HOMEPAGE_PUBLISHED_FILE, HOMEPAGE_DRAFT_FILE,
-  POSTS_META_FILE, CONTACT_SETTINGS_FILE, DATA_STORE_DIR,
-  DEFAULT_MICROSITES, DEFAULT_POSTS, DEFAULT_THEME, DEFAULT_HOMEPAGE,
+  DATA_STORE_DIR,
+  DEFAULT_MICROSITES, DEFAULT_POSTS, DEFAULT_THEME, DEFAULT_HOMEPAGE, DEFAULT_CATEGORIES,
 } from "./config.js";
+import { kvGetJson, kvSetJson, itemsAll, itemsReplaceAll } from "./db.js";
 
 /** Konfigurasi WhatsApp (JSON di disk). */
 export interface WhatsAppConfig {
@@ -174,8 +172,8 @@ function getWhatsAppConfig() {
   };
 
   try {
-    if (fs.existsSync(CONFIG_FILE)) {
-      const saved = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8"));
+    const saved = kvGetJson<Record<string, any>>("whatsapp_config");
+    if (saved) {
       return {
         ...defaultConfig,
         ...saved,
@@ -186,7 +184,7 @@ function getWhatsAppConfig() {
       };
     }
   } catch (err) {
-    console.error("Error reading WhatsApp config file, using defaults", err);
+    console.error("Error reading WhatsApp config, using defaults", err);
   }
   return defaultConfig;
 }
@@ -194,7 +192,7 @@ function getWhatsAppConfig() {
 // Helper to save config
 function saveWhatsAppConfig(config: WhatsAppConfig) {
   try {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
+    kvSetJson("whatsapp_config", config);
     return true;
   } catch (err) {
     console.error("Failed to write WhatsApp config:", err);
@@ -205,9 +203,8 @@ function saveWhatsAppConfig(config: WhatsAppConfig) {
 // Helper to read logs
 function getWhatsAppLogs(): WhatsAppLog[] {
   try {
-    if (fs.existsSync(LOGS_FILE)) {
-      return JSON.parse(fs.readFileSync(LOGS_FILE, "utf-8"));
-    }
+    const saved = kvGetJson<WhatsAppLog[]>("whatsapp_logs");
+    if (Array.isArray(saved)) return saved;
   } catch (err) {
     console.error("Error reading WhatsApp logs:", err);
   }
@@ -217,7 +214,7 @@ function getWhatsAppLogs(): WhatsAppLog[] {
 // Helper to save logs
 function saveWhatsAppLogs(logs: WhatsAppLog[]) {
   try {
-    fs.writeFileSync(LOGS_FILE, JSON.stringify(logs, null, 2), "utf-8");
+    kvSetJson("whatsapp_logs", logs);
     return true;
   } catch (err) {
     console.error("Failed to write WhatsApp logs:", err);
@@ -274,9 +271,8 @@ function getAIProviderConfig() {
   };
 
   try {
-    if (fs.existsSync(AI_CONFIG_FILE)) {
-      const saved = JSON.parse(fs.readFileSync(AI_CONFIG_FILE, "utf-8"));
-      
+    const saved = kvGetJson<Record<string, any>>("ai_provider_config");
+    if (saved) {
       let textConfig = { ...defaultTextConfig };
       if (saved.text) {
         textConfig = { ...defaultTextConfig, ...saved.text };
@@ -362,7 +358,7 @@ function getAIProviderConfig() {
 
 function saveAIProviderConfig(config: AIProviderConfig) {
   try {
-    fs.writeFileSync(AI_CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
+    kvSetJson("ai_provider_config", config);
     return true;
   } catch (err) {
     console.error("Failed to write AI config:", err);
@@ -501,15 +497,12 @@ async function executeAICompletion(params: ExecuteAIParams): Promise<{ text: str
 }
 function getServerThemePublished(): Record<string, any> {
   try {
-    if (fs.existsSync(THEME_PUBLISHED_FILE)) {
-      const content = fs.readFileSync(THEME_PUBLISHED_FILE, "utf-8");
-      const parsed = JSON.parse(content);
-      if (parsed && typeof parsed === 'object') {
-        return { ...DEFAULT_THEME, ...parsed, status: 'published' };
-      }
+    const parsed = kvGetJson<Record<string, any>>("theme_published");
+    if (parsed && typeof parsed === 'object') {
+      return { ...DEFAULT_THEME, ...parsed, status: 'published' };
     }
   } catch (e) {
-    console.error("Error reading theme_published.json:", e);
+    console.error("Error reading theme_published:", e);
   }
   return DEFAULT_THEME;
 }
@@ -517,25 +510,22 @@ function getServerThemePublished(): Record<string, any> {
 function saveServerThemePublished(theme: Record<string, any>): boolean {
   try {
     const merged = { ...DEFAULT_THEME, ...theme, status: 'published', updatedAt: new Date().toISOString() };
-    fs.writeFileSync(THEME_PUBLISHED_FILE, JSON.stringify(merged, null, 2), "utf-8");
+    kvSetJson("theme_published", merged);
     return true;
   } catch (e) {
-    console.error("Error saving theme_published.json:", e);
+    console.error("Error saving theme_published:", e);
     return false;
   }
 }
 
 function getServerThemeDraft(): Record<string, any> {
   try {
-    if (fs.existsSync(THEME_DRAFT_FILE)) {
-      const content = fs.readFileSync(THEME_DRAFT_FILE, "utf-8");
-      const parsed = JSON.parse(content);
-      if (parsed && typeof parsed === 'object') {
-        return { ...DEFAULT_THEME, ...parsed, status: 'draft' };
-      }
+    const parsed = kvGetJson<Record<string, any>>("theme_draft");
+    if (parsed && typeof parsed === 'object') {
+      return { ...DEFAULT_THEME, ...parsed, status: 'draft' };
     }
   } catch (e) {
-    console.error("Error reading theme_draft.json:", e);
+    console.error("Error reading theme_draft:", e);
   }
   return getServerThemePublished();
 }
@@ -543,25 +533,22 @@ function getServerThemeDraft(): Record<string, any> {
 function saveServerThemeDraft(theme: Record<string, any>): boolean {
   try {
     const merged = { ...DEFAULT_THEME, ...theme, status: 'draft', updatedAt: new Date().toISOString() };
-    fs.writeFileSync(THEME_DRAFT_FILE, JSON.stringify(merged, null, 2), "utf-8");
+    kvSetJson("theme_draft", merged);
     return true;
   } catch (e) {
-    console.error("Error saving theme_draft.json:", e);
+    console.error("Error saving theme_draft:", e);
     return false;
   }
 }
 
 function getServerHomepagePublished(): Record<string, any> {
   try {
-    if (fs.existsSync(HOMEPAGE_PUBLISHED_FILE)) {
-      const content = fs.readFileSync(HOMEPAGE_PUBLISHED_FILE, "utf-8");
-      const parsed = JSON.parse(content);
-      if (parsed && typeof parsed === 'object' && Array.isArray(parsed.sections)) {
-        return { ...DEFAULT_HOMEPAGE, ...parsed, status: 'published' };
-      }
+    const parsed = kvGetJson<Record<string, any>>("homepage_published");
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.sections)) {
+      return { ...DEFAULT_HOMEPAGE, ...parsed, status: 'published' };
     }
   } catch (e) {
-    console.error("Error reading homepage_published.json:", e);
+    console.error("Error reading homepage_published:", e);
   }
   return DEFAULT_HOMEPAGE;
 }
@@ -569,25 +556,22 @@ function getServerHomepagePublished(): Record<string, any> {
 function saveServerHomepagePublished(config: Record<string, any>): boolean {
   try {
     const merged = { ...DEFAULT_HOMEPAGE, ...config, status: 'published', updatedAt: new Date().toISOString() };
-    fs.writeFileSync(HOMEPAGE_PUBLISHED_FILE, JSON.stringify(merged, null, 2), "utf-8");
+    kvSetJson("homepage_published", merged);
     return true;
   } catch (e) {
-    console.error("Error saving homepage_published.json:", e);
+    console.error("Error saving homepage_published:", e);
     return false;
   }
 }
 
 function getServerHomepageDraft(): Record<string, any> {
   try {
-    if (fs.existsSync(HOMEPAGE_DRAFT_FILE)) {
-      const content = fs.readFileSync(HOMEPAGE_DRAFT_FILE, "utf-8");
-      const parsed = JSON.parse(content);
-      if (parsed && typeof parsed === 'object' && Array.isArray(parsed.sections)) {
-        return { ...DEFAULT_HOMEPAGE, ...parsed, status: 'draft' };
-      }
+    const parsed = kvGetJson<Record<string, any>>("homepage_draft");
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.sections)) {
+      return { ...DEFAULT_HOMEPAGE, ...parsed, status: 'draft' };
     }
   } catch (e) {
-    console.error("Error reading homepage_draft.json:", e);
+    console.error("Error reading homepage_draft:", e);
   }
   return getServerHomepagePublished();
 }
@@ -595,32 +579,27 @@ function getServerHomepageDraft(): Record<string, any> {
 function saveServerHomepageDraft(config: Record<string, any>): boolean {
   try {
     const merged = { ...DEFAULT_HOMEPAGE, ...config, status: 'draft', updatedAt: new Date().toISOString() };
-    fs.writeFileSync(HOMEPAGE_DRAFT_FILE, JSON.stringify(merged, null, 2), "utf-8");
+    kvSetJson("homepage_draft", merged);
     return true;
   } catch (e) {
-    console.error("Error saving homepage_draft.json:", e);
+    console.error("Error saving homepage_draft:", e);
     return false;
   }
 }
 
 function getServerMicrosites(): CmsItem[] {
   try {
-    if (fs.existsSync(MICROSITES_DATA_FILE)) {
-      const content = fs.readFileSync(MICROSITES_DATA_FILE, "utf-8");
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) {
-        return parsed;
-      }
-    }
+    const list = itemsAll("microsites");
+    if (Array.isArray(list)) return list as CmsItem[];
   } catch (e) {
-    console.error("Error reading microsites_data.json:", e);
+    console.error("Error reading microsites:", e);
   }
   return [];
 }
 
 function saveServerMicrosites(microsites: CmsItem[]): boolean {
   try {
-    fs.writeFileSync(MICROSITES_DATA_FILE, JSON.stringify(microsites, null, 2), "utf-8");
+    itemsReplaceAll("microsites", microsites);
     // Rebuild metaList solely from remaining microsites to prevent ghost resurrection
     const metaList: Record<string, any> = {};
     for (const m of microsites) {
@@ -636,35 +615,32 @@ function saveServerMicrosites(microsites: CmsItem[]): boolean {
         };
       }
     }
-    fs.writeFileSync(MICROSITES_META_FILE, JSON.stringify(metaList, null, 2), "utf-8");
+    kvSetJson("microsites_meta", metaList);
     return true;
   } catch (e) {
-    console.error("Error saving microsites_data.json:", e);
+    console.error("Error saving microsites:", e);
     return false;
   }
 }
 
 function getServerMicrositeCategories(): CmsItem[] {
   try {
-    if (fs.existsSync(MICROSITES_CATEGORIES_FILE)) {
-      const content = fs.readFileSync(MICROSITES_CATEGORIES_FILE, "utf-8");
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
+    const list = itemsAll("microsite_categories");
+    if (Array.isArray(list) && list.length > 0) {
+      return list as CmsItem[];
     }
   } catch (e) {
-    console.error("Error reading microsites_categories.json:", e);
+    console.error("Error reading microsite_categories:", e);
   }
   return DEFAULT_CATEGORIES;
 }
 
 function saveServerMicrositeCategories(categories: CmsItem[]): boolean {
   try {
-    fs.writeFileSync(MICROSITES_CATEGORIES_FILE, JSON.stringify(categories, null, 2), "utf-8");
+    itemsReplaceAll("microsite_categories", categories);
     return true;
   } catch (e) {
-    console.error("Error saving microsites_categories.json:", e);
+    console.error("Error saving microsite_categories:", e);
     return false;
   }
 }
@@ -687,15 +663,12 @@ function getServerSiteSettings(): Record<string, any> {
   };
 
   try {
-    if (fs.existsSync(SITE_SETTINGS_FILE)) {
-      const content = fs.readFileSync(SITE_SETTINGS_FILE, "utf-8");
-      const parsed = JSON.parse(content);
-      if (parsed && typeof parsed === 'object') {
-        return { ...defaultSettings, ...parsed };
-      }
+    const parsed = kvGetJson<Record<string, any>>("site_settings");
+    if (parsed && typeof parsed === 'object') {
+      return { ...defaultSettings, ...parsed };
     }
   } catch (e) {
-    console.error("Error reading site_settings.json:", e);
+    console.error("Error reading site_settings:", e);
   }
   return defaultSettings;
 }
@@ -713,12 +686,12 @@ function saveServerSiteSettings(settings: Record<string, any>): boolean {
       operatingHours: typeof opHours === 'string' && opHours.trim() ? opHours : "Senin - Sabtu: 07.30 - 14.00 WIB | UGD & Rawat Inap: 24 Jam",
       updatedAt: new Date().toISOString() 
     };
-    fs.writeFileSync(SITE_SETTINGS_FILE, JSON.stringify(merged, null, 2), "utf-8");
+    kvSetJson("site_settings", merged);
 
-    // Also synchronize to contact settings file if it exists
+    // Also synchronize to contact settings if it exists
     try {
-      if (fs.existsSync(CONTACT_SETTINGS_FILE)) {
-        const contact = JSON.parse(fs.readFileSync(CONTACT_SETTINGS_FILE, "utf-8"));
+      const contact = kvGetJson<Record<string, any>>("contact_settings");
+      if (contact) {
         if (merged.siteName) contact.name = merged.siteName;
         if (merged.tagline) contact.tagline = merged.tagline;
         if (merged.address) contact.address = merged.address;
@@ -746,7 +719,7 @@ function saveServerSiteSettings(settings: Record<string, any>): boolean {
           }
         }
         contact.updatedAt = new Date().toISOString();
-        fs.writeFileSync(CONTACT_SETTINGS_FILE, JSON.stringify(contact, null, 2), "utf-8");
+        kvSetJson("contact_settings", contact);
       }
     } catch {}
 
@@ -760,41 +733,35 @@ function saveServerSiteSettings(settings: Record<string, any>): boolean {
 function getServerMicrositesMeta(): Record<string, any> {
   const defaultList: Record<string, any> = { ...DEFAULT_MICROSITES };
   try {
-    if (fs.existsSync(MICROSITES_META_FILE)) {
-      const content = fs.readFileSync(MICROSITES_META_FILE, "utf-8");
-      const parsed = JSON.parse(content);
-      if (typeof parsed === 'object' && parsed !== null) {
-        Object.assign(defaultList, parsed);
-      }
+    const parsed = kvGetJson<Record<string, any>>("microsites_meta");
+    if (typeof parsed === 'object' && parsed !== null) {
+      Object.assign(defaultList, parsed);
     }
   } catch (e) {
-    console.error("Error reading microsites_meta.json:", e);
+    console.error("Error reading microsites_meta:", e);
   }
 
-  // Also read from MICROSITES_DATA_FILE to ensure live sync with all microsites
+  // Also read from items('microsites') to ensure live sync with all microsites
   try {
-    if (fs.existsSync(MICROSITES_DATA_FILE)) {
-      const content = fs.readFileSync(MICROSITES_DATA_FILE, "utf-8");
-      const items = JSON.parse(content);
-      if (Array.isArray(items)) {
-        for (const item of items) {
-          if (item && item.slug) {
-            defaultList[item.slug] = {
-              name: item.name || item.title || '',
-              description: item.description || '',
-              category: item.category || 'Umum',
-              links: Array.isArray(item.links) ? item.links : [],
-              profileImageUrl: item.profileImageUrl || item.coverImageUrl || '',
-              logoUrl: item.logoUrl || '',
-              ogImageUrl: item.ogImageUrl || item.profileImageUrl || '',
-              slug: item.slug
-            };
-          }
+    const items = itemsAll("microsites");
+    if (Array.isArray(items)) {
+      for (const item of items) {
+        if (item && item.slug) {
+          defaultList[item.slug] = {
+            name: item.name || item.title || '',
+            description: item.description || '',
+            category: item.category || 'Umum',
+            links: Array.isArray(item.links) ? item.links : [],
+            profileImageUrl: item.profileImageUrl || item.coverImageUrl || '',
+            logoUrl: item.logoUrl || '',
+            ogImageUrl: item.ogImageUrl || item.profileImageUrl || '',
+            slug: item.slug
+          };
         }
       }
     }
   } catch (e) {
-    console.error("Error reading microsites_data.json into meta:", e);
+    console.error("Error reading microsites into meta:", e);
   }
 
   return defaultList;
@@ -804,10 +771,10 @@ function saveServerMicrositeMeta(slug: string, meta: Record<string, any>): boole
   try {
     const current = getServerMicrositesMeta();
     current[slug] = { ...(current[slug] || {}), ...meta, slug };
-    fs.writeFileSync(MICROSITES_META_FILE, JSON.stringify(current, null, 2), "utf-8");
+    kvSetJson("microsites_meta", current);
     return true;
   } catch (e) {
-    console.error("Error saving microsites_meta.json:", e);
+    console.error("Error saving microsites_meta:", e);
     return false;
   }
 }
@@ -816,10 +783,10 @@ function saveServerPostMeta(slug: string, meta: Record<string, any>): boolean {
   try {
     const current = getServerPosts();
     current[slug] = { ...(current[slug] || {}), ...meta, slug };
-    fs.writeFileSync(POSTS_META_FILE, JSON.stringify(current, null, 2), "utf-8");
+    kvSetJson("posts_meta", current);
     return true;
   } catch (e) {
-    console.error("Error saving posts_meta.json:", e);
+    console.error("Error saving posts_meta:", e);
     return false;
   }
 }
@@ -827,38 +794,33 @@ function saveServerPostMeta(slug: string, meta: Record<string, any>): boolean {
 function getServerPosts(): Record<string, any> {
   const postsMap: Record<string, any> = {};
   try {
-    if (fs.existsSync(POSTS_META_FILE)) {
-      const parsed = JSON.parse(fs.readFileSync(POSTS_META_FILE, "utf-8"));
-      if (parsed && typeof parsed === 'object') {
-        Object.assign(postsMap, parsed);
-      }
+    const parsed = kvGetJson<Record<string, any>>("posts_meta");
+    if (parsed && typeof parsed === 'object') {
+      Object.assign(postsMap, parsed);
     }
   } catch (e) {
-    console.error("Error reading posts_meta.json:", e);
+    console.error("Error reading posts_meta:", e);
   }
 
-  // Also check data_store/posts.json
+  // Also check items('posts')
   try {
-    const dataStorePostsPath = path.join(process.cwd(), "data_store", "posts.json");
-    if (fs.existsSync(dataStorePostsPath)) {
-      const parsed = JSON.parse(fs.readFileSync(dataStorePostsPath, "utf-8"));
-      if (Array.isArray(parsed)) {
-        for (const item of parsed) {
-          if (item && item.slug) {
-            postsMap[item.slug] = {
-              title: item.title || '',
-              excerpt: item.excerpt || item.summary || '',
-              featuredImage: item.featuredImage || item.coverImage || item.imageUrl || '',
-              category: item.category || 'Berita & Informasi',
-              publishedAt: item.publishedAt || item.date || '',
-              updatedAt: item.updatedAt || item.publishedAt || ''
-            };
-          }
+    const items = itemsAll("posts");
+    if (Array.isArray(items)) {
+      for (const item of items) {
+        if (item && item.slug) {
+          postsMap[item.slug] = {
+            title: item.title || '',
+            excerpt: item.excerpt || item.summary || '',
+            featuredImage: item.featuredImage || item.coverImage || item.imageUrl || '',
+            category: item.category || 'Berita & Informasi',
+            publishedAt: item.publishedAt || item.date || '',
+            updatedAt: item.updatedAt || item.publishedAt || ''
+          };
         }
       }
     }
   } catch (e) {
-    console.error("Error reading data_store/posts.json:", e);
+    console.error("Error reading posts into meta:", e);
   }
 
   return postsMap;
@@ -1318,28 +1280,20 @@ function renderScreenshotPng(svg: string): Buffer {
   return resvg.render().asPng();
 }
 function getServerPostsList(): CmsItem[] {
-  const dataStorePostsPath = path.join(process.cwd(), "data_store", "posts.json");
   try {
-    if (fs.existsSync(dataStorePostsPath)) {
-      const parsed = JSON.parse(fs.readFileSync(dataStorePostsPath, "utf-8"));
-      if (Array.isArray(parsed)) {
-        return parsed;
-      }
-    }
+    const list = itemsAll("posts");
+    if (Array.isArray(list)) return list as CmsItem[];
   } catch (err) {
-    console.error("Error reading data_store/posts.json:", err);
+    console.error("Error reading posts:", err);
   }
   return [];
 }
 
 function saveServerPostsList(posts: CmsItem[]): boolean {
   try {
-    const dataStorePostsPath = path.join(process.cwd(), "data_store", "posts.json");
-    const dataStoreDir = path.join(process.cwd(), "data_store");
-    if (!fs.existsSync(dataStoreDir)) fs.mkdirSync(dataStoreDir, { recursive: true });
-    fs.writeFileSync(dataStorePostsPath, JSON.stringify(posts, null, 2), "utf-8");
+    itemsReplaceAll("posts", posts);
 
-    // Also sync to posts_meta.json
+    // Also sync to posts_meta
     const metaMap: Record<string, any> = {};
     for (const p of posts) {
       if (p && p.slug) {
@@ -1352,7 +1306,7 @@ function saveServerPostsList(posts: CmsItem[]): boolean {
         };
       }
     }
-    fs.writeFileSync(POSTS_META_FILE, JSON.stringify(metaMap, null, 2), "utf-8");
+    kvSetJson("posts_meta", metaMap);
     return true;
   } catch (err) {
     console.error("Error saving posts list:", err);
@@ -1361,11 +1315,10 @@ function saveServerPostsList(posts: CmsItem[]): boolean {
 }
 function getServerContactSettings() {
   try {
-    if (fs.existsSync(CONTACT_SETTINGS_FILE)) {
-      return JSON.parse(fs.readFileSync(CONTACT_SETTINGS_FILE, "utf-8"));
-    }
+    const saved = kvGetJson<Record<string, any>>("contact_settings");
+    if (saved) return saved;
   } catch (err) {
-    console.error("Error reading contact settings file:", err);
+    console.error("Error reading contact settings:", err);
   }
   
   // If contact settings file doesn't exist, generate default from site settings
@@ -1417,19 +1370,19 @@ function getServerContactSettings() {
   };
 
   try {
-    fs.writeFileSync(CONTACT_SETTINGS_FILE, JSON.stringify(defaultContact, null, 2), "utf-8");
+    kvSetJson("contact_settings", defaultContact);
   } catch {}
   return defaultContact;
 }
 
 function saveServerContactSettings(data: Record<string, unknown>) {
   try {
-    fs.writeFileSync(CONTACT_SETTINGS_FILE, JSON.stringify(data, null, 2), "utf-8");
+    kvSetJson("contact_settings", data);
     
-    // Also synchronize back to site_settings.json
+    // Also synchronize back to site_settings
     try {
-      if (fs.existsSync(SITE_SETTINGS_FILE)) {
-        const site = JSON.parse(fs.readFileSync(SITE_SETTINGS_FILE, "utf-8"));
+      const site = kvGetJson<Record<string, any>>("site_settings");
+      if (site) {
         if (data.name) site.siteName = data.name;
         if (data.tagline) site.tagline = data.tagline;
         if (data.address) site.address = data.address;
@@ -1451,13 +1404,13 @@ function saveServerContactSettings(data: Record<string, unknown>) {
           if (emailCh?.value) site.email = emailCh.value;
         }
         site.updatedAt = new Date().toISOString();
-        fs.writeFileSync(SITE_SETTINGS_FILE, JSON.stringify(site, null, 2), "utf-8");
+        kvSetJson("site_settings", site);
       }
     } catch {}
 
     return true;
   } catch (err) {
-    console.error("Error writing contact settings file:", err);
+    console.error("Error writing contact settings:", err);
     return false;
   }
 }
