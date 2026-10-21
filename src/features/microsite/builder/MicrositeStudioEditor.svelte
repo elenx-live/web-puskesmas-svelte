@@ -371,6 +371,7 @@
   let customBadgesText = $state(initialFooterConfig.customBadgesText || '');
   let footerLinks = $state<MicrositeFooterLink[]>(initialFooterConfig.links || []);
   let footerAlignment = $state<'center' | 'left'>(initialFooterConfig.alignment || 'center');
+  let footerImageUrl = $state(initialMicrosite.footerImageUrl || '');
 
   // Social & contact state
   let phone = $state(initialMicrosite.phone || '');
@@ -449,6 +450,7 @@
     profileImageUrl: bannerImageUrl || profileImageUrl,
     bannerImageUrl: bannerImageUrl || profileImageUrl,
     backgroundImageUrl,
+    footerImageUrl,
     status,
     active,
     phone,
@@ -636,6 +638,7 @@
         profileImageUrl: bannerImageUrl || profileImageUrl,
         bannerImageUrl: bannerImageUrl || profileImageUrl,
         backgroundImageUrl,
+    footerImageUrl,
         status,
         active,
         phone,
@@ -1445,6 +1448,25 @@
                   </div>
                 {/each}
               </div>
+            </div>
+
+            <!-- Gambar Latar Footer -->
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 flex items-center gap-1.5">
+                <ImageIcon class="w-4 h-4 text-teal-400" />
+                <span>Gambar Latar Footer</span>
+              </h3>
+              <p class="text-[11px] text-slate-400 mb-3">
+                Foto latar area footer — ditampilkan di balik isi footer dengan lapisan warna tema agar teks tetap terbaca. Kosongkan untuk footer biasa.
+              </p>
+              <MicrositeImageUploadField
+                label="Upload File Gambar Footer"
+                value={footerImageUrl}
+                onChange={(url) => (footerImageUrl = url)}
+                presetType="background"
+                aspectRatio="background"
+                placeholder="Pilih foto PNG/JPG/WebP atau tautan..."
+              />
             </div>
 
             <!-- Perataan & Tampilan Dasar -->
