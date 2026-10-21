@@ -60,6 +60,11 @@
   import MicrositeTemplateRenderer from '../components/MicrositeTemplateRenderer.svelte';
   import MicrositeImageUploadField from './MicrositeImageUploadField.svelte';
   import { micrositeService } from '../../../shared/services/micrositeService.js';
+  import {
+    MICROSITE_THEMES,
+    getMicrositeTheme,
+    micrositeThemeCssVars
+  } from '../../../shared/themes/micrositeThemes.js';
   import { toastStore } from '../../../shared/stores/toast.svelte.js';
 
   interface Props {
@@ -382,6 +387,14 @@
   );
   let accentColor = $state(initialMicrosite.themeCustomization?.accentColor || '#10b981');
   let themePreset = $state(initialMicrosite.themeCustomization?.theme || 'emerald');
+
+  // Token tema aktif untuk pratinjau live (20 tema baru dari registry).
+  // Nama lama (mis. 'emerald') tidak ada di registry -> undefined -> pratinjau
+  // memakai token default seperti sebelumnya.
+  const previewThemeVars = $derived.by(() => {
+    const t = getMicrositeTheme(themePreset);
+    return t ? micrositeThemeCssVars(t) : undefined;
+  });
 
   // Security
   let passwordProtected = $state(initialMicrosite.passwordProtected ?? false);
@@ -1905,6 +1918,42 @@
                 {/each}
               </div>
             </div>
+
+            <!-- 20 Tema Siap Pakai (registry, 21 Okt 2026) -->
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
+                Tema Siap Pakai (20 Tema Baru)
+              </h3>
+              <p class="text-[11px] text-slate-400 mb-3">
+                Palet lengkap siap pakai — klik untuk menerapkan ke pratinjau dan
+                menyimpan. Tema lama di atas tetap tersedia dan tidak berubah.
+              </p>
+              <div class="grid grid-cols-2 gap-2 pt-1">
+                {#each MICROSITE_THEMES as t (t.id)}
+                  <button
+                    type="button"
+                    onclick={() => {
+                      themePreset = t.id;
+                      accentColor = t.tokens.accent;
+                    }}
+                    class={`p-2.5 rounded-xl border text-left transition ${
+                      themePreset === t.id
+                        ? 'border-emerald-400 bg-slate-800'
+                        : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
+                    }`}
+                  >
+                    <div class="flex items-center gap-2 mb-1">
+                      <div
+                        class="w-5 h-5 rounded-full shrink-0 shadow-sm border border-white/20"
+                        style={`background-color: ${t.tokens.primary}`}
+                      ></div>
+                      <span class="text-[11px] font-bold text-white leading-tight">{t.name}</span>
+                    </div>
+                    <span class="text-[10px] text-slate-400 block leading-snug">{t.character}</span>
+                  </button>
+                {/each}
+              </div>
+            </div>
           </div>
         {/if}
 
@@ -2146,7 +2195,7 @@
         {/if}
 
         <!-- Scrollable Live Interactive Preview -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar">
+        <div class="flex-1 overflow-y-auto custom-scrollbar" style={previewThemeVars}>
           <MicrositeTemplateRenderer
             microsite={liveEntity}
             templateOverride={template}
