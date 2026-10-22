@@ -48,7 +48,8 @@ import { memStore } from '../lib/memStore';
     { id: 'galeri', label: 'Galeri', url: '#/galeri', order: 7, type: 'custom', enabled: true, openInNewTab: false, visibility: 'all', createdAt: '2025-01-01T00:00:00Z' },
     { id: 'survei', label: 'Survei', url: '#/survei', order: 8, type: 'custom', enabled: true, openInNewTab: false, visibility: 'all', createdAt: '2025-01-01T00:00:00Z' },
     { id: 'kritik-saran', label: 'Kritik & Saran', url: '#/kritik-saran', order: 9, type: 'custom', enabled: true, openInNewTab: false, visibility: 'all', createdAt: '2025-01-01T00:00:00Z' },
-    { id: 'kontak', label: 'Kontak & Lokasi', url: '#/kontak', order: 10, type: 'custom', enabled: true, openInNewTab: false, visibility: 'all', createdAt: '2025-01-01T00:00:00Z' }
+    { id: 'kontak', label: 'Kontak & Lokasi', url: '#/kontak', order: 10, type: 'custom', enabled: true, openInNewTab: false, visibility: 'all', createdAt: '2025-01-01T00:00:00Z' },
+    { id: 'fishbone', label: 'Fishbone', url: 'https://fishbone.puskesmasmanding.com', order: 11, type: 'custom', enabled: true, openInNewTab: true, visibility: 'all', createdAt: '2025-01-01T00:00:00Z' }
   ];
 
   let settings = $state<SiteSettings | null>(null);
