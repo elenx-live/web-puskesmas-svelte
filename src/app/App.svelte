@@ -28,9 +28,11 @@ import { memStore } from '../shared/lib/memStore';
   let settings = $state<SiteSettings | null>(null);
 
   // Hasil pencocokan rute dari registry tunggal + komponen hasil lazy-load.
-  let matched = $state<MatchedRoute | null>(null);
+  // Diinisialisasi sinkron dari path saat ini (bukan null) supaya render pertama
+  // untuk rute valid langsung menampilkan status memuat — bukan NotFoundPage.
+  let matched = $state<MatchedRoute | null>(matchRoute(routerState.path));
   let PageComponent = $state<Component | null>(null);
-  let loadState = $state<'idle' | 'loading' | 'error'>('idle');
+  let loadState = $state<'idle' | 'loading' | 'error'>(matched ? 'loading' : 'idle');
 
   // Cache komponen yang sudah dimuat: navigasi ulang ke halaman yang sama
   // menjadi instan (tanpa flash loading), remount tetap terjadi via {#key}.

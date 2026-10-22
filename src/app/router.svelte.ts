@@ -82,7 +82,9 @@ export function navigate(path: string): void {
 
 /** State reaktif rute aktif — dipakai App.svelte. */
 export class RouterState {
-  path = $state('/');
+  // Inisialisasi dari URL sebenarnya (bukan '/'), supaya render pertama tidak
+  // sempat menampilkan halaman NotFound sebelum init() berjalan di onMount.
+  path = $state(typeof window !== 'undefined' ? currentPath() : '/');
   query = $state<Record<string, string>>({});
   private onHashChange = () => {
     this.path = currentPath();
